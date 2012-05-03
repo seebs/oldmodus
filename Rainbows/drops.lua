@@ -1,6 +1,9 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
+-- from messing with a rainbow background
+scene.COLOR_MULTIPLIER = 50
+scene.color_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.DROPS = #Rainbow.hues * 3
 scene.DROP_DEPTH = 12
 scene.MAX_GROWTH = 125
@@ -11,6 +14,7 @@ function scene:createScene(event)
   -- so clicks have something to land on
   self.bg = display.newRect(self.view, screen.xoff, screen.yoff, screen.width, screen.height)
   self.bg:setFillColor(0, 0)
+  scene.last_color = 1
   self.view:insert(self.bg)
   self.spare_drops = {}
   self.last_hue = nil
@@ -24,21 +28,24 @@ function scene:createScene(event)
     d:insert(d.inner)
     d.inner.alpha = 1
     d.hue = i
+    local r, g, b = unpack(Rainbow.color(i - 1))
     for j = 1, scene.DROP_DEPTH do
+      local mod = (scene.DROP_DEPTH - j) * 11
       local c = display.newCircle(d, 0, 0, 60)
       c:setFillColor(0)
-      c.strokeWidth = j * 2
-      c.alpha = 0.1
-      c:setStrokeColor(unpack(Rainbow.color(i - 1)))
+      c.strokeWidth = j * 1.5
+      c.alpha = 0.15
+      c:setStrokeColor(math.min(r + mod, 255), math.min(g + mod, 255), math.min(b + mod, 255))
       c.blendMode = 'add'
       d.outer:insert(c)
     end
     for j = 1, scene.DROP_DEPTH do
+      local mod = (scene.DROP_DEPTH - j) * 17
       local c = display.newCircle(d, 0, 0, 40)
       c:setFillColor(0, 0)
-      c.strokeWidth = j * 1.5
-      c.alpha = 0.1
-      c:setStrokeColor(unpack(Rainbow.color(i - 1)))
+      c.strokeWidth = j * 2
+      c.alpha = 0.15
+      c:setStrokeColor(math.min(r + mod, 255), math.min(g + mod, 255), math.min(b + mod, 255))
       c.blendMode = 'add'
       d.inner:insert(c)
     end
@@ -58,14 +65,19 @@ function scene:do_drops()
     d.inner.xScale = d.inner.xScale + 0.01
     d.inner.yScale = d.inner.yScale + 0.01
     d.growth = d.growth + 1
+    local halfway = d.max_growth / 2
     if d.growth >= d.max_growth then
       d.isVisible = 0
       d.alpha = 0
       table.insert(spares, i)
     elseif d.growth >= d.max_growth / 2 then
-      d.alpha = 1 - ((d.growth - d.max_growth / 2) / (d.max_growth / 2))
+      d.alpha = 1 - ((d.growth - halfway) / halfway)
+      d.outer.alpha = math.sqrt(1 - ((d.growth - halfway) / halfway))
+      d.inner.alpha = math.sqrt(1 - ((d.growth - halfway) / halfway))
     else
       d.alpha = 1
+      d.outer.alpha = 1
+      d.inner.alpha = 1
     end
   end
   while #spares > 0 do
@@ -88,6 +100,10 @@ function scene:do_drops()
     d.isVisible = true
     d.x = math.random((screen.width - 50) + 25) + screen.xoff
     d.y = math.random((screen.height - 50) + 25) + screen.yoff
+    if self.toward then
+      local between = Util.between(d, self.toward)
+      d.x, d.y = between.x, between.y
+    end
     local range = scene.MAX_GROWTH - scene.MIN_GROWTH
     local scale = math.random(range)
     d.max_growth = scale + scene.MIN_GROWTH
@@ -105,20 +121,29 @@ function scene:do_drops()
 end
 
 function scene:enterFrame(event)
+  -- local r, g, b = unpack(Rainbow.smooth(self.last_color, self.COLOR_MULTIPLIER))
+  -- self.last_color = (self.last_color % (#Rainbow.hues * self.COLOR_MULTIPLIER)) + 1
+  -- self.bg:setFillColor(r, g, b, 50)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .03, 1)
   end
   self:do_drops()
 end
 
+function scene:touch_magic(state, ...)
+  self.toward = state.ordered[1] and state.ordered[1].current
+  return true
+end
+
 function scene:willEnterScene(event)
   self.view.alpha = 0
+  self.toward = nil
 end
 
 function scene:enterScene(event)
   self.cooldown = 0
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', next_display)
+  self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
 end
 
 function scene:didExitScene(event)
@@ -134,7 +159,7 @@ function scene:didExitScene(event)
 end
 
 function scene:exitScene(event)
-  self.view:removeEventListener('touch', next_display)
+  self.view:removeEventListener('touch', Touch.handler(self.touch_magic, self))
   Runtime:removeEventListener('enterFrame', scene)
 end
 

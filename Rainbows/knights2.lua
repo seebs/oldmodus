@@ -4,6 +4,11 @@ local scene = storyboard.newScene()
 scene.KNIGHTS = 6
 scene.INSET = 4
 
+scene.FADED = 0.75
+scene.CYCLE = 12
+-- NOT necessarily .KNIGHTS
+scene.FADE_DIVISOR = 5 * scene.CYCLE
+
 scene.square_size = math.max(32, Util.gcd(screen.height, screen.width))
 
 function scene:createScene(event)
@@ -27,6 +32,7 @@ function scene:createScene(event)
       square.strokeWidth = self.INSET
       square:setReferencePoint(display.TopLeftReferencePoint)
       square.hue = 0
+      square.cooldown = math.random(self.FADE_DIVISOR)
       column[j] = square
       self.view:insert(square)
       square.isVisible = true
@@ -46,6 +52,10 @@ function scene:bump(square, hue)
   if square then
     square.hue = Rainbow.towards(square.hue, hue)
     scene:colorize(square)
+    square.cooldown = square.cooldown + (scene.FADE_DIVISOR / 2)
+    if square.alpha < scene.FADED then
+      square.alpha = (scene.FADED + square.alpha) / 2
+    end
   end
 end
 
@@ -86,7 +96,7 @@ function scene:move_knight(knight)
     primary = 'y'
     secondary = 'x'
   end
-  self.squares[knight.x][knight.y].alpha = .7
+  self.squares[knight.x][knight.y].alpha = scene.FADED + 0.1
   if math.random(2) == 2 then
     knight[primary] = knight[primary] + 2
   else
@@ -108,6 +118,17 @@ end
 function scene:enterFrame(event)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(1, self.view.alpha + .03)
+  end
+  for _, col in ipairs(self.squares) do
+    for _, square in ipairs(col) do
+      if square.alpha < 1 then
+	square.cooldown = square.cooldown - 1
+	if square.cooldown < 1 then
+          square.alpha = math.max(0, square.alpha - .002)
+	  square.cooldown = self.FADE_DIVISOR
+	end
+      end
+    end
   end
   for i, knight in ipairs(self.knights) do
     knight.counter = knight.counter - 1
@@ -143,7 +164,7 @@ end
 
 function scene:enterScene(event)
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', next_display)
+  self.view:addEventListener('touch', Touch.handler())
 end
 
 function scene:didExitScene(event)
@@ -152,7 +173,7 @@ end
 
 function scene:exitScene(event)
   Runtime:removeEventListener('enterFrame', scene)
-  self.view:removeEventListener('touch', next_display)
+  self.view:removeEventListener('touch', Touch.handler())
 end
 
 function scene:destroyScene(event)

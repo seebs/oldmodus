@@ -17,6 +17,12 @@ function Util.gcd(x, y)
   end
 end
 
+function Util.between(a, b, ratio)
+  ratio = ratio or 0.5
+  return { x = a.x * ratio + b.x * (1 - ratio),
+           y = a.y * ratio + b.y * (1 - ratio) }
+end
+
 function Util.dist(a, b)
   if type(a) == 'number' and type(b) == 'number' then
     return math.sqrt(a * a + b * b)

@@ -12,7 +12,7 @@ end
 audio.setVolume(0.4, 0)
 
 function Sounds.play(hue)
-  hue = (hue % 6) + 1 + Sounds.offset
+  hue = ((hue or math.random(#Rainbow.hues)) % #Rainbow.hues) + 1 + Sounds.offset
   if hue == 6 or hue == 12 then
     if Sounds.offset == 6 then
       Sounds.offset = 0

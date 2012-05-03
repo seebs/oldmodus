@@ -4,6 +4,11 @@ local scene = storyboard.newScene()
 scene.KNIGHTS = 5
 scene.INSET = 4
 
+scene.FADED = 0.75
+scene.CYCLE = 12
+-- NOT necessarily .KNIGHTS
+scene.FADE_DIVISOR = 5 * scene.CYCLE
+
 scene.square_size = math.max(32, Util.gcd(screen.height, screen.width))
 
 function scene:createScene(event)
@@ -27,6 +32,7 @@ function scene:createScene(event)
       square.strokeWidth = self.INSET
       square:setReferencePoint(display.TopLeftReferencePoint)
       square.hue = 0
+      square.cooldown = math.random(self.FADE_DIVISOR)
       column[j] = square
       self.view:insert(square)
       square.isVisible = true
@@ -42,6 +48,10 @@ function scene:bump(square)
     local r, g, b = unpack(Rainbow.color(square.hue))
     square:setFillColor(r, g, b)
     square:setStrokeColor(r, g, b, 150)
+    square.cooldown = square.cooldown + (scene.FADE_DIVISOR / 2)
+    if square.alpha < scene.FADED then
+      square.alpha = (scene.FADED + square.alpha) / 2
+    end
   end
 end
 
@@ -61,6 +71,7 @@ function scene:adjust(knight, quiet)
     Sounds.play(square.hue)
   end
   square.alpha = 1
+  square.cooldown = scene.FADE_DIVISOR
   scene:bump(scene:find(knight.x + 1, knight.y    ))
   scene:bump(scene:find(knight.x - 1, knight.y    ))
   scene:bump(scene:find(knight.x    , knight.y + 1))
@@ -76,7 +87,7 @@ function scene:move_knight(knight)
     primary = 'y'
     secondary = 'x'
   end
-  self.squares[knight.x][knight.y].alpha = .7
+  self.squares[knight.x][knight.y].alpha = scene.FADED + 0.1
   if math.random(2) == 2 then
     knight[primary] = knight[primary] + 2
   else
@@ -99,6 +110,17 @@ function scene:enterFrame(event)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(1, self.view.alpha + .03)
   end
+  for _, col in ipairs(self.squares) do
+    for _, square in ipairs(col) do
+      if square.alpha < 1 then
+	square.cooldown = square.cooldown - 1
+	if square.cooldown < 1 then
+          square.alpha = math.max(0, square.alpha - .002)
+	  square.cooldown = self.FADE_DIVISOR
+	end
+      end
+    end
+  end
   for i, knight in ipairs(self.knights) do
     knight.counter = knight.counter - 1
     if knight.counter == 0 then
@@ -111,7 +133,7 @@ function scene:willEnterScene(event)
   for x = 1, self.columns do
     for y = 1, self.rows do
       self.squares[x][y].hue = 0
-      self.squares[x][y].alpha = .7
+      self.squares[x][y].alpha = self.FADED
       self:bump(self.squares[x][y])
     end
   end
@@ -120,9 +142,9 @@ function scene:willEnterScene(event)
     local knight = {
       x = math.random(self.columns),
       y = math.random(self.rows),
-      counter = 30 + (i * 12),
+      counter = 30 + (i * self.CYCLE),
       index = i,
-      cooldown = self.KNIGHTS * 12,
+      cooldown = self.KNIGHTS * self.CYCLE,
     }
     table.insert(self.knights, knight)
     self:adjust(knight, true)
@@ -132,7 +154,7 @@ end
 
 function scene:enterScene(event)
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', next_display)
+  self.view:addEventListener('touch', Touch.handler())
 end
 
 function scene:didExitScene(event)
@@ -141,7 +163,7 @@ end
 
 function scene:exitScene(event)
   Runtime:removeEventListener('enterFrame', scene)
-  self.view:removeEventListener('touch', next_display)
+  self.view:removeEventListener('touch', Touch.handler())
 end
 
 function scene:destroyScene(event)

@@ -9,9 +9,10 @@ widget = require "widget"
 Util = require "Util"
 Rainbow = require "Rainbow"
 Sounds = require "Sounds"
+Touch = require "Touch"
 
-local displays = { 'bars', 'drops', 'knights', 'knights2', 'qix' }
-local debugging_display = 'qix'
+local displays = { 'lines', 'drops', 'knights', 'knights2', 'lissajous' }
+local debugging_display = nil
 local display_index = 1
 
 display_offset = { x = display.screenOriginX, y = display.screenOriginY }
@@ -28,6 +29,8 @@ screen.left = screen.xoff
 screen.top = screen.yoff
 screen.right = screen.xoff + screen.width
 screen.bottom = screen.yoff + screen.height
+
+system.activate("multitouch")
 
 function next_display(event)
   if debugging_display then
