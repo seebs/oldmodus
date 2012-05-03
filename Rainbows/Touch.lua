@@ -73,9 +73,6 @@ function Touch.handle(event, callback)
     e.current = { x = event.x, y = event.y }
     e.count = e.count + 1
   elseif event.phase == 'ended' then
-    if Util.dist(e.start, event) < 20 and e.count < 5 then
-      retval = false
-    end
     state.event[idx] = nil
     state.known_ids[idx] = nil
     active = active - 1
@@ -94,7 +91,7 @@ function Touch.handle(event, callback)
 
   -- Util.printf("Processed '%s' for idx %d, active %d/%d.", event.phase, idx, active, state.peak)
   if state.active == 0 and state.peak <= 1 and system.getTimer() - state.stamp
-  < 100 then
+  < 150 then
     next_display()
   elseif not callback(args[1], state, unpack(args, 2)) then
     next_display()

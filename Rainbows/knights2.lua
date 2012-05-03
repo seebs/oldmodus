@@ -97,16 +97,33 @@ function scene:move_knight(knight)
     secondary = 'x'
   end
   self.squares[knight.x][knight.y].alpha = scene.FADED + 0.1
-  if math.random(2) == 2 then
+  local p_chance = .5
+  local s_chance = .5
+  if self.toward then
+    if self.toward[primary] > knight[primary] then
+      p_chance = .8
+    elseif self.toward[primary] < knight[primary] then
+      p_chance = .2
+    end
+    if self.toward[secondary] > knight[secondary] then
+      s_chance = .8
+    elseif self.toward[secondary] < knight[secondary] then
+      s_chance = .2
+    end
+  end
+
+  self.squares[knight.x][knight.y].alpha = scene.FADED + 0.1
+  if math.random() < p_chance then
     knight[primary] = knight[primary] + 2
   else
     knight[primary] = knight[primary] - 2
   end
-  if math.random(2) == 2 then
+  if math.random() < s_chance then
     knight[secondary] = knight[secondary] + 1
   else
     knight[secondary] = knight[secondary] - 1
   end
+
   if knight.x < 1 then knight.x = knight.x + self.columns end
   if knight.x > self.columns then knight.x = knight.x - self.columns end
   if knight.y < 1 then knight.y = knight.y + self.rows end
@@ -162,9 +179,20 @@ function scene:willEnterScene(event)
   self.view.alpha = 0
 end
 
+function scene:touch_magic(state, ...)
+  if state.ordered[1] then
+    self.toward = state.ordered[1].current
+    self.toward.x = math.ceil((self.toward.x / self.square_size) + 0.5)
+    self.toward.y = math.ceil((self.toward.y / self.square_size) + 0.5)
+  else
+    self.toward = nil
+  end
+  return true
+end
+
 function scene:enterScene(event)
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', Touch.handler())
+  self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
 end
 
 function scene:didExitScene(event)
@@ -173,7 +201,7 @@ end
 
 function scene:exitScene(event)
   Runtime:removeEventListener('enterFrame', scene)
-  self.view:removeEventListener('touch', Touch.handler())
+  self.view:removeEventListener('touch', Touch.handler(self.touch_magic, self))
 end
 
 function scene:destroyScene(event)

@@ -9,6 +9,7 @@ scene.VELOCITY_MAX = 20
 scene.VELOCITY_VARIANCE = scene.VELOCITY_MAX - scene.VELOCITY_MIN
 scene.START_LINES = 1
 scene.LINE_DEPTH = 8
+scene.TOUCH_ACCEL = 1
 
 function scene:random_velocity()
   local d = math.random(self.VELOCITY_VARIANCE) + self.VELOCITY_MIN
@@ -126,24 +127,24 @@ function scene:move_vec(vec, id)
 
   if toward then
     if toward.x > vec.x then
-      vec.dx = vec.dx + 1
+      vec.dx = vec.dx + self.TOUCH_ACCEL
       if vec.dx == 0 then
         vec.dx = 1
       end
     elseif toward.x < vec.x then
-      vec.dx = vec.dx - 1
+      vec.dx = vec.dx - self.TOUCH_ACCEL
       if vec.dx == 0 then
         vec.dx = -1
       end
     end
 
     if toward.y > vec.y then
-      vec.dy = vec.dy + 1
+      vec.dy = vec.dy + self.TOUCH_ACCEL
       if vec.dy == 0 then
         vec.dy = 1
       end
     elseif toward.y < vec.y then
-      vec.dy = vec.dy - 1
+      vec.dy = vec.dy - self.TOUCH_ACCEL
       if vec.dy == 0 then
         vec.dy = -1
       end

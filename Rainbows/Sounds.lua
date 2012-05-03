@@ -4,24 +4,22 @@ Sounds.wavs = {}
 
 Sounds.offset = 0
 
-for i = 2, 12 do
-  local name = Util.sprintf("%03d.wav", i)
+Sounds.scale = { 0, 3, 5, 7, 10, 12 }
+
+for i = 1, 25 do
+  local name = Util.sprintf("bell%03d.wav", i)
   local sound = audio.loadSound(name)
   table.insert(Sounds.wavs, sound)
 end
-audio.setVolume(0.4, 0)
+audio.setVolume(0.7, 0)
 
 function Sounds.play(hue)
-  hue = ((hue or math.random(#Rainbow.hues)) % #Rainbow.hues) + 1 + Sounds.offset
-  if hue == 6 or hue == 12 then
-    if Sounds.offset == 6 then
-      Sounds.offset = 0
-      hue = 1
-    else
-      Sounds.offset = 6
-    end
+  local note = ((hue or math.random(#Rainbow.hues)) % #Rainbow.hues) + 1
+  local offset = 1
+  if math.random(2) == 2 then
+    offset = offset + 12
   end
-  audio.play(Sounds.wavs[hue])
+  audio.play(Sounds.wavs[Sounds.scale[note] + offset])
 end
 
 return Sounds
