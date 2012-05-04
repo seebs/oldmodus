@@ -12,7 +12,7 @@ Sounds = require "Sounds"
 Touch = require "Touch"
 
 local displays = { 'lines', 'drops', 'knights', 'knights2', 'lissajous' }
-local debugging_display = nil
+local debugging_display = 'knights2'
 local display_index = 1
 
 display_offset = { x = display.screenOriginX, y = display.screenOriginY }

@@ -4,10 +4,65 @@ local scene = storyboard.newScene()
 -- from messing with a rainbow background
 scene.COLOR_MULTIPLIER = 50
 scene.color_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
-scene.DROPS = #Rainbow.hues * 3
-scene.DROP_DEPTH = 12
+scene.DROPS = #Rainbow.hues * 2
 scene.MAX_GROWTH = 125
-scene.MIN_GROWTH = 65
+scene.MIN_GROWTH = 45
+
+function scene.setDropVisible(drop, hidden)
+  drop.innerc.isVisible = hidden
+  drop.innerh.isVisible = hidden
+  drop.outerc.isVisible = hidden
+  drop.outerh.isVisible = hidden
+end
+
+function scene.setDropScale(drop, reset_or_main, inner, outer)
+  if reset_or_main == true then
+    drop.scale = 1
+    drop.inner_scale = 1
+    drop.outer_scale = 1
+    drop.innerc:scale(drop.iscale, drop.iscale)
+    drop.innerh:scale(drop.iscale, drop.iscale)
+    drop.outerc:scale(drop.oscale, drop.oscale)
+    drop.outerh:scale(drop.oscale, drop.oscale)
+  else
+    local is = drop.iscale * inner * reset_or_main
+    local os = drop.iscale * outer * reset_or_main
+    drop.scale = reset_or_main
+    drop.inner_scale = inner
+    drop.outer_scale = outer
+    drop.innerc.xScale = is
+    drop.innerc.yScale = is
+    drop.innerh.xScale = is
+    drop.innerh.yScale = is
+    drop.outerc.xScale = os
+    drop.outerc.yScale = os
+    drop.outerh.xScale = os
+    drop.outerh.yScale = os
+  end
+end
+
+function scene.setDropXY(drop, x, y)
+  drop.x = x
+  drop.y = y
+  drop.innerc.x, drop.innerc.y = x, y
+  drop.innerh.x, drop.innerh.y = x, y
+  drop.outerc.x, drop.outerc.y = x, y
+  drop.outerh.x, drop.outerh.y = x, y
+end
+
+function scene.setDropAlpha(drop, reset_or_main, inner, outer)
+  if reset_or_main == true then
+    drop.innerc.alpha = 1
+    drop.innerh.alpha = 1
+    drop.outerc.alpha = .8
+    drop.outerh.alpha = .8
+  else
+    drop.innerc.alpha = reset_or_main * inner
+    drop.innerh.alpha = reset_or_main * inner
+    drop.outerc.alpha = reset_or_main * outer * .8
+    drop.outerh.alpha = reset_or_main * outer * .8
+  end
+end
 
 function scene:createScene(event)
   self.drops = {}
@@ -18,73 +73,77 @@ function scene:createScene(event)
   self.view:insert(self.bg)
   self.spare_drops = {}
   self.last_hue = nil
+  self.sheetc = graphics.newImageSheet("drop_widec.png", { width = 512, height = 512, numFrames = 1 })
+  self.sheeth = graphics.newImageSheet("drop_wideh.png", { width = 512, height = 512, numFrames = 1 })
+  self.iscale = 200 / 512
+  self.oscale = 300 / 512
   for i = 1, scene.DROPS do
-    local d = display.newGroup()
-    d.subdrops = {}
-    d.outer = display.newGroup()
-    d:insert(d.outer)
-    d.outer.alpha = 0.7
-    d.inner = display.newGroup()
-    d:insert(d.inner)
-    d.inner.alpha = 1
+    local d = {
+      iscale = self.iscale,
+      oscale = self.oscale,
+      setVisible = self.setDropVisible,
+      setScale = self.setDropScale,
+      setAlpha = self.setDropAlpha,
+      setXY = self.setDropXY,
+    }
+    local img
     d.hue = i
+    d.id = i
     local r, g, b = unpack(Rainbow.color(i - 1))
-    for j = 1, scene.DROP_DEPTH do
-      local mod = (scene.DROP_DEPTH - j) * 11
-      local c = display.newCircle(d, 0, 0, 60)
-      c:setFillColor(0)
-      c.strokeWidth = j * 1.5
-      c.alpha = 0.15
-      c:setStrokeColor(math.min(r + mod, 255), math.min(g + mod, 255), math.min(b + mod, 255))
-      c.blendMode = 'add'
-      d.outer:insert(c)
-    end
-    for j = 1, scene.DROP_DEPTH do
-      local mod = (scene.DROP_DEPTH - j) * 17
-      local c = display.newCircle(d, 0, 0, 40)
-      c:setFillColor(0, 0)
-      c.strokeWidth = j * 2
-      c.alpha = 0.15
-      c:setStrokeColor(math.min(r + mod, 255), math.min(g + mod, 255), math.min(b + mod, 255))
-      c.blendMode = 'add'
-      d.inner:insert(c)
-    end
+
+    img = display.newImage(self.sheetc, 1)
+    img:setFillColor(r, g, b)
+    img.blendMode = 'add'
+    self.view:insert(img)
+    d.innerc = img
+
+    img = display.newImage(self.sheeth, 1)
+    img.blendMode = 'add'
+    self.view:insert(img)
+    d.innerh = img
+
+    img = display.newImage(self.sheetc, 1)
+    img:setFillColor(r, g, b, 180)
+    img.blendMode = 'add'
+    self.view:insert(img)
+    d.outerc = img
+
+    img = display.newImage(self.sheeth, 1)
+    img.blendMode = 'add'
+    img:setFillColor(255, 180)
+    self.view:insert(img)
+    d.outerh = img
+
+    d:setScale(true)
+    d:setAlpha(true)
+    d:setVisible(false)
+
     table.insert(self.spare_drops, d)
-    self.view:insert(d)
-    d.isVisible = false
   end
 end
 
 function scene:do_drops()
   local spares = {}
   for i, d in ipairs(self.drops) do
-    d.xScale = d.xScale + 0.015
-    d.yScale = d.yScale + 0.015
-    d.outer.xScale = d.outer.xScale + 0.005
-    d.outer.yScale = d.outer.yScale + 0.005
-    d.inner.xScale = d.inner.xScale + 0.01
-    d.inner.yScale = d.inner.yScale + 0.01
+    d:setScale(d.scale + 0.01, d.inner_scale + 0.01, d.outer_scale + 0.01)
     d.growth = d.growth + 1
     local halfway = d.max_growth / 2
     if d.growth >= d.max_growth then
-      d.isVisible = 0
-      d.alpha = 0
+      d:setVisible(false)
       table.insert(spares, i)
-    elseif d.growth >= d.max_growth / 2 then
-      d.alpha = 1 - ((d.growth - halfway) / halfway)
-      d.outer.alpha = math.sqrt(1 - ((d.growth - halfway) / halfway))
-      d.inner.alpha = math.sqrt(1 - ((d.growth - halfway) / halfway))
+    elseif d.growth >= halfway then
+      local mod = 1 - ((d.growth - halfway) / halfway)
+      local sqmod = math.sqrt(mod)
+      d:setAlpha(mod, sqmod, sqmod)
     else
-      d.alpha = 1
-      d.outer.alpha = 1
-      d.inner.alpha = 1
+      d:setAlpha(true)
     end
   end
   while #spares > 0 do
     local idx = table.remove(spares)
     table.insert(self.spare_drops, table.remove(self.drops, idx))
   end
-  if #self.spare_drops > 0 and math.random(#self.spare_drops) > 12 and self.cooldown < 1 then
+  if #self.spare_drops > 0 and math.random(#self.spare_drops) > 6 and self.cooldown < 1 then
     self.cooldown = 10
     local d = table.remove(self.spare_drops, 1)
     if #self.spare_drops > 1 then
@@ -97,33 +156,27 @@ function scene:do_drops()
     end
     self.last_hue = d.hue
     Sounds.play(d.hue)
-    d.isVisible = true
-    d.x = math.random((screen.width - 50) + 25) + screen.xoff
-    d.y = math.random((screen.height - 50) + 25) + screen.yoff
+    local new_point = {}
+    new_point.x = math.random((screen.width - 50) + 25) + screen.xoff
+    new_point.y = math.random((screen.height - 50) + 25) + screen.yoff
     if self.toward then
-      local between = Util.between(d, self.toward)
-      d.x, d.y = between.x, between.y
+      local between = Util.between(new_point, self.toward)
     end
+    d:setXY(new_point.x, new_point.y)
     local range = scene.MAX_GROWTH - scene.MIN_GROWTH
     local scale = math.random(range)
     d.max_growth = scale + scene.MIN_GROWTH
     d.factor = (scale / range) * 0.3
-    d.xScale = 0.3 + d.factor
-    d.yScale = 0.3 + d.factor
+    d:setVisible(true)
+    d:setAlpha(true)
+    d:setScale(0.1 + d.factor, .3, 1)
     d.growth = 0
-    d.outer.xScale = 1
-    d.outer.yScale = 1
-    d.inner.xScale = .3
-    d.inner.yScale = .3
     table.insert(self.drops, d)
   end
   self.cooldown = self.cooldown - 1
 end
 
 function scene:enterFrame(event)
-  -- local r, g, b = unpack(Rainbow.smooth(self.last_color, self.COLOR_MULTIPLIER))
-  -- self.last_color = (self.last_color % (#Rainbow.hues * self.COLOR_MULTIPLIER)) + 1
-  -- self.bg:setFillColor(r, g, b, 50)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .03, 1)
   end
@@ -149,7 +202,8 @@ end
 function scene:didExitScene(event)
   local move_these = {}
   for i, d in ipairs(self.drops) do
-    d.alpha = 0
+    d:setVisible(false)
+    d:setScale(true)
     table.insert(move_these, i)
   end
   while #move_these > 0 do
