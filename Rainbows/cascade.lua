@@ -78,10 +78,11 @@ function scene:enterFrame(event)
 
     local new = ((before.compute + after.compute + adjust) % self.total_colors) + 1
     square.compute = new
-    if square.compute > 1 then
-      square.alpha = math.min(1, square.alpha + (.015 * self.rows))
+    if square.compute % 2 ~= 1 then
+      square.alpha = 1
+      -- math.min(1, square.alpha + (.022 * self.rows))
     else
-      square.alpha = math.min(1, square.alpha + (.006 * self.rows))
+      square.alpha = math.min(1, square.alpha + (.0065 * self.rows))
     end
     square.hue = self.colors[square.compute % 2 + 1]
     new = ((new - 1) % #Rainbow.hues) + 1
@@ -92,7 +93,7 @@ function scene:enterFrame(event)
   self.colors[2] = (self.colors[2] % self.total_colors) + 1
   for _, column in ipairs(self.squares) do
     for _, square in ipairs(column) do
-      square.alpha = math.max(0, square.alpha - .01)
+      square.alpha = math.max(0.005, square.alpha - .01)
     end
   end
   local max = 1
@@ -111,7 +112,7 @@ end
 function scene:willEnterScene(event)
   for x = 1, self.columns do
     for y = 1, self.rows do
-      self.squares[x][y].hue = 1 + self.COLOR_MULTIPLIER
+      self.squares[x][y].hue = 1
       self.squares[x][y].compute = 1
       self.squares[x][y].alpha = self.FADED + (y == 1 and 0.1 or 0.0)
       self:colorize(self.squares[x][y])
@@ -119,8 +120,8 @@ function scene:willEnterScene(event)
   end
   self.active_row = 1
   self.index = 0
-  self.colors = { 1, 1 + self.COLOR_MULTIPLIER }
-  self.squares[1][1].hue = 1
+  self.colors = { 1 + self.COLOR_MULTIPLIER, 1 }
+  self.squares[1][1].hue = 1 + self.COLOR_MULTIPLIER
   self:colorize(self.squares[1][1])
   self.squares[1][1].compute = 2
   self.view.alpha = 0

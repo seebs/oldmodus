@@ -1,5 +1,7 @@
 # Make white pixel versions of images.
 
+SDK ?= SDK
+
 default: images
 
 IMAGES = $(wildcard *.png)
@@ -16,4 +18,7 @@ images: $(patsubst %.png,%.wng,$(IMAGES))
 	for img in $(IMAGES); do mv $${img%.png}.wng mojo/$${img%.png}-highlight.png; cp $$img mojo/.; done
 
 run:
-	/Applications/CoronaSDK/simulator Rainbows/main.lua
+	/Applications/Corona$(SDK)/simulator Rainbows/main.lua
+
+perf:
+	/Applications/Corona$(SDK)/simulator Perftest/main.lua

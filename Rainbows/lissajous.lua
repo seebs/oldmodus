@@ -2,8 +2,9 @@ local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
 scene.HISTORY = 8
+scene.COLOR_MULTIPLIER = 16
 scene.LINE_MULTIPLIER = 16
-scene.line_total = #Rainbow.hues * scene.LINE_MULTIPLIER
+scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.FRAME_DELAY = 3
 scene.SOUND_DELAY = 3
 scene.DELTA_DELTA = 0.02 * scene.FRAME_DELAY
@@ -169,7 +170,7 @@ function scene:calc(quiet)
     self.vecs[i].y = y
   end
   if play_sound and self.sound_cooldown < 1 then
-    Sounds.play(self.last_color)
+    Sounds.play(math.ceil(self.next_color / self.COLOR_MULTIPLIER))
     self.sound_cooldown = self.SOUND_DELAY
   else
     self.sound_cooldown = self.sound_cooldown - 1

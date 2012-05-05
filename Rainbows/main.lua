@@ -15,12 +15,13 @@ widget = require "widget"
 
 local displays = {
   'knights',
-  'lines',
-  'knights2',
-  'drops',
+  'spline',
   'cascade',
-  'lissajous',
+  'drops',
+  'knights2',
+  'lines',
   'cascade2',
+  'lissajous',
 }
 local debugging_display = nil
 local display_index = 1
@@ -48,7 +49,7 @@ function next_display(event)
     debugging_display = nil
   end
   if not event or event.phase == 'ended' then
-    storyboard.gotoScene(displays[display_index])
+    storyboard.gotoScene(displays[display_index], fade, 500)
     display_index = (display_index % #displays) + 1
   end
 end

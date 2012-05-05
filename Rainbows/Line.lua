@@ -17,9 +17,6 @@ function Line.new(x1, y1, x2, y2, depth, r, g, b)
   if not b then
     r, g, b = unpack(Rainbow.color(r))
   end
-  Line.sheet = Line.sheet or graphics.newImageSheet('pixel.png', {
-    width = 16, height = 16, numFrames = 1
-  })
   local o = display.newGroup()
   o.hue = hue or math.random(#Rainbow.hues)
   o.r, o.g, o.b, o.a = r, g, b, 255

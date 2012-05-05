@@ -30,6 +30,14 @@ function Util.line(a, b)
   return l
 end
 
+function Util.vec_add(v1, v2)
+  return { x = v1.x + v2.x, y = v1.y + v2.y }
+end
+
+function Util.vec_scale(v, s)
+  return { x = v.x * s, y = v.y * s }
+end
+
 function Util.theta(a, b)
   if a.x ~= b.x or a.y ~= b.y then
     return atan2(b.y - a.y, b.x - a.x)
@@ -40,8 +48,9 @@ end
 
 function Util.between(a, b, ratio)
   ratio = ratio or 0.5
-  return { x = a.x * ratio + b.x * (1 - ratio),
-           y = a.y * ratio + b.y * (1 - ratio) }
+  local scale = 1 - ratio
+  return { x = a.x * scale + b.x * ratio,
+           y = a.y * scale + b.y * ratio }
 end
 
 function Util.dist(a, b)

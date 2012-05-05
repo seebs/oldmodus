@@ -73,15 +73,6 @@ function scene:enterFrame(event)
     first.flag = 0
     table.insert(self.squares, first)
     first.group.y = #self.squares * self.square_size + screen.yoff
-    for i = 1, self.columns do
-      local square = first[i]
-      square.flag = nil
-      if square.compute > 1 then
-	square.alpha = math.min(1, square.alpha + (.03 * self.rows))
-      else
-	square.alpha = math.min(1, square.alpha + (.012 * self.rows))
-      end
-    end
   end
 
   local prow = nil
@@ -89,12 +80,12 @@ function scene:enterFrame(event)
     prow = self.squares[y - 1]
     if self.toggle then
       row.group.y = row.group.y - self.square_size
+      for i, square in ipairs(row) do
+	square.alpha = math.max(0.005, square.alpha - .01)
+      end
     end
     if row.flag < 0 then
       row.flag = row.flag * -1
-    end
-    for i, square in ipairs(row) do
-      square.alpha = math.max(0, square.alpha - .005)
     end
     if (prow and prow.flag > 0) or y == self.rows then
       if row.flag == 0 and prow.flag > 0 then
@@ -118,6 +109,20 @@ function scene:enterFrame(event)
 	self:colorize(square)
       end
     end
+    if row.flag < 0 or (y == self.rows and self.toggle) then
+      for x, square in ipairs(row) do
+	square.flag = nil
+	if square.compute % 2 ~= 1 then
+	  -- square.alpha = math.min(1, square.alpha + (.03 * self.rows))
+	  square.alpha = 1
+	else
+	  -- only do this if we weren't specially-processing this row
+	  if row.flag >= 0 then
+	    square.alpha = math.min(1, square.alpha + (.004 * self.rows))
+	  end
+	end
+      end
+    end
   end
   Sounds.play()
 end
@@ -131,11 +136,13 @@ function scene:willEnterScene(event)
   self.colors[2] = (self.colors[2] % self.total_colors) + 1
   for y, row in ipairs(self.squares) do
     row.colors = { unpack(self.colors) }
+    row.flag = 0
     for x = 1, self.columns do
       local square = row[x]
       square.hue = row.colors[2]
       square.compute = 1
       square.alpha = self.FADED + (1 - self.FADED) * (y / self.rows)
+      square.flag = 0
       self:colorize(square)
     end
     self.colors[1] = (self.colors[1] % self.total_colors) + 1
@@ -165,6 +172,7 @@ end
 
 function scene:enterScene(event)
   self.toward = nil
+  self.toggle = false
   Runtime:addEventListener('enterFrame', scene)
   self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
 end

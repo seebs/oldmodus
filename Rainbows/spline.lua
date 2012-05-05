@@ -1,13 +1,16 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
-scene.LINE_MULTIPLIER = 8
-scene.line_total = #Rainbow.hues * scene.LINE_MULTIPLIER
+scene.COLOR_MULTIPLIER = 6
+-- scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
+scene.HISTORY = 16
 scene.LINE_DELAY = 2
-scene.VELOCITY_MIN = 10
-scene.VELOCITY_MAX = 20
+scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
+scene.LINE_SEGMENTS = scene.TOTAL_COLORS
+scene.VELOCITY_MIN = 5
+scene.VELOCITY_MAX = 15
 scene.VELOCITY_VARIANCE = scene.VELOCITY_MAX - scene.VELOCITY_MIN
-scene.START_LINES = 1
+scene.START_POINTS = 4
 scene.LINE_DEPTH = 8
 scene.TOUCH_ACCEL = 1
 
@@ -41,49 +44,74 @@ function scene:createScene(event)
   self.view.alpha = 0
 end
 
+function scene:spline(vecs, points, lo, hi)
+  if lo == hi then
+    return
+  end
+  local mid = math.ceil((lo + hi) / 2)
+  local midpt = Util.between(vecs[2], vecs[3])
+  local p = points[mid + 1] or {}
+  p.x, p.y = midpt.x, midpt.y
+  points[mid + 1] = p
+  if mid == lo or mid == hi then
+    return
+  end
+  local newvecs = {
+    vecs[1],
+    Util.between(vecs[1], vecs[2]),
+    Util.between(vecs[2], vecs[3], .25),
+    midpt,
+    Util.between(vecs[2], vecs[3], .75),
+    Util.between(vecs[3], vecs[4]),
+    vecs[4]
+  }
+  -- if mid == lo+1, then this would just overwrite it
+  if mid ~= lo + 1 then
+    scene:spline(newvecs, points, lo, mid)
+  end
+  if mid ~= hi - 1 then
+    scene:spline({ newvecs[4], newvecs[5], newvecs[6], newvecs[7] }, points, mid, hi)
+  end
+end
+
 function scene:line(color, g)
   if not color then
     color = self.next_color or 1
-    self.next_color = (color % scene.line_total) + 1
+    self.next_color = (color % scene.TOTAL_COLORS) + 1
   end
   g = g or display.newGroup()
+  g.points = g.points or {}
   g.segments = g.segments or {}
-  for i = 1, #self.vecs - 1 do
+  scene:spline(self.vecs, g.points, 0, self.LINE_SEGMENTS)
+  g.points[1] = { x = self.vecs[1].x, y = self.vecs[1].y }
+  g.points[self.LINE_SEGMENTS + 1] = { x = self.vecs[4].x, y = self.vecs[4].y }
+  for i = 1, self.LINE_SEGMENTS do
     if g.segments[i] then
-      self:one_line(color, self.vecs[i], self.vecs[i + 1], g.segments[i])
+      self:one_line(color, g.points[i], g.points[i + 1], g.segments[i])
     else
-      local l = self:one_line(color, self.vecs[i], self.vecs[i + 1])
+      local l = self:one_line(color, g.points[i], g.points[i + 1])
       g.segments[i] = l
       g:insert(l)
     end
-  end
-  if #self.vecs > 2 then
-    if g.segments[#self.vecs] then
-      self:one_line(color, self.vecs[#self.vecs], self.vecs[1], g.segments[#self.vecs])
-    else
-      local l = self:one_line(color, self.vecs[#self.vecs], self.vecs[1])
-      g.segments[#self.vecs] = l
-      g:insert(l)
-    end
-  end
-  while #g.segments > #self.vecs or (#g.segments > 1 and #self.vecs == 2) do
-    local l = table.remove(g.segments)
-    l:removeSelf()
+    color = color + 1
   end
   return g
 end
+
+local vec_add = Util.vec_add
+local vec_scale = Util.vec_scale
 
 function scene:one_line(color, vec1, vec2, existing)
   if not vec1 or not vec2 then
     return nil
   end
   if not existing then
-    local l = Line.new(vec1, vec2, 5, unpack(Rainbow.smooth(color, self.LINE_MULTIPLIER)))
-    l:setThickness(3)
+    local l = Line.new(vec1, vec2, 2, unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
+    l:setThickness(2)
     return l
   else
     existing:setPoints(vec1, vec2)
-    existing:setColor(unpack(Rainbow.smooth(self.next_color, self.LINE_MULTIPLIER)))
+    existing:setColor(unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
     return existing
   end
 end
@@ -97,7 +125,7 @@ function scene:move()
   end
   -- not used during startup
   if bounce and self.next_color then
-    Sounds.play(math.ceil(self.next_color / self.LINE_MULTIPLIER))
+    Sounds.play(math.ceil(self.next_color / self.COLOR_MULTIPLIER))
   end
 end
 
@@ -188,44 +216,44 @@ function scene:enterFrame(event)
     self.cooldown = self.LINE_DELAY
   end
   local last = table.remove(self.lines, 1)
+  for i, l in ipairs(self.lines) do
+    l.alpha = math.sqrt(i / self.HISTORY)
+  end
   table.insert(self.lines, scene:line(nil, last))
+  self.lines[#self.lines].alpha = 1
   self:move()
 end
 
 function scene:willEnterScene(event)
   self.view.alpha = 0
-  self.cooldown = self.LINE_DELAY
+  self.cooldown = 0
 end
 
 function scene:enterScene(event)
   self.lines = {}
   self.next_color = nil
   self.vecs = {}
-  for i = 1, scene.START_LINES + 1 do
+  for i = 1, scene.START_POINTS do
     self.vecs[i] = self:new_vec(void)
   end
-  for i = 1, scene.line_total do
+  local last = table.remove(self.lines, 1)
+  self:move()
+  for i = 1, scene.HISTORY do
     local l = self:line(i, nil)
-    self:move()
+    l.alpha = math.sqrt(i / scene.HISTORY)
     table.insert(self.lines, l)
+    self:move()
   end
   self.next_color = 1
-  self.last_color = scene.line_total
   Runtime:addEventListener('enterFrame', scene)
   self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
 end
 
 function scene:touch_magic(state, ...)
   self.toward = {}
+  local lookup = { 1, 4, 2, 3 }
   for i, v in ipairs(state.ordered) do
-    self.toward[i] = v.current
-  end
-
-  while #state.ordered > #self.vecs do
-    table.insert(self.vecs, self:new_vec())
-  end
-  if #state.ordered == 0 and state.peak < #self.vecs and #self.vecs > 2 then
-    table.remove(self.vecs, 1)
+    self.toward[lookup[i] or 5] = v.current
   end
   return true
 end
