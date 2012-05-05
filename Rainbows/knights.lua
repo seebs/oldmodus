@@ -1,17 +1,15 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
-scene.KNIGHTS = 5
+scene.KNIGHTS = 6
 
 scene.FADED = 0.75
 scene.CYCLE = 12
--- NOT necessarily .KNIGHTS
-scene.FADE_DIVISOR = 5 * scene.CYCLE
 
 scene.square_size = math.max(32, Util.gcd(screen.height, screen.width))
 
 function scene:createScene(event)
-  while (screen.width / scene.square_size < 16) and self.square_size % 2 == 0 do
+  while (screen.width / scene.square_size < 13) and self.square_size % 2 == 0 do
     self.square_size = self.square_size / 2
   end
   self.squares = {}
@@ -26,8 +24,7 @@ function scene:createScene(event)
     light:scale(self.square_size / 256, self.square_size / 256)
     light.isVisible = false
     self.view:insert(light)
-    light.blendMode = 'add'
-    light.alpha = 0.4
+    light.alpha = .8
     light:setReferencePoint(display.TopLeftReferencePoint)
     table.insert(self.knight_lights, light)
   end
@@ -40,7 +37,6 @@ function scene:createScene(event)
       square.y = screen.yoff + (#column * self.square_size)
       square:scale(self.square_size / 128, self.square_size / 128)
       square.hue = 0
-      square.cooldown = math.random(self.FADE_DIVISOR)
       column[j] = square
       self.igroup:insert(square)
       square.isVisible = true
@@ -50,8 +46,8 @@ function scene:createScene(event)
   self.knights = {}
 end
 
-function scene:colorize(square)
-  local r, g, b = unpack(Rainbow.color(square.hue))
+function scene:colorize(square, hue)
+  local r, g, b = unpack(Rainbow.color(hue or square.hue))
   square:setFillColor(r, g, b)
 end
 
@@ -59,7 +55,6 @@ function scene:bump(square)
   if square then
     square.hue = ((square.hue + 1) % #Rainbow.hues)
     self:colorize(square)
-    square.cooldown = square.cooldown + (scene.FADE_DIVISOR / 2)
     if square.alpha < scene.FADED then
       square.alpha = (scene.FADED + square.alpha) / 2
     end
@@ -79,8 +74,15 @@ function scene:adjust(knight, quiet)
   scene:bump(square)
   scene:bump(square)
   if knight.light then
-    knight.light.hue = square.hue
-    self:colorize(knight.light)
+    -- knight.light.hue = square.hue
+    -- self:colorize(knight.light)
+    if knight.light.hue == square.hue then
+      knight.light.alpha = 0.6
+      knight.light.blendMode = 'add'
+    else
+      knight.light.alpha = 0.8
+      knight.light.blendMode = 'blend'
+    end
     knight.light:setReferencePoint(display.TopLeftReferencePoint)
     knight.light.x = square.x + self.square_size / 4
     knight.light.y = square.y + self.square_size / 4
@@ -90,7 +92,6 @@ function scene:adjust(knight, quiet)
     Sounds.play(square.hue)
   end
   square.alpha = 1
-  square.cooldown = scene.FADE_DIVISOR
   scene:bump(scene:find(knight.x + 1, knight.y    ))
   scene:bump(scene:find(knight.x - 1, knight.y    ))
   scene:bump(scene:find(knight.x    , knight.y + 1))
@@ -146,21 +147,19 @@ function scene:enterFrame(event)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(1, self.view.alpha + .03)
   end
-  for _, col in ipairs(self.squares) do
-    for _, square in ipairs(col) do
-      if square.alpha < 1 then
-	square.cooldown = square.cooldown - 1
-	if square.cooldown < 1 then
-          square.alpha = math.max(0, square.alpha - .003)
-	  square.cooldown = self.FADE_DIVISOR
+  local knight = self.knights[1]
+  knight.counter = knight.counter - 1
+  if knight.counter < 0 then
+    scene:move_knight(knight)
+    table.remove(self.knights, 1)
+    knight.counter = self.CYCLE
+    table.insert(self.knights, knight)
+    if knight.index == 1 then
+      for _, column in ipairs(self.squares) do
+	for _, square in ipairs(column) do
+	  square.alpha = math.max(0, square.alpha - .0001)
 	end
       end
-    end
-  end
-  for i, knight in ipairs(self.knights) do
-    knight.counter = knight.counter - 1
-    if knight.counter == 0 then
-      scene:move_knight(knight)
     end
   end
 end
@@ -178,14 +177,17 @@ function scene:willEnterScene(event)
     local knight = {
       x = math.random(self.columns),
       y = math.random(self.rows),
-      counter = 30 + (i * self.CYCLE),
+      counter = self.CYCLE,
       index = i,
-      cooldown = self.KNIGHTS * self.CYCLE,
+      cooldown = self.CYCLE,
       light = self.knight_lights[i]
     }
+    knight.light.hue = knight.index
+    self:colorize(knight.light, knight.index)
     table.insert(self.knights, knight)
     self:adjust(knight, true)
   end
+  self.knights[1].counter = self.knights[1].counter + 30
   self.view.alpha = 0
 end
 

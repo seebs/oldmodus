@@ -41,71 +41,51 @@ function scene:createScene(event)
   self.view.alpha = 0
 end
 
-function scene:line(color)
-  local g = display.newGroup()
+function scene:line(color, g)
   if not color then
     color = self.next_color or 1
     self.next_color = (color % scene.line_total) + 1
   end
+  g = g or display.newGroup()
+  g.segments = g.segments or {}
   for i = 1, #self.vecs - 1 do
-    local l = self:one_line(color, self.vecs[i], self.vecs[i + 1])
-    if l then
+    if g.segments[i] then
+      self:one_line(color, self.vecs[i], self.vecs[i + 1], g.segments[i])
+    else
+      local l = self:one_line(color, self.vecs[i], self.vecs[i + 1])
+      g.segments[i] = l
       g:insert(l)
     end
   end
   if #self.vecs > 2 then
-    local l = self:one_line(color, self.vecs[#self.vecs], self.vecs[1])
-    if l then
+    if g.segments[#self.vecs] then
+      self:one_line(color, self.vecs[#self.vecs], self.vecs[1], g.segments[#self.vecs])
+    else
+      local l = self:one_line(color, self.vecs[#self.vecs], self.vecs[1])
+      g.segments[#self.vecs] = l
       g:insert(l)
     end
+  end
+  while #g.segments > #self.vecs or (#g.segments > 1 and #self.vecs == 2) do
+    local l = table.remove(g.segments)
+    l:removeSelf()
   end
   return g
 end
 
-function scene:one_line(color, vec1, vec2)
+function scene:one_line(color, vec1, vec2, existing)
   if not vec1 or not vec2 then
     return nil
   end
-  if not color then
-    color = self.next_color or 1
-    self.next_color = (color % scene.line_total) + 1
-  end
-  local r, g, b = unpack(Rainbow.smooth(color, scene.LINE_MULTIPLIER))
-  local gr = display.newGroup()
-  local l
-  local rect
-
-  if vec1.x ~= vec2.x or vec1.y ~= vec2.y then
-    rect = {
-      x = (vec1.x + vec2.x) / 2,
-      y = (vec1.y + vec2.y) / 2,
-      len = Util.dist(vec1, vec2),
-      angle = math.atan2(vec2.y - vec1.y, vec2.x - vec1.x),
-    }
+  if not existing then
+    local l = Line.new(vec1, vec2, 5, unpack(Rainbow.smooth(color, self.LINE_MULTIPLIER)))
+    l:setThickness(3)
+    return l
   else
-    rect = {
-      x = (vec1.x + vec2.x) / 2,
-      y = (vec1.y + vec2.y) / 2,
-      len = Util.dist(vec1, vec2),
-      angle = 0
-    }
+    existing:setPoints(vec1, vec2)
+    existing:setColor(unpack(Rainbow.smooth(self.next_color, self.LINE_MULTIPLIER)))
+    return existing
   end
-  gr.x = rect.x
-  gr.y = rect.y
-  for i = scene.LINE_DEPTH, 1, -1 do
-    l = display.newRect(gr,
-      0 - (rect.len / 2),
-      0 - (i / 4),
-      rect.len + i / 2,
-      i / 2)
-    l:setFillColor(r, g, b)
-    l.alpha = 1 / (scene.LINE_DEPTH - 1)
-    l.blendMode = "add"
-    gr:insert(l)
-  end
-  gr.rotation = math.deg(rect.angle)
-
-  return gr
 end
 
 function scene:move()
@@ -208,8 +188,7 @@ function scene:enterFrame(event)
     self.cooldown = 2
   end
   local last = table.remove(self.lines, 1)
-  last:removeSelf()
-  table.insert(self.lines, scene:line())
+  table.insert(self.lines, scene:line(nil, last))
   self:move()
 end
 
@@ -226,7 +205,7 @@ function scene:enterScene(event)
     self.vecs[i] = self:new_vec(void)
   end
   for i = 1, scene.line_total do
-    local l = self:line(i)
+    local l = self:line(i, nil)
     self:move()
     table.insert(self.lines, l)
   end

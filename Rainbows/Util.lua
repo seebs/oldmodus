@@ -1,8 +1,14 @@
 local Util = {}
 
+local pow = math.pow
+local atan2 = math.atan2
+local min = math.min
+local max = math.max
+local sqrt = math.sqrt
+
 function Util.scale(o)
   local level = o.level or 1
-  return math.pow(1.1, level)
+  return pow(1.1, level)
 end
 
 function Util.gcd(x, y)
@@ -17,6 +23,21 @@ function Util.gcd(x, y)
   end
 end
 
+function Util.line(a, b)
+  local l = Util.between(a, b, 0.5)
+  l.theta = Util.theta(a, b)
+  l.len = Util.dist(a, b)
+  return l
+end
+
+function Util.theta(a, b)
+  if a.x ~= b.x or a.y ~= b.y then
+    return atan2(b.y - a.y, b.x - a.x)
+  else
+    return 0
+  end
+end
+
 function Util.between(a, b, ratio)
   ratio = ratio or 0.5
   return { x = a.x * ratio + b.x * (1 - ratio),
@@ -25,11 +46,11 @@ end
 
 function Util.dist(a, b)
   if type(a) == 'number' and type(b) == 'number' then
-    return math.sqrt(a * a + b * b)
+    return sqrt(a * a + b * b)
   else
     local dx = (a.x or 0) - (b.x or 0)
     local dy = (a.y or 0) - (b.y or 0)
-    return math.sqrt(dx * dx + dy * dy)
+    return sqrt(dx * dx + dy * dy)
   end
 end
 
@@ -127,7 +148,7 @@ function Util.sprintf(fmt, ...)
 end
 
 function Util.printf(fmt, ...)
-  print(Util.sprintf(fmt, ...))
+  io.stderr:write(Util.sprintf(fmt, ...) .. "\n")
 end
 
 function Util.to_s(v)

@@ -2,17 +2,27 @@ display.setStatusBar(display.HiddenStatusBar)
 
 player = { slot = 1, score = 0, location = 1 }
 
-storyboard = require "storyboard"
-widget = require "widget"
 
 -- mine get caps so I don't clash
 Util = require "Util"
+Line = require "Line"
 Rainbow = require "Rainbow"
 Sounds = require "Sounds"
 Touch = require "Touch"
 
-local displays = { 'lines', 'drops', 'knights', 'knights2', 'lissajous' }
-local debugging_display = 'knights2'
+storyboard = require "storyboard"
+widget = require "widget"
+
+local displays = {
+  'knights',
+  'lines',
+  'knights2',
+  'drops',
+  'cascade',
+  'lissajous',
+  'cascade2',
+}
+local debugging_display = nil
 local display_index = 1
 
 display_offset = { x = display.screenOriginX, y = display.screenOriginY }
@@ -38,7 +48,7 @@ function next_display(event)
     debugging_display = nil
   end
   if not event or event.phase == 'ended' then
-    storyboard.gotoScene(displays[display_index], 'fade', 500)
+    storyboard.gotoScene(displays[display_index])
     display_index = (display_index % #displays) + 1
   end
 end

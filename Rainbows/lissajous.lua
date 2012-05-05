@@ -1,12 +1,12 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
-scene.HISTORY = 12
+scene.HISTORY = 8
 scene.LINE_MULTIPLIER = 16
 scene.line_total = #Rainbow.hues * scene.LINE_MULTIPLIER
-scene.FRAME_DELAY = 2
+scene.FRAME_DELAY = 3
 scene.SOUND_DELAY = 3
-scene.DELTA_DELTA = 0.04 * scene.FRAME_DELAY
+scene.DELTA_DELTA = 0.02 * scene.FRAME_DELAY
 scene.INSET = 4
 
 function scene:new_vec(void)
@@ -38,23 +38,48 @@ function scene:createScene(event)
   self.view.alpha = 0
 end
 
-function scene:line(color)
-  local g = display.newGroup()
+function scene:line(color, g)
   if not color then
     color = self.next_color or 1
   end
+  if g and scene.one_line == scene.old_line then
+    g:removeSelf()
+    g = nil
+  end
+  g = g or display.newGroup()
+  g.segments = g.segments or {}
   for i = 1, #self.vecs - 1 do
-    local l = self:one_line(color, self.vecs[i], self.vecs[i + 1])
-    color = color + 1
-    if l then
+    if g.segments[i] then
+      self:one_line(color, self.vecs[i], self.vecs[i + 1], g.segments[i])
+    else
+      local l = self:one_line(color, self.vecs[i], self.vecs[i + 1])
+      g.segments[i] = l
       g:insert(l)
     end
+    color = color + 1
   end
   self.next_color = (color + 2) % scene.line_total
+  self.view:insert(g)
   return g
 end
 
-function scene:one_line(color, vec1, vec2)
+function scene:new_line(color, vec1, vec2, existing)
+  if not vec1 or not vec2 then
+    return nil
+  end
+  if not existing then
+    local l = Line.new(vec1, vec2, 2, unpack(Rainbow.smooth(color, self.LINE_MULTIPLIER)))
+    l:setThickness(2)
+    return l
+  else
+    existing:setPoints(vec1, vec2)
+    existing:setColor(unpack(Rainbow.smooth(color, self.LINE_MULTIPLIER)))
+    return existing
+  end
+end
+
+
+function scene:old_line(color, vec1, vec2, existing)
   if not vec1 or not vec2 then
     return nil
   end
@@ -95,6 +120,8 @@ function scene:one_line(color, vec1, vec2)
 
   return l
 end
+
+scene.one_line = scene.new_line
 
 function scene:calc(quiet)
   self.vecs = self.vecs or {}
@@ -147,7 +174,7 @@ function scene:calc(quiet)
   else
     self.sound_cooldown = self.sound_cooldown - 1
   end
-  local delta_scale = math.sqrt(math.max(1, math.abs(self.a)) * math.max(1, math.abs(self.b)))
+  local delta_scale = math.max(math.max(math.abs(self.b), math.abs(self.a)), 1)
   self.delta = self.delta + self.DELTA_DELTA / delta_scale
   if self.delta > math.pi * 2 then
     self.delta = self.delta - math.pi * 2
@@ -164,14 +191,12 @@ function scene:enterFrame(event)
   end
   self.cooldown = self.FRAME_DELAY
   local last = table.remove(self.lines, 1)
-  if last then
-    last:removeSelf()
-  end
   for i, l in ipairs(self.lines) do
-    l.alpha = i / self.HISTORY
+    l.alpha = math.sqrt(i / self.HISTORY)
   end
   self:calc()
-  table.insert(self.lines, scene:line())
+  table.insert(self.lines, scene:line(nil, last))
+  self.lines[#self.lines].alpha = 1
 end
 
 function scene:willEnterScene(event)
@@ -190,8 +215,8 @@ function scene:enterScene(event)
   self.scale_delta_b = 1
   self:calc(true)
   for i = 1, scene.HISTORY do
-    local l = self:line(i)
-    l.alpha = i / scene.HISTORY
+    local l = self:line(i, nil)
+    l.alpha = math.sqrt(i / scene.HISTORY)
     table.insert(self.lines, l)
     self:calc(true)
   end
@@ -235,15 +260,15 @@ end
 
 function scene:didExitScene(event)
   self.view.alpha = 0
-  for i, l in ipairs(self.lines) do
-    l:removeSelf()
-  end
-  self.lines = {}
 end
 
 function scene:exitScene(event)
   self.sorted_ids = {}
   self.toward = {}
+  for i, l in ipairs(self.lines) do
+    l:removeSelf()
+  end
+  self.lines = {}
   self.view:removeEventListener('touch', Touch.handler(self.touch_magic, self))
   Runtime:removeEventListener('enterFrame', scene)
 end

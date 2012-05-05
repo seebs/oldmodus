@@ -40,7 +40,6 @@ function scene:createScene(event)
       square.y = screen.yoff + (#column * self.square_size)
       square:scale(self.square_size / 128, self.square_size / 128)
       square.hue = 0
-      square.cooldown = math.random(self.FADE_DIVISOR)
       column[j] = square
       self.igroup:insert(square)
       square.isVisible = true
@@ -66,7 +65,6 @@ function scene:bump(square, hue)
   if square then
     square.hue = Rainbow.towards(square.hue, hue)
     scene:colorize(square)
-    square.cooldown = square.cooldown + (scene.FADE_DIVISOR / 2)
     if square.alpha < scene.FADED then
       square.alpha = (scene.FADED + square.alpha) / 2
     end
@@ -95,7 +93,6 @@ function scene:adjust(knight, quiet)
     Sounds.play(square.hue)
   end
   square.alpha = 1
-  square.cooldown = scene.FADE_DIVISOR
   scene:bump(scene:find(knight.x + 1, knight.y    ), knight.hue)
   scene:bump(scene:find(knight.x - 1, knight.y    ), knight.hue)
   scene:bump(scene:find(knight.x    , knight.y + 1), knight.hue)
@@ -151,21 +148,19 @@ function scene:enterFrame(event)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(1, self.view.alpha + .03)
   end
-  for _, col in ipairs(self.squares) do
-    for _, square in ipairs(col) do
-      if square.alpha < 1 then
-	square.cooldown = square.cooldown - 1
-	if square.cooldown < 1 then
-          square.alpha = math.max(0, square.alpha - .003)
-	  square.cooldown = self.FADE_DIVISOR
+  local knight = self.knights[1]
+  knight.counter = knight.counter - 1
+  if knight.counter < 0 then
+    scene:move_knight(knight)
+    table.remove(self.knights, 1)
+    knight.counter = self.CYCLE
+    table.insert(self.knights, knight)
+    if knight.index == 1 then
+      for _, column in ipairs(self.squares) do
+	for _, square in ipairs(column) do
+	  square.alpha = math.max(0, square.alpha - .0001)
 	end
       end
-    end
-  end
-  for i, knight in ipairs(self.knights) do
-    knight.counter = knight.counter - 1
-    if knight.counter == 0 then
-      scene:move_knight(knight)
     end
   end
 end
@@ -183,10 +178,10 @@ function scene:willEnterScene(event)
     local knight = {
       x = math.random(self.columns),
       y = math.random(self.rows),
-      counter = 30 + (i * self.CYCLE),
+      counter = self.CYCLE,
       index = i,
       hue = ((i - 1) % #Rainbow.hues) + 1,
-      cooldown = self.KNIGHTS * self.CYCLE,
+      cooldown = self.CYCLE,
       light = self.knight_lights[i]
     }
     knight.light.hue = knight.hue
