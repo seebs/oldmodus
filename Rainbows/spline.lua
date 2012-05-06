@@ -236,7 +236,6 @@ function scene:enterScene(event)
   for i = 1, scene.START_POINTS do
     self.vecs[i] = self:new_vec(void)
   end
-  local last = table.remove(self.lines, 1)
   self:move()
   for i = 1, scene.HISTORY do
     local l = self:line(i, nil)
@@ -246,7 +245,7 @@ function scene:enterScene(event)
   end
   self.next_color = 1
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
+  Touch.handler(self.touch_magic, self)
 end
 
 function scene:touch_magic(state, ...)
@@ -260,17 +259,18 @@ end
 
 function scene:didExitScene(event)
   self.view.alpha = 0
-  for i, l in ipairs(self.lines) do
-    l:removeSelf()
-  end
-  self.lines = {}
 end
 
 function scene:exitScene(event)
   self.sorted_ids = {}
   self.toward = {}
-  self.view:removeEventListener('touch', Touch.handler(self.touch_magic, self))
+  self.view.alpha = 0
+  for i, l in ipairs(self.lines) do
+    l:removeSelf()
+  end
+  self.lines = {}
   Runtime:removeEventListener('enterFrame', scene)
+  Touch.handler()
 end
 
 function scene:destroyScene(event)

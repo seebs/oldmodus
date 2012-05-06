@@ -196,7 +196,7 @@ end
 function scene:enterScene(event)
   self.cooldown = 0
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
+  Touch.handler(self.touch_magic, self)
 end
 
 function scene:didExitScene(event)
@@ -213,8 +213,8 @@ function scene:didExitScene(event)
 end
 
 function scene:exitScene(event)
-  self.view:removeEventListener('touch', Touch.handler(self.touch_magic, self))
   Runtime:removeEventListener('enterFrame', scene)
+  Touch.handler()
 end
 
 function scene:destroyScene(event)

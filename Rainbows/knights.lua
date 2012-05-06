@@ -205,7 +205,7 @@ end
 function scene:enterScene(event)
   self.toward = nil
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
+  Touch.handler(self.touch_magic, self)
 end
 
 function scene:didExitScene(event)
@@ -215,7 +215,7 @@ end
 function scene:exitScene(event)
   self.toward = nil
   Runtime:removeEventListener('enterFrame', scene)
-  self.view:removeEventListener('touch', Touch.handler(self.touch_magic, self))
+  Touch.handler()
 end
 
 function scene:destroyScene(event)

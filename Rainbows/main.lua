@@ -23,7 +23,7 @@ local displays = {
   'cascade2',
   'lissajous',
 }
-local debugging_display = nil
+local debugging_display = 'spiral'
 local display_index = 1
 
 display_offset = { x = display.screenOriginX, y = display.screenOriginY }
@@ -49,9 +49,11 @@ function next_display(event)
     debugging_display = nil
   end
   if not event or event.phase == 'ended' then
-    storyboard.gotoScene(displays[display_index], fade, 500)
+    storyboard.gotoScene(displays[display_index], 'fade', 500)
     display_index = (display_index % #displays) + 1
   end
 end
+
+Runtime:addEventListener('touch', Touch.handle)
 
 next_display()

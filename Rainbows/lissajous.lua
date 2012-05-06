@@ -223,7 +223,7 @@ function scene:enterScene(event)
   end
   self.next_color = 1
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
+  Touch.handler(self.touch_magic, self)
 end
 
 function scene:touch_magic(state, ...)
@@ -270,8 +270,8 @@ function scene:exitScene(event)
     l:removeSelf()
   end
   self.lines = {}
-  self.view:removeEventListener('touch', Touch.handler(self.touch_magic, self))
   Runtime:removeEventListener('enterFrame', scene)
+  Touch.handler()
 end
 
 function scene:destroyScene(event)

@@ -93,12 +93,13 @@ function scene:enterFrame(event)
 	prow.flag = 0
       end
       for i, square in ipairs(row) do
-	local before = prow[i]
-	local after = prow[((i - 2) % self.columns) + 1]
-	local adjust = -2
+	-- shift left occasionally
 	if row.colors[1] % self.COLOR_MULTIPLIER == 0 then
 	  square = row[(i - 2) % self.columns + 1]
 	end
+	local after = prow[i]
+	local before = prow[((i - 2) % self.columns) + 1]
+	local adjust = -2
 	if square.flag then
 	  adjust = -1
 	end
@@ -132,26 +133,24 @@ function scene:willEnterScene(event)
     self.total_colors - self.rows,
     self.total_colors - self.rows + self.COLOR_MULTIPLIER
   }
-  self.colors[1] = (self.colors[1] % self.total_colors) + 1
-  self.colors[2] = (self.colors[2] % self.total_colors) + 1
   for y, row in ipairs(self.squares) do
     row.colors = { unpack(self.colors) }
     row.flag = 0
     for x = 1, self.columns do
       local square = row[x]
       square.hue = row.colors[2]
-      square.compute = 1
+      square.compute = 0
       square.alpha = self.FADED + (1 - self.FADED) * (y / self.rows)
-      square.flag = 0
+      square.flag = false
       self:colorize(square)
     end
     self.colors[1] = (self.colors[1] % self.total_colors) + 1
     self.colors[2] = (self.colors[2] % self.total_colors) + 1
   end
   self.index = 0
-  self.squares[self.rows][1].hue = 1
+  self.squares[self.rows][1].hue = self.squares[self.rows].colors[1]
   self:colorize(self.squares[self.rows][1])
-  self.squares[self.rows][1].compute = 2
+  self.squares[self.rows][1].compute = 1
   self.view.alpha = 0
 end
 
@@ -174,7 +173,7 @@ function scene:enterScene(event)
   self.toward = nil
   self.toggle = false
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
+  Touch.handler(self.touch_magic, self)
 end
 
 function scene:didExitScene(event)
@@ -184,7 +183,7 @@ end
 function scene:exitScene(event)
   self.toward = nil
   Runtime:removeEventListener('enterFrame', scene)
-  self.view:removeEventListener('touch', Touch.handler(self.touch_magic, self))
+  Touch.handler()
 end
 
 function scene:destroyScene(event)

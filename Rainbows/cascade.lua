@@ -134,6 +134,7 @@ function scene:touch_magic(state, ...)
     y = math.ceil((y + 1) / self.square_size)
     local square = self.squares[x][y]
     square.flag = true
+    square.alpha = 1
     square.hue = square.hue + self.COLOR_MULTIPLIER
     self:colorize(square)
   end
@@ -143,7 +144,7 @@ end
 function scene:enterScene(event)
   self.toward = nil
   Runtime:addEventListener('enterFrame', scene)
-  self.view:addEventListener('touch', Touch.handler(self.touch_magic, self))
+  Touch.handler(self.touch_magic, self)
 end
 
 function scene:didExitScene(event)
@@ -153,7 +154,7 @@ end
 function scene:exitScene(event)
   self.toward = nil
   Runtime:removeEventListener('enterFrame', scene)
-  self.view:removeEventListener('touch', Touch.handler(self.touch_magic, self))
+  Touch.handler()
 end
 
 function scene:destroyScene(event)

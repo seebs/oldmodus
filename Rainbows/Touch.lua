@@ -2,31 +2,37 @@ local Touch = {}
 
 local callbacks = {}
 
+Touch.active = nil
+
 function Touch.handler(callback, ...)
   if callback then
     if not callbacks[callback] then
       callbacks[callback] = {
 	callback = callback,
       }
-      local func = function(event) Touch.handle(event, callbacks[callback]) end
-      callbacks[callback].func = func
     end
     callbacks[callback].args = { ... }
     callbacks[callback].state = { }
-    return callbacks[callback].func
+    Touch.active = callback
   else
-    return next_display
+    Touch.active = nil
   end
 end
 
-function Touch.handle(event, callback)
+function Touch.handle(event)
   local id = event.id or 'unknown'
   local idx = nil
   local last = 0
   local active = 0
-  local state = callback.state
-  local args = callback.args
-  local callback = callback.callback
+  local state = {}
+  local args
+  local func = nil
+  local callback = callbacks[Touch.active]
+  if callback then
+    state = callback.state
+    args = callback.args
+    func = callback.callback
+  end
   state.event = state.event or {}
   state.known_ids = state.known_ids or {}
   state.peak = state.peak or 0
@@ -64,19 +70,12 @@ function Touch.handle(event, callback)
   end
 
   if not state.event[idx] then
-    state.event[idx] = { start = { x = event.x, y = event.y }, count = 0, idx = idx}
+    state.event[idx] = { start = { x = event.x, y = event.y }, idx = idx}
   end
   e = state.event[idx]
-  if event.phase == 'began' then
+  if event.phase == 'began' or event.phase == 'moved' then
     e.current = { x = event.x, y = event.y }
-  elseif event.phase == 'moved' then
-    e.current = { x = event.x, y = event.y }
-    e.count = e.count + 1
-  elseif event.phase == 'ended' then
-    state.event[idx] = nil
-    state.known_ids[idx] = nil
-    active = active - 1
-  elseif event.phase == 'cancelled' then
+  elseif event.phase == 'ended' or event.phase == 'cancelled' then
     state.event[idx] = nil
     state.known_ids[idx] = nil
     active = active - 1
@@ -89,12 +88,20 @@ function Touch.handle(event, callback)
   end
   table.sort(state.ordered, function(a, b) return a.idx < b.idx end)
 
-  -- Util.printf("Processed '%s' for idx %d, active %d/%d.", event.phase, idx, active, state.peak)
+  -- Util.printf("Processed '%s' for idx %d, active %d/%d, func %s.", event.phase, idx, active, state.peak, tostring(func))
   if state.active == 0 and state.peak <= 1 and system.getTimer() - state.stamp
   < 150 then
-    next_display()
-  elseif not callback(args[1], state, unpack(args, 2)) then
-    next_display()
+    local now = system.getTimer()
+    if state.recentTap and now - state.recentTap < 350 then
+      next_display()
+      state.recentTap = nil
+      return
+    else
+      state.recentTap = now
+    end
+  end
+  if func then
+    func(args[1], state, unpack(args, 2))
   end
   return true
 end
