@@ -19,11 +19,13 @@ local displays = {
   'spline',
   'cascade',
   'drops',
+  'spiral2',
   'knights2',
   'lines',
   'cascade2',
   'lissajous',
 }
+local debugging_display = nil
 local display_index = 1
 
 display_offset = { x = display.screenOriginX, y = display.screenOriginY }
