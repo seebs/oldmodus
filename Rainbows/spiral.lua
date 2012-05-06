@@ -4,7 +4,7 @@ local scene = storyboard.newScene()
 
 scene.COLOR_MULTIPLIER = 12
 -- scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
-scene.HISTORY = 12
+scene.HISTORY = 8
 scene.LINE_DELAY = 2
 scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.LINE_SEGMENTS = scene.TOTAL_COLORS
@@ -233,7 +233,7 @@ function scene:enterFrame(event)
   end
   local last = table.remove(self.lines, 1)
   for i, l in ipairs(self.lines) do
-    l.alpha = math.sqrt(i / self.HISTORY)
+    l.alpha = i / self.HISTORY
   end
   table.insert(self.lines, scene:all_lines(nil, last))
   self.lines[#self.lines].alpha = 1

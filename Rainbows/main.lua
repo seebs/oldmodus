@@ -14,6 +14,7 @@ storyboard = require "storyboard"
 widget = require "widget"
 
 local displays = {
+  'spiral',
   'knights',
   'spline',
   'cascade',
@@ -23,7 +24,6 @@ local displays = {
   'cascade2',
   'lissajous',
 }
-local debugging_display = 'spiral'
 local display_index = 1
 
 display_offset = { x = display.screenOriginX, y = display.screenOriginY }
