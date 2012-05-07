@@ -11,6 +11,41 @@ function Util.scale(o)
   return pow(1.1, level)
 end
 
+local last_times = {}
+local time_counter = 60
+
+local message_box
+
+function Util.messages_to(frame)
+  message_box = frame
+end
+
+function Util.message(fmt, ...)
+  local out = Util.sprintf(fmt, ...)
+  if message_box then
+    message_box.text = out
+  end
+  print(out)
+end
+
+function Util.enterFrame(reset)
+  if reset then
+    last_times = {}
+  end
+  table.insert(last_times, system.getTimer())
+  if #last_times > 61 then
+    table.remove(last_times, 1)
+    time_counter = time_counter - 1
+    if time_counter < 1 then
+      local time = last_times[61] - last_times[1]
+      local frame_time = time / 60
+      local fps = 1000 / frame_time
+      Util.message("%.1fms %.1ffps", frame_time, fps)
+      time_counter = 60
+    end
+  end
+end
+
 function Util.gcd(x, y)
   if x < y then
     return Util.gcd(y, x)
@@ -54,13 +89,9 @@ function Util.between(a, b, ratio)
 end
 
 function Util.dist(a, b)
-  if type(a) == 'number' and type(b) == 'number' then
-    return sqrt(a * a + b * b)
-  else
-    local dx = (a.x or 0) - (b.x or 0)
-    local dy = (a.y or 0) - (b.y or 0)
-    return sqrt(dx * dx + dy * dy)
-  end
+  local dx = (a.x or 0) - (b.x or 0)
+  local dy = (a.y or 0) - (b.y or 0)
+  return sqrt(dx * dx + dy * dy)
 end
 
 local skip_items = {

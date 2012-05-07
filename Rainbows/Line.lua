@@ -1,5 +1,9 @@
 local Line = {}
 
+local frame = Util.line
+local max = math.max
+local deg = math.deg
+
 function Line.new(x1, y1, x2, y2, depth, r, g, b)
   local p1, p2
   if type(x1) == 'table' then
@@ -72,16 +76,16 @@ function Line:setColor(r, g, b, a)
 end
 
 function Line:redraw()
-  local frame = Util.line(self.p1, self.p2)
-  self.x, self.y = frame.x, frame.y
+  local f = frame(self.p1, self.p2)
+  self.x, self.y = f.x, f.y
   for i, l in ipairs(self.lines) do
-    l.xScale = frame.len + .0001
+    l.xScale = f.len + .0001
     l.yScale = i * self.thick_scale
-    l.alpha = math.max(0, math.min(1, 1.5 / self.depth))
+    l.alpha = max(0, math.min(1, 1.5 / self.depth))
     l:setFillColor(self.r, self.g, self.b, self.a)
     l.blendMode = 'add'
   end
-  self.rotation = math.deg(frame.theta)
+  self.rotation = deg(f.theta)
 end
 
 return Line

@@ -2,7 +2,7 @@ Rainbow = {}
 
 Rainbow.hues = {
   { 255, 0, 0 },
-  { 240, 110, 0 },
+  { 240, 90, 0 },
   { 220, 220, 0 },
   { 0, 200, 0 },
   { 0, 0, 255 },
@@ -38,8 +38,12 @@ function Rainbow.towards(hue1, hue2)
   end
 end
 
-function Rainbow.color(idx)
-  return Rainbow.hues[((idx - 1) % #Rainbow.hues) + 1]
+function Rainbow.color(idx, denominator)
+  if denominator and denominator > 1 then
+    return Rainbow.smooth(idx, denominator)
+  else
+    return Rainbow.hues[((idx - 1) % #Rainbow.hues) + 1]
+  end
 end
 
 function Rainbow.colors(state, value)

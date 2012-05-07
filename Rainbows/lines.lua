@@ -6,36 +6,22 @@ scene.line_total = #Rainbow.hues * scene.LINE_MULTIPLIER
 scene.LINE_DELAY = 2
 scene.VELOCITY_MIN = 10
 scene.VELOCITY_MAX = 20
-scene.VELOCITY_VARIANCE = scene.VELOCITY_MAX - scene.VELOCITY_MIN
 scene.START_LINES = 1
 scene.LINE_DEPTH = 8
 scene.TOUCH_ACCEL = 1
 
-function scene:random_velocity()
-  local d = math.random(self.VELOCITY_VARIANCE) + self.VELOCITY_MIN
-  if math.random(2) == 2 then
-    d = d * -1
-  end
-  return d
-end
-
-function scene:new_vec(void)
-  return {
-    x = math.random(screen.width) - 1,
-    y = math.random(screen.height) - 1,
-    dx = scene:random_velocity(),
-    dy = scene:random_velocity(),
-  }
-end
+local s
 
 function scene:createScene(event)
   self.ids = self.ids or {}
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
 
+  s = Screen.new(self.view)
+
   self.lines = {}
   -- so clicks have something to land on
-  self.bg = display.newRect(self.view, screen.xoff, screen.yoff, screen.width, screen.height)
+  self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
   self.view:insert(self.bg)
   self.view.alpha = 0
@@ -91,7 +77,7 @@ end
 function scene:move()
   local bounce = false
   for i, v in ipairs(self.vecs) do
-    if self:move_vec(v, i) then
+    if v:move(self.toward[i]) then
       bounce = true
     end
   end
@@ -101,83 +87,8 @@ function scene:move()
   end
 end
 
-function scene:move_vec(vec, id)
-  local bounce_x, bounce_y = false, false
-  local toward = self.toward[id]
-
-  if toward then
-    if toward.x > vec.x then
-      vec.dx = vec.dx + self.TOUCH_ACCEL
-      if vec.dx == 0 then
-        vec.dx = 1
-      end
-    elseif toward.x < vec.x then
-      vec.dx = vec.dx - self.TOUCH_ACCEL
-      if vec.dx == 0 then
-        vec.dx = -1
-      end
-    end
-
-    if toward.y > vec.y then
-      vec.dy = vec.dy + self.TOUCH_ACCEL
-      if vec.dy == 0 then
-        vec.dy = 1
-      end
-    elseif toward.y < vec.y then
-      vec.dy = vec.dy - self.TOUCH_ACCEL
-      if vec.dy == 0 then
-        vec.dy = -1
-      end
-    end
-  end
-
-  vec.x = vec.x + vec.dx
-  if vec.x < screen.left then
-    bounce_x = true
-    vec.x = screen.left + (screen.left - vec.x)
-  elseif vec.x > screen.right then
-    bounce_x = true
-    vec.x = screen.right - (vec.x - screen.right)
-  end
-
-  vec.y = vec.y + vec.dy
-  if vec.y < screen.top then
-    bounce_y = true
-    vec.y = screen.top + (screen.top - vec.y)
-  elseif vec.y > screen.bottom then
-    bounce_y = true
-    vec.y = screen.bottom - (vec.y - screen.bottom)
-  end
-
-  if bounce_x then
-    sign = vec.dx < 0
-    vec.dx = vec.dx * (sign and -1 or 1)
-    if vec.dx >= scene.VELOCITY_MAX then
-      vec.dx = vec.dx - (math.random(2) - 1)
-    elseif vec.dx <= scene.VELOCITY_MIN then
-      vec.dx = vec.dx + (math.random(2) - 1)
-    else
-      vec.dx = vec.dx + (math.random(3) - 2)
-    end
-    vec.dx = vec.dx * (sign and 1 or -1)
-  end
-
-  if bounce_y then
-    sign = vec.dy < 0
-    vec.dy = vec.dy * (sign and -1 or 1)
-    if vec.dy >= scene.VELOCITY_MAX then
-      vec.dy = vec.dy - (math.random(2) - 1)
-    elseif vec.dy <= scene.VELOCITY_MIN then
-      vec.dy = vec.dy + (math.random(2) - 1)
-    else
-      vec.dy = vec.dy + (math.random(3) - 2)
-    end
-    vec.dy = vec.dy * (sign and 1 or -1)
-  end
-  return bounce_x or bounce_y
-end
-
 function scene:enterFrame(event)
+  Util.enterFrame()
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .01, 1)
   end
@@ -201,8 +112,9 @@ function scene:enterScene(event)
   self.lines = {}
   self.next_color = nil
   self.vecs = {}
+  s = Screen.new(self.view)
   for i = 1, scene.START_LINES + 1 do
-    self.vecs[i] = self:new_vec(void)
+    self.vecs[i] = Vector.new(s, self)
   end
   for i = 1, scene.line_total do
     local l = self:line(i, nil)
@@ -217,10 +129,11 @@ end
 
 function scene:touch_magic(state, ...)
   self.toward = {}
-  for i, v in ipairs(state.ordered) do
-    self.toward[i] = v.current
+  if state.active > 0 and state.phase ~= 'ended' then
+    for i, v in ipairs(state.ordered) do
+      self.toward[i] = v.current
+    end
   end
-
   while #state.ordered > #self.vecs do
     table.insert(self.vecs, self:new_vec())
   end

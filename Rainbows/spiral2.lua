@@ -2,7 +2,7 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
-scene.COLOR_MULTIPLIER = 12
+scene.COLOR_MULTIPLIER = 10
 -- scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.HISTORY = 6
 scene.LINE_DELAY = 2
@@ -11,39 +11,18 @@ scene.LINE_SEGMENTS = scene.TOTAL_COLORS
 scene.SEGMENTS_TRIANGLE = (scene.LINE_SEGMENTS * scene.LINE_SEGMENTS + scene.LINE_SEGMENTS * 9) / 2
 scene.VELOCITY_MIN = 5
 scene.VELOCITY_MAX = 15
-scene.VELOCITY_VARIANCE = scene.VELOCITY_MAX - scene.VELOCITY_MIN
-scene.THETA_MIN = 6 * math.pi
-scene.THETA_MAX = 6 * math.pi
+scene.THETA_MIN = 5 * math.pi
+scene.THETA_MAX = 5 * math.pi
 scene.THETA_VARIANCE = scene.THETA_MAX - scene.THETA_MIN
 scene.POINTS = 3
 scene.TOUCH_ACCEL = 1
 scene.ROTATIONS = 1
 
-function scene:random_velocity(limiter)
-  limiter = limiter or 1
-  local d = math.random(self.VELOCITY_VARIANCE) + self.VELOCITY_MIN
-  if math.random(2) == 2 then
-    d = d * -1
-  end
-  d = d / limiter
-  return d
-end
+local s
 
 function scene:random_theta()
   local t = math.random() * self.THETA_VARIANCE + self.THETA_MIN
   return t
-end
-
-function scene:new_vec(limiter)
-  return {
-    limiter = limiter,
-    ripples = {},
-    x = math.random(screen.width) - 1,
-    y = math.random(screen.height) - 1,
-    dx = scene:random_velocity(limiter),
-    dy = scene:random_velocity(limiter),
-    theta = scene:random_theta(),
-  }
 end
 
 function scene:createScene(event)
@@ -51,15 +30,18 @@ function scene:createScene(event)
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
 
-  self.origin = { x = screen.xoff + screen.width / 2, y = screen.yoff + screen.height / 2 }
-  self.center = self:new_vec(5)
-  self.center.x = self.origin.x
-  self.center.y = self.origin.y
+  s = Screen.new(self.view)
+
+  self.center = Vector.new(s, self, 5)
+  self.center.ripples = {}
+  self.center.theta = self:random_theta()
+  self.center.x = s.center.x
+  self.center.y = s.center.y
   self.lines = {}
   -- so clicks have something to land on
-  self.bg = display.newRect(self.view, screen.xoff, screen.yoff, screen.width, screen.height)
+  self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
-  self.view:insert(self.bg)
+  s:insert(self.bg)
   self.view.alpha = 0
 end
 
@@ -163,11 +145,12 @@ function scene:move()
   local bounce = false
   local offset = 0
   if self.center.dx then
-    self:move_vec(self.center, self.toward[1] or self.origin)
+    self.center:move(self.toward[1] or s.center)
     offset = 1
   end
   for i, v in ipairs(self.vecs) do
-    if self:move_vec(v, self.toward[i + offset]) then
+    if v:move(self.toward[i + offset]) then
+      table.insert(v.ripples, self.LINE_SEGMENTS + 2)
       bounce = true
     end
   end
@@ -177,104 +160,9 @@ function scene:move()
   end
 end
 
-function scene:move_vec(vec, toward)
-  local bounce_x, bounce_y, bounce_theta = false, false, false
-  local accel = self.TOUCH_ACCEL -- / (vec.limiter or 1)
-
-  if toward then
-    if toward.x > vec.x then
-      vec.dx = vec.dx + accel
-      if vec.dx == 0 then
-        vec.dx = 1
-      end
-    elseif toward.x < vec.x then
-      vec.dx = vec.dx - accel
-      if vec.dx == 0 then
-        vec.dx = -1
-      end
-    end
-
-    if toward.y > vec.y then
-      vec.dy = vec.dy + accel
-      if vec.dy == 0 then
-        vec.dy = 1
-      end
-    elseif toward.y < vec.y then
-      vec.dy = vec.dy - accel
-      if vec.dy == 0 then
-        vec.dy = -1
-      end
-    end
-    vec.controlled = true
-  else
-    vec.controlled = false
-  end
-
-  vec.x = vec.x + vec.dx
-  if vec.x < screen.left then
-    bounce_x = true
-    vec.x = screen.left + (screen.left - vec.x)
-  elseif vec.x > screen.right then
-    bounce_x = true
-    vec.x = screen.right - (vec.x - screen.right)
-  end
-
-  vec.y = vec.y + vec.dy
-  if vec.y < screen.top then
-    bounce_y = true
-    vec.y = screen.top + (screen.top - vec.y)
-  elseif vec.y > screen.bottom then
-    bounce_y = true
-    vec.y = screen.bottom - (vec.y - screen.bottom)
-  end
-
-  -- vec.theta = vec.theta + vec.dtheta
-  -- if math.abs(vec.theta) > self.THETA_MAX or math.abs(vec.theta) < self.THETA_MIN then
-    -- vec.dtheta = vec.dtheta * -1
-    -- theta_bounce = true
-  -- end
-
-  self:coerce(vec, 'dx', bounce_x)
-  self:coerce(vec, 'dy', bounce_y)
-  if bounce_x then
-    vec.dx = vec.dx * -1
-  end
-  if bounce_y then
-    vec.dy = vec.dy * -1
-  end
-
-  if bounce_x or bounce_y then
-    table.insert(vec.ripples, self.LINE_SEGMENTS + 2)
-  end
-  return bounce_x or bounce_y
-end
-
-function scene:coerce(vec, member, big)
-  local v = vec[member]
-  local l = vec.limiter or 1
-  local max_v = self.VELOCITY_MAX / (vec.limiter or 1)
-  local min_v = self.VELOCITY_MIN / (vec.limiter or 1)
-  local sign = v < 0
-  local mag = sign and (0 - v) or v
-  if big and not vec.controlled then
-    if mag > max_v then
-      mag = mag + math.random(2) - 3
-    elseif mag < min_v then
-      mag = mag + math.random(2)
-    else
-      mag = mag + math.random(3) - 2
-    end
-  else
-    if mag > max_v then
-      mag = mag + math.random(2) - 2
-    elseif mag < min_v and not vec.controlled then
-      mag = mag + math.random(2) - 1
-    end
-  end
-  vec[member] = sign and (0 - mag) or mag
-end
 
 function scene:enterFrame(event)
+  Util.enterFrame()
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .01, 1)
   end
@@ -303,14 +191,10 @@ function scene:enterScene(event)
   self.next_color = nil
   self.vecs = {}
   for i = 1, scene.POINTS do
-    self.vecs[i] = self:new_vec(void)
-    -- self.vecs[i].dtheta = .03
-    -- if i % 2 == 1 then
-    --   self.vecs[i].theta = self.vecs[i].theta * -1
-    --   self.vecs[i].dtheta = self.vecs[i].dtheta * -1
-    -- end
+    self.vecs[i] = Vector.new(s, self)
+    self.vecs[i].ripples = {}
+    self.vecs[i].theta = self:random_theta()
   end
-  self.vec_center = self:new_vec(void)
   self:move()
   for i = 1, scene.HISTORY do
     local g = self:all_lines(i, nil)
@@ -326,8 +210,10 @@ end
 
 function scene:touch_magic(state, ...)
   self.toward = {}
-  for i, v in ipairs(state.ordered) do
-    self.toward[i] = v.current
+  if state.active > 0 and state.phase ~= 'ended' then
+    for i, v in ipairs(state.ordered) do
+      self.toward[i] = v.current
+    end
   end
   return true
 end

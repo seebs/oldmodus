@@ -27,6 +27,7 @@ function Touch.handle(event)
   local state = {}
   local args
   local func = nil
+  local remove_me = false
   local callback = callbacks[Touch.active]
   if callback then
     state = callback.state
@@ -64,6 +65,7 @@ function Touch.handle(event)
       idx = last
     end
   end
+  state.this_event = idx
 
   if active > state.peak then
     state.peak = active
@@ -74,13 +76,18 @@ function Touch.handle(event)
   end
   e = state.event[idx]
   if event.phase == 'began' or event.phase == 'moved' then
+    e.previous = e.current
     e.current = { x = event.x, y = event.y }
-  elseif event.phase == 'ended' or event.phase == 'cancelled' then
+  elseif event.phase == 'ended' then
+    -- if an event ended, leave it in for one last process...
+    remove_me = true
+  elseif event.phase == 'cancelled' then
     state.event[idx] = nil
     state.known_ids[idx] = nil
     active = active - 1
   end
   state.active = active
+  state.phase = event.phase
 
   state.ordered = {}
   for k, e in pairs(state.event) do
@@ -89,6 +96,14 @@ function Touch.handle(event)
   table.sort(state.ordered, function(a, b) return a.idx < b.idx end)
 
   -- Util.printf("Processed '%s' for idx %d, active %d/%d, func %s.", event.phase, idx, active, state.peak, tostring(func))
+  if func then
+    func(args[1], state, unpack(args, 2))
+  end
+  if remove_me then
+    state.event[idx] = nil
+    state.known_ids[idx] = nil
+    state.active = state.active - 1
+  end
   if state.active == 0 and state.peak <= 1 and system.getTimer() - state.stamp
   < 150 then
     local now = system.getTimer()
@@ -99,9 +114,6 @@ function Touch.handle(event)
     else
       state.recentTap = now
     end
-  end
-  if func then
-    func(args[1], state, unpack(args, 2))
   end
   return true
 end

@@ -6,67 +6,22 @@ scene.KNIGHTS = 6
 scene.FADED = 0.75
 scene.CYCLE = 12
 
-scene.square_size = math.max(32, Util.gcd(screen.height, screen.width))
+local s
 
 function scene:createScene(event)
-  while (screen.width / scene.square_size < 13) and self.square_size % 2 == 0 do
-    self.square_size = self.square_size / 2
-  end
-  self.squares = {}
-  self.rows = math.floor(screen.height / self.square_size)
-  self.columns = math.floor(screen.width / self.square_size)
-  self.sheet = graphics.newImageSheet("square.png", { width = 128, height = 128, numFrames = 1 })
-  self.igroup = display.newImageGroup(self.sheet)
-  self.view:insert(self.igroup)
-  self.knight_lights = {}
-  for i = 1, self.KNIGHTS do
-    local light = display.newImage(self.sheet, 1)
-    light:scale(self.square_size / 256, self.square_size / 256)
-    light.isVisible = false
-    self.view:insert(light)
-    light.alpha = .8
-    light:setReferencePoint(display.TopLeftReferencePoint)
-    table.insert(self.knight_lights, light)
-  end
-  for i = 1, self.columns do
-    local column = {}
-    for j = 1, self.rows do
-      local square = display.newImage(self.sheet, 1)
-      square:setReferencePoint(display.TopLeftReferencePoint)
-      square.x = screen.xoff + (#self.squares * self.square_size)
-      square.y = screen.yoff + (#column * self.square_size)
-      square:scale(self.square_size / 128, self.square_size / 128)
-      square.hue = 0
-      column[j] = square
-      self.igroup:insert(square)
-      square.isVisible = true
-    end
-    self.squares[i] = column
-  end
+  s = Screen.new(self.view)
+  self.squares = Squares.new(s, self.KNIGHTS)
   self.knights = {}
-end
-
-function scene:colorize(square, hue)
-  local r, g, b = unpack(Rainbow.color(hue or square.hue))
-  square:setFillColor(r, g, b)
 end
 
 function scene:bump(square)
   if square then
     square.hue = ((square.hue + 1) % #Rainbow.hues)
-    self:colorize(square)
+    square:colorize()
     if square.alpha < scene.FADED then
       square.alpha = (scene.FADED + square.alpha) / 2
     end
   end
-end
-
-function scene:find(x, y)
-  while x < 1 do x = x + self.columns end
-  while x > self.columns do x = x - self.columns end
-  while y < 1 do y = y + self.rows end
-  while y > self.rows do y = y - self.rows end
-  return self.squares[x][y]
 end
 
 function scene:adjust(knight, quiet)
@@ -74,8 +29,8 @@ function scene:adjust(knight, quiet)
   scene:bump(square)
   scene:bump(square)
   if knight.light then
-    -- knight.light.hue = square.hue
-    -- self:colorize(knight.light)
+    knight.light.hue = square.hue
+    knight.light:colorize()
     if knight.light.hue == square.hue then
       knight.light.alpha = 0.6
       knight.light.blendMode = 'add'
@@ -83,19 +38,16 @@ function scene:adjust(knight, quiet)
       knight.light.alpha = 0.8
       knight.light.blendMode = 'blend'
     end
-    knight.light:setReferencePoint(display.TopLeftReferencePoint)
-    knight.light.x = square.x + self.square_size / 4
-    knight.light.y = square.y + self.square_size / 4
-    knight.light.isVisible = true
+    knight.light:move(square)
   end
   if not quiet then
     Sounds.play(square.hue)
   end
   square.alpha = 1
-  scene:bump(scene:find(knight.x + 1, knight.y    ))
-  scene:bump(scene:find(knight.x - 1, knight.y    ))
-  scene:bump(scene:find(knight.x    , knight.y + 1))
-  scene:bump(scene:find(knight.x    , knight.y - 1))
+  scene:bump(square:find(1, 0))
+  scene:bump(square:find(-1, 0))
+  scene:bump(square:find(0, 1))
+  scene:bump(square:find(0, -1))
 end
 
 function scene:move_knight(knight)
@@ -109,18 +61,6 @@ function scene:move_knight(knight)
   end
   local p_chance = .5
   local s_chance = .5
-  if self.toward then
-    if self.toward[primary] > knight[primary] then
-      p_chance = .8
-    elseif self.toward[primary] < knight[primary] then
-      p_chance = .2
-    end
-    if self.toward[secondary] > knight[secondary] then
-      s_chance = .8
-    elseif self.toward[secondary] < knight[secondary] then
-      s_chance = .2
-    end
-  end
 
   self.squares[knight.x][knight.y].alpha = scene.FADED + 0.1
 
@@ -134,16 +74,16 @@ function scene:move_knight(knight)
   else
     knight[secondary] = knight[secondary] - 1
   end
+  knight.square = self.squares:find(knight.x, knight.y)
+  knight.x = knight.square.logical_x
+  knight.y = knight.square.logical_y
 
-  if knight.x < 1 then knight.x = knight.x + self.columns end
-  if knight.x > self.columns then knight.x = knight.x - self.columns end
-  if knight.y < 1 then knight.y = knight.y + self.rows end
-  if knight.y > self.rows then knight.y = knight.y - self.rows end
   self:adjust(knight)
   knight.counter = knight.cooldown
 end
 
 function scene:enterFrame(event)
+  Util.enterFrame()
   if self.view.alpha < 1 then
     self.view.alpha = math.min(1, self.view.alpha + .03)
   end
@@ -165,25 +105,27 @@ function scene:enterFrame(event)
 end
 
 function scene:willEnterScene(event)
-  for x = 1, self.columns do
-    for y = 1, self.rows do
-      self.squares[x][y].hue = 1
-      self.squares[x][y].alpha = self.FADED
-      self:colorize(self.squares[x][y])
+  for x, column in ipairs(self.squares) do
+    for y, square in ipairs(column) do
+      square.hue = 1
+      square.alpha = self.FADED
+      square:colorize()
     end
   end
   self.knights = {}
   for i = 1, self.KNIGHTS do
     local knight = {
-      x = math.random(self.columns),
-      y = math.random(self.rows),
+      x = math.random(self.squares.columns),
+      y = math.random(self.squares.rows),
       counter = self.CYCLE,
       index = i,
       cooldown = self.CYCLE,
-      light = self.knight_lights[i]
+      light = self.squares.highlights[i]
     }
-    knight.light.hue = knight.index
-    self:colorize(knight.light, knight.index)
+    if knight.light then
+      knight.light.hue = knight.index
+      knight.light:colorize()
+    end
     table.insert(self.knights, knight)
     self:adjust(knight, true)
   end
@@ -192,18 +134,42 @@ function scene:willEnterScene(event)
 end
 
 function scene:touch_magic(state, ...)
-  if state.ordered[1] then
-    self.toward = state.ordered[1].current
-    self.toward.x = math.ceil((self.toward.x / self.square_size) + 0.5)
-    self.toward.y = math.ceil((self.toward.y / self.square_size) + 0.5)
+  if state.ordered[1] and state.phase ~= 'ended' then
+    self.saved_delta = self.saved_delta or { x = 0, y = 0 }
+    local event = state.ordered[1]
+    if event.current and event.previous then
+      local delta = Util.vec_add(event.current, Util.vec_scale(event.previous, -1))
+      delta = Util.vec_add(delta, self.saved_delta)
+      self.saved_delta = { x = 0, y = 0 }
+      if delta.x > 0 then
+	self.saved_delta.x = delta.x % Squares.square_size
+        delta.x = math.floor(delta.x / Squares.square_size)
+      elseif delta.x < 0 then
+	self.saved_delta.x = (delta.x % Squares.square_size)
+        delta.x = math.ceil(delta.x / Squares.square_size)
+	if self.saved_delta.x > 0 then
+	  self.saved_delta.x = self.saved_delta.x - Squares.square_size
+	end
+      end
+      if delta.y > 0 then
+	self.saved_delta.y = delta.y % Squares.square_size
+        delta.y = math.floor(delta.y / Squares.square_size)
+      elseif delta.y < 0 then
+	self.saved_delta.y = (delta.y % Squares.square_size)
+        delta.y = math.ceil(delta.y / Squares.square_size)
+	if self.saved_delta.y > 0 then
+	  self.saved_delta.y = self.saved_delta.y - Squares.square_size
+	end
+      end
+      self.squares:shift(delta.x, delta.y)
+    end
   else
-    self.toward = nil
+    self.saved_delta = nil
   end
   return true
 end
 
 function scene:enterScene(event)
-  self.toward = nil
   Runtime:addEventListener('enterFrame', scene)
   Touch.handler(self.touch_magic, self)
 end
@@ -213,18 +179,14 @@ function scene:didExitScene(event)
 end
 
 function scene:exitScene(event)
-  self.toward = nil
   Runtime:removeEventListener('enterFrame', scene)
   Touch.handler()
 end
 
 function scene:destroyScene(event)
+  self.squares:removeSelf()
   self.squares = nil
-  self.sheet = nil
-  self.igroup:removeSelf()
-  self.igroup = nil
   self.knights = nil
-  self.knight_lights = nil
 end
 
 scene:addEventListener('createScene', scene)

@@ -1,23 +1,25 @@
-
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
-scene.COLOR_MULTIPLIER = 12
+scene.COLOR_MULTIPLIER = 10
 -- scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.HISTORY = 6
 scene.LINE_DELAY = 2
 scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.LINE_SEGMENTS = scene.TOTAL_COLORS
-scene.SEGMENTS_TRIANGLE = (scene.LINE_SEGMENTS * scene.LINE_SEGMENTS + scene.LINE_SEGMENTS * 9) / 2
+scene.SEGMENT_FUDGE = 5
+scene.SEGMENTS_TRIANGLE = (scene.LINE_SEGMENTS * scene.LINE_SEGMENTS + scene.LINE_SEGMENTS) / 2 + (scene.LINE_SEGMENTS * scene.SEGMENT_FUDGE)
 scene.VELOCITY_MIN = 5
-scene.VELOCITY_MAX = 15
+scene.VELOCITY_MAX = 10
 scene.VELOCITY_VARIANCE = scene.VELOCITY_MAX - scene.VELOCITY_MIN
-scene.THETA_MIN = 6 * math.pi
-scene.THETA_MAX = 6 * math.pi
+scene.THETA_MIN = 5 * math.pi
+scene.THETA_MAX = 5 * math.pi
 scene.THETA_VARIANCE = scene.THETA_MAX - scene.THETA_MIN
 scene.POINTS = 3
 scene.TOUCH_ACCEL = 1
 scene.ROTATIONS = 1
+
+local s
 
 function scene:random_velocity()
   local d = math.random(self.VELOCITY_VARIANCE) + self.VELOCITY_MIN
@@ -35,8 +37,8 @@ end
 function scene:new_vec(void)
   return {
     ripples = {},
-    x = math.random(screen.width) - 1,
-    y = math.random(screen.height) - 1,
+    x = math.random(s.size.x) - 1,
+    y = math.random(s.size.y) - 1,
     dx = scene:random_velocity(),
     dy = scene:random_velocity(),
     theta = scene:random_theta(),
@@ -47,18 +49,20 @@ function scene:createScene(event)
   self.ids = self.ids or {}
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
+  s = Screen.new(self.view)
+  -- this is because we might later move it
+  self.center = { x = s.center.x, y = s.center.y }
 
-  self.origin = { x = screen.xoff + screen.width / 2, y = screen.yoff + screen.height / 2 }
   self.lines = {}
   -- so clicks have something to land on
-  self.bg = display.newRect(self.view, screen.xoff, screen.yoff, screen.width, screen.height)
+  self.bg = display.newRect(0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
-  self.view:insert(self.bg)
+  s:insert(self.bg)
   self.view.alpha = 0
 end
 
 function scene:spiral_from(vec, points, segments)
-  local params = Util.line(self.origin, vec)
+  local params = Util.line(self.center, vec)
   params.theta = params.theta + math.fmod(vec.theta, math.pi * 2)
   local rip = {}
   local remove = {}
@@ -84,15 +88,15 @@ function scene:spiral_from(vec, points, segments)
   local counter = segments
   for i = 1, segments - 1 do
     local scale = i / segments
-    counter = counter + (segments - i) + 4
+    counter = counter + (segments - i) + self.SEGMENT_FUDGE
     local theta = ((counter / self.SEGMENTS_TRIANGLE) * vec.theta) + params.theta
     local r = params.len * scale
     if rip[i] then
       r = r * (1 + 0.03 * rip[i])
     end
     points[i + 1] = points[i + 1] or {}
-    points[i + 1].x = r * math.cos(theta) + self.origin.x
-    points[i + 1].y = r * math.sin(theta) + self.origin.y
+    points[i + 1].x = r * math.cos(theta) + self.center.x
+    points[i + 1].y = r * math.sin(theta) + self.center.y
   end
 end
 
@@ -120,7 +124,7 @@ function scene:line(color, g, index)
   g.points = g.points or {}
   g.segments = g.segments or {}
   scene:spiral_from(self.vecs[index], g.points, self.LINE_SEGMENTS)
-  g.points[1] = self.origin
+  g.points[1] = s.center
   g.points[self.LINE_SEGMENTS + 1] = { x = self.vecs[index].x, y = self.vecs[index].y }
   for i = 1, self.LINE_SEGMENTS do
     if g.segments[i] then
@@ -197,21 +201,21 @@ function scene:move_vec(vec, id)
   end
 
   vec.x = vec.x + vec.dx
-  if vec.x < screen.left then
+  if vec.x < s.left then
     bounce_x = true
-    vec.x = screen.left + (screen.left - vec.x)
-  elseif vec.x > screen.right then
+    vec.x = s.left + (s.left - vec.x)
+  elseif vec.x > s.right then
     bounce_x = true
-    vec.x = screen.right - (vec.x - screen.right)
+    vec.x = s.right - (vec.x - s.right)
   end
 
   vec.y = vec.y + vec.dy
-  if vec.y < screen.top then
+  if vec.y < s.top then
     bounce_y = true
-    vec.y = screen.top + (screen.top - vec.y)
-  elseif vec.y > screen.bottom then
+    vec.y = s.top + (s.top - vec.y)
+  elseif vec.y > s.bottom then
     bounce_y = true
-    vec.y = screen.bottom - (vec.y - screen.bottom)
+    vec.y = s.bottom - (vec.y - s.bottom)
   end
 
   -- vec.theta = vec.theta + vec.dtheta
@@ -252,6 +256,7 @@ function scene:move_vec(vec, id)
 end
 
 function scene:enterFrame(event)
+  Util.enterFrame()
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .01, 1)
   end
@@ -302,8 +307,10 @@ end
 
 function scene:touch_magic(state, ...)
   self.toward = {}
-  for i, v in ipairs(state.ordered) do
-    self.toward[i] = v.current
+  if state.active > 0 and state.phase ~= 'ended' then
+    for i, v in ipairs(state.ordered) do
+      self.toward[i] = v.current
+    end
   end
   return true
 end

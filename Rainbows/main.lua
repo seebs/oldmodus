@@ -2,13 +2,17 @@ display.setStatusBar(display.HiddenStatusBar)
 
 player = { slot = 1, score = 0, location = 1 }
 
+profiler = require "Profiler"; profiler.startProfiler(); --its easy!
 
 -- mine get caps so I don't clash
 Util = require "Util"
 Line = require "Line"
 Rainbow = require "Rainbow"
+Screen = require "Screen"
 Sounds = require "Sounds"
+Squares = require "Squares"
 Touch = require "Touch"
+Vector = require "Vector"
 
 storyboard = require "storyboard"
 widget = require "widget"
@@ -25,23 +29,11 @@ local displays = {
   'cascade2',
   'lissajous',
 }
-local debugging_display = nil
-local display_index = 1
+local debugging_display = 'lissajous'
+local display_index = 5
 
-display_offset = { x = display.screenOriginX, y = display.screenOriginY }
-screen = {
-  x = display.contentWidth,
-  y = display.contentHeight,
-  width = display.contentWidth - (2 * display.screenOriginX),
-  height = display.contentHeight - (2 * display.screenOriginY),
-  xoff = display.screenOriginX,
-  yoff = display.screenOriginY,
-}
-
-screen.left = screen.xoff
-screen.top = screen.yoff
-screen.right = screen.xoff + screen.width
-screen.bottom = screen.yoff + screen.height
+local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 50)
+Util.messages_to(message_box)
 
 system.activate("multitouch")
 

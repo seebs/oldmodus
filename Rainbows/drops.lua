@@ -53,24 +53,27 @@ end
 function scene.setDropAlpha(drop, reset_or_main, inner, outer)
   if reset_or_main == true then
     drop.innerc.alpha = 1
-    drop.innerh.alpha = 1
+    drop.innerh.alpha = .8
     drop.outerc.alpha = .8
-    drop.outerh.alpha = .8
+    drop.outerh.alpha = .64
   else
     drop.innerc.alpha = reset_or_main * inner
-    drop.innerh.alpha = reset_or_main * inner
+    drop.innerh.alpha = reset_or_main * inner * .8
     drop.outerc.alpha = reset_or_main * outer * .8
-    drop.outerh.alpha = reset_or_main * outer * .8
+    drop.outerh.alpha = reset_or_main * outer * .64
   end
 end
 
+local s
+
 function scene:createScene(event)
   self.drops = {}
+  s = Screen.new(self.view)
   -- so clicks have something to land on
-  self.bg = display.newRect(self.view, screen.xoff, screen.yoff, screen.width, screen.height)
+  self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
   scene.last_color = 1
-  self.view:insert(self.bg)
+  s:insert(self.bg)
   self.spare_drops = {}
   self.last_hue = nil
   self.sheetc = graphics.newImageSheet("drop_widec.png", { width = 512, height = 512, numFrames = 1 })
@@ -157,8 +160,8 @@ function scene:do_drops()
     self.last_hue = d.hue
     Sounds.play(d.hue)
     local new_point = {}
-    new_point.x = math.random((screen.width - 50) + 25) + screen.xoff
-    new_point.y = math.random((screen.height - 50) + 25) + screen.yoff
+    new_point.x = math.random((s.size.x - 50) + 25)
+    new_point.y = math.random((s.size.y - 50) + 25)
     if self.toward then
       local between = Util.between(new_point, self.toward)
     end
@@ -177,6 +180,7 @@ function scene:do_drops()
 end
 
 function scene:enterFrame(event)
+  Util.enterFrame()
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .03, 1)
   end

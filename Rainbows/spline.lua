@@ -14,6 +14,8 @@ scene.START_POINTS = 4
 scene.LINE_DEPTH = 8
 scene.TOUCH_ACCEL = 1
 
+local s
+
 function scene:random_velocity()
   local d = math.random(self.VELOCITY_VARIANCE) + self.VELOCITY_MIN
   if math.random(2) == 2 then
@@ -24,8 +26,8 @@ end
 
 function scene:new_vec(void)
   return {
-    x = math.random(screen.width) - 1,
-    y = math.random(screen.height) - 1,
+    x = math.random(s.width) - 1,
+    y = math.random(s.height) - 1,
     dx = scene:random_velocity(),
     dy = scene:random_velocity(),
   }
@@ -37,10 +39,14 @@ function scene:createScene(event)
   self.toward = self.toward or {}
 
   self.lines = {}
+  
+  s = Screen.new(self.view)
+
   -- so clicks have something to land on
-  self.bg = display.newRect(self.view, screen.xoff, screen.yoff, screen.width, screen.height)
+
+  self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
-  self.view:insert(self.bg)
+  s:insert(self.bg)
   self.view.alpha = 0
 end
 
@@ -160,21 +166,21 @@ function scene:move_vec(vec, id)
   end
 
   vec.x = vec.x + vec.dx
-  if vec.x < screen.left then
+  if vec.x < s.left then
     bounce_x = true
-    vec.x = screen.left + (screen.left - vec.x)
-  elseif vec.x > screen.right then
+    vec.x = s.left + (s.left - vec.x)
+  elseif vec.x > s.right then
     bounce_x = true
-    vec.x = screen.right - (vec.x - screen.right)
+    vec.x = s.right - (vec.x - s.right)
   end
 
   vec.y = vec.y + vec.dy
-  if vec.y < screen.top then
+  if vec.y < s.top then
     bounce_y = true
-    vec.y = screen.top + (screen.top - vec.y)
-  elseif vec.y > screen.bottom then
+    vec.y = s.top + (s.top - vec.y)
+  elseif vec.y > s.bottom then
     bounce_y = true
-    vec.y = screen.bottom - (vec.y - screen.bottom)
+    vec.y = s.bottom - (vec.y - s.bottom)
   end
 
   if bounce_x then
@@ -206,6 +212,7 @@ function scene:move_vec(vec, id)
 end
 
 function scene:enterFrame(event)
+  Util.enterFrame()
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .01, 1)
   end
@@ -250,9 +257,11 @@ end
 
 function scene:touch_magic(state, ...)
   self.toward = {}
-  local lookup = { 1, 4, 2, 3 }
-  for i, v in ipairs(state.ordered) do
-    self.toward[lookup[i] or 5] = v.current
+  if state.active > 0 and state.phase ~= 'ended' then
+    local lookup = { 1, 4, 2, 3 }
+    for i, v in ipairs(state.ordered) do
+      self.toward[lookup[i] or 5] = v.current
+    end
   end
   return true
 end

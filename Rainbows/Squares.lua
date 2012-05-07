@@ -6,7 +6,7 @@ while (Screen.size.x / Squares.square_size < 13) and Squares.square_size % 2 == 
 end
 Squares.rows = math.floor(Screen.size.y / Squares.square_size)
 Squares.columns = math.floor(Screen.size.x / Squares.square_size)
-Squares.sheet = graphics.newImageSheet("square.png", { width = 128, height = 128, numFrames = 1 })
+Squares.sheet = graphics.newImageSheet("square.png", { width = 128, height = 128, numFrames = 2 })
 
 function Squares.colorize(square, color)
   square.hue = color or square.hue
@@ -47,6 +47,9 @@ function Squares:shift_squares(x, y)
 	  square.logical_x = square.logical_x + ex
 	  newrow[square.logical_x] = square
 	  square.x = square.x + (ex * Squares.square_size)
+	  if square.gemmy then
+	    square.gemmy.x = square.gemmy.x + (ex * Squares.square_size)
+	  end
 	end
 	for idx, square in ipairs(newrow) do
 	  row[idx] = square
@@ -135,8 +138,15 @@ function Squares.new(group, highlights, multiplier)
     for x = 1, Squares.columns do
       squares[x] = squares[x] or {}
       local square = display.newImage(Squares.sheet, 1)
+      local gemmy = display.newImage(Squares.sheet, 2)
       -- local square = display.newRect(0, 0, 256, 256)
       row:insert(square)
+      row:insert(gemmy)
+      gemmy.x = (x - 1) * Squares.square_size
+      gemmy.y = 0
+      gemmy.xScale = Squares.square_size / 128
+      gemmy.yScale = Squares.square_size / 128
+      gemmy.blendMode = 'add'
       square.x = (x - 1) * Squares.square_size
       square.y = 0
       square.xScale = Squares.square_size / 128
@@ -152,6 +162,7 @@ function Squares.new(group, highlights, multiplier)
       table.insert(row, square)
       squares[x][y] = square
       squares.r[y][x] = square
+      square.gemmy = gemmy
     end
   end
   squares.find = Squares.find
