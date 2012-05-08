@@ -186,6 +186,7 @@ function scene:enterScene(event)
     l.alpha = sqrt(i / scene.HISTORY)
     table.insert(self.lines, l)
     s:insert(l)
+    l.y = 0
     self:calc(true)
   end
   self.next_color = 1

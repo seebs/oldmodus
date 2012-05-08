@@ -7,6 +7,7 @@ scene.color_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.DROPS = #Rainbow.hues * 2
 scene.MAX_GROWTH = 125
 scene.MIN_GROWTH = 45
+scene.FRAME_DELAY = 2
 
 function scene.setDropVisible(drop, hidden)
   drop.innerc.isVisible = hidden
@@ -80,6 +81,7 @@ function scene:createScene(event)
   self.sheeth = graphics.newImageSheet("drop_wideh.png", { width = 512, height = 512, numFrames = 1 })
   self.iscale = 200 / 512
   self.oscale = 300 / 512
+  self.cooldown = self.FRAME_DELAY
   for i = 1, scene.DROPS do
     local d = {
       iscale = self.iscale,
@@ -97,24 +99,24 @@ function scene:createScene(event)
     img = display.newImage(self.sheetc, 1)
     img:setFillColor(r, g, b)
     img.blendMode = 'add'
-    self.view:insert(img)
+    s:insert(img)
     d.innerc = img
 
     img = display.newImage(self.sheeth, 1)
     img.blendMode = 'add'
-    self.view:insert(img)
+    s:insert(img)
     d.innerh = img
 
     img = display.newImage(self.sheetc, 1)
     img:setFillColor(r, g, b, 180)
     img.blendMode = 'add'
-    self.view:insert(img)
+    s:insert(img)
     d.outerc = img
 
     img = display.newImage(self.sheeth, 1)
     img.blendMode = 'add'
     img:setFillColor(255, 180)
-    self.view:insert(img)
+    s:insert(img)
     d.outerh = img
 
     d:setScale(true)
@@ -184,7 +186,11 @@ function scene:enterFrame(event)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .03, 1)
   end
-  self:do_drops()
+  self.cooldown = self.cooldown -1
+  if self.cooldown < 1 then
+    self:do_drops()
+    self.cooldown = self.FRAME_DELAY
+  end
 end
 
 function scene:touch_magic(state, ...)

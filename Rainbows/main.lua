@@ -32,8 +32,11 @@ local displays = {
 }
 local debugging_display = nil
 local display_index = 1
-local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 50)
-Util.messages_to(message_box)
+local debugging_performance = true
+if debugging_display or debugging_performance then
+  local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 50)
+  Util.messages_to(message_box)
+end
 
 system.activate("multitouch")
 
