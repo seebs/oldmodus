@@ -4,7 +4,8 @@ local scene = storyboard.newScene()
 scene.HISTORY = 8
 scene.COLOR_MULTIPLIER = 16
 scene.LINE_MULTIPLIER = 16
-scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
+scene.point_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
+scene.line_total = scene.point_total - 1
 scene.FRAME_DELAY = 3
 scene.SOUND_DELAY = 3
 scene.DELTA_DELTA = 0.02 * scene.FRAME_DELAY
@@ -44,7 +45,7 @@ function scene:createScene(event)
   self.a = 1
   self.b = 1
   self.delta = 1
-  self.line_scale = twopi / (self.line_total - 1)
+  self.line_scale = twopi / self.line_total
   -- so clicks have something to land on
   self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
@@ -84,7 +85,7 @@ function scene:line(color, g)
       color = color + 1
     end
   end
-  self.next_color = (color + 2) % scene.line_total
+  self.next_color = (color % scene.line_total) + 1
   return g
 end
 
@@ -114,7 +115,7 @@ function scene:calc(quiet)
   self.sign_y = self.sign_y or {}
   self.sound_cooldown = self.sound_cooldown or 0
   local play_sound = false
-  for i = 1, self.line_total do
+  for i = 1, self.point_total do
     local t = i * self.line_scale
     local x = sin(self.a * t + self.delta)
     local y = sin(self.b * t - self.delta)
@@ -133,7 +134,6 @@ function scene:calc(quiet)
     self.vecs[i].x = x
     self.vecs[i].y = y
   end
-  self.vecs[self.line_total + 1] = self.vecs[1]
   if play_sound and self.sound_cooldown < 1 then
     Sounds.play(ceil(self.next_color / self.COLOR_MULTIPLIER))
     self.sound_cooldown = self.SOUND_DELAY

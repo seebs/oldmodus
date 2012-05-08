@@ -2,7 +2,6 @@ local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
 local pi = math.pi
-local smooth = Rainbow.smooth
 local fmod = math.fmod
 local sin = math.sin
 local min = math.min
@@ -27,6 +26,10 @@ scene.THETA_VARIANCE = scene.THETA_MAX - scene.THETA_MIN
 scene.POINTS = 3
 scene.TOUCH_ACCEL = 1
 scene.ROTATIONS = 1
+
+local rfuncs = Rainbow.funcs_for(scene.COLOR_MULTIPLIER)
+local colorfor = rfuncs.smooth
+local colorize = rfuncs.smoothobj
 
 local s
 
@@ -123,7 +126,7 @@ function scene:line(color, g, index)
   if #g.segments == self.line_segments then
     for i, seg in ipairs(g.segments) do
       seg:setPoints(g.points[i], g.points[i + 1])
-      seg:setColor(unpack(smooth(color, self.COLOR_MULTIPLIER)))
+      colorize(seg, color)
       seg:redraw()
       color = color + 1
     end
@@ -134,9 +137,9 @@ function scene:line(color, g, index)
       local next = g.points[i + 1]
       if seg then
 	seg:setPoints(point, next)
-	seg:setColor(unpack(smooth(color, self.COLOR_MULTIPLIER)))
+	colorize(seg, color)
       else
-	local l = Line.new(point, next, 2, unpack(smooth(color, self.COLOR_MULTIPLIER)))
+	local l = Line.new(point, next, 2, colorfor(color))
 	l:setThickness(2)
 	seg = l
 	g.segments[i] = l

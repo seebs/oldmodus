@@ -6,6 +6,9 @@ scene.CYCLE = 12
 scene.COLOR_MULTIPLIER = 12
 scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
 
+local max = math.max
+local min = math.min
+
 function scene:createScene(event)
   s = Screen.new(self.view)
   self.squares = Squares.new(s, 0, self.COLOR_MULTIPLIER)
@@ -15,7 +18,7 @@ end
 function scene:enterFrame(event)
   Util.enterFrame()
   if self.view.alpha < 1 then
-    self.view.alpha = math.min(1, self.view.alpha + .03)
+    self.view.alpha = min(1, self.view.alpha + .03)
   end
   self.cooldown = self.cooldown - 1
   if self.cooldown > 1 then
@@ -47,7 +50,7 @@ function scene:enterFrame(event)
       square.alpha = 1
       -- math.min(1, square.alpha + (.022 * self.squares.rows))
     else
-      square.alpha = math.min(1, square.alpha + (.0065 * self.squares.rows))
+      square.alpha = min(1, square.alpha + (.0065 * self.squares.rows))
     end
     square.hue = self.colors[square.compute % 2 + 1]
     new = ((new - 1) % #Rainbow.hues) + 1
@@ -58,7 +61,7 @@ function scene:enterFrame(event)
   self.colors[2] = (self.colors[2] % self.TOTAL_COLORS) + 1
   for _, column in ipairs(self.squares) do
     for _, square in ipairs(column) do
-      square.alpha = math.max(0.005, square.alpha - .01)
+      square.alpha = max(0.005, square.alpha - .01)
     end
   end
   local max = 1

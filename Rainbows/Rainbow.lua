@@ -42,6 +42,10 @@ end
 
 function Rainbow.smoothify(denominator)
   local tab = {}
+  if denominator == 1 then
+    Rainbow.smoothed[denominator] = Rainbow.hues
+    return
+  end
   for hue = 1, #Rainbow.hues * denominator do
     local hue1 = floor(hue / denominator)
     local hue2 = ceil((hue + 1) / denominator)

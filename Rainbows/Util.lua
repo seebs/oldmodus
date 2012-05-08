@@ -25,7 +25,7 @@ function Util.message(fmt, ...)
   if message_box then
     message_box.text = out
   end
-  print(out)
+  -- print(out)
 end
 
 function Util.enterFrame(reset)

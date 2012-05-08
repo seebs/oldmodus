@@ -6,12 +6,11 @@ while (Screen.size.x / Squares.square_size < 13) and Squares.square_size % 2 == 
 end
 Squares.rows = math.floor(Screen.size.y / Squares.square_size)
 Squares.columns = math.floor(Screen.size.x / Squares.square_size)
-Squares.sheet = graphics.newImageSheet("square.png", { width = 128, height = 128, numFrames = 2 })
+Squares.sheet = graphics.newImageSheet("square.png", { width = 128, height = 128, numFrames = 1 })
 
 function Squares.colorize(square, color)
   square.hue = color or square.hue
-  local r, g, b = unpack(square.squares.color(square.hue, square.squares.multiplier))
-  square:setFillColor(r, g, b)
+  square:setFillColor(square.squares.color(square.hue))
 end
 
 function Squares.find(squares, x, y)
@@ -47,9 +46,7 @@ function Squares:shift_squares(x, y)
 	  square.logical_x = square.logical_x + ex
 	  newrow[square.logical_x] = square
 	  square.x = square.x + (ex * Squares.square_size)
-	  if square.gemmy then
-	    square.gemmy.x = square.gemmy.x + (ex * Squares.square_size)
-	  end
+	  square.column = self[square.logical_x]
 	end
 	for idx, square in ipairs(newrow) do
 	  row[idx] = square
@@ -114,11 +111,8 @@ function Squares.new(group, highlights, multiplier)
   squares.igroup.x = 0
   squares.igroup.y = 0
   squares.igroup:setReferencePoint(display.TopLeftReferencePoint)
-  if multiplier then
-    squares.color = Rainbow.smooth
-  else
-    squares.color = Rainbow.color
-  end
+  local funcs = Rainbow.funcs_for(multiplier or 1)
+  squares.color = funcs.smooth
   squares.multiplier = multiplier
   squares.highlights = {}
   squares.width = Screen.size.x
@@ -138,20 +132,13 @@ function Squares.new(group, highlights, multiplier)
       row.y = (y - 0.5) * Squares.square_size
       squares.r[y] = row
     else
-      row = squares[r].y
+      row = squares.r[y]
     end
     for x = 1, Squares.columns do
       squares[x] = squares[x] or {}
       local square = display.newImage(Squares.sheet, 1)
-      local gemmy = display.newImage(Squares.sheet, 2)
       -- local square = display.newRect(0, 0, 256, 256)
       row:insert(square)
-      row:insert(gemmy)
-      gemmy.x = (x - 1) * Squares.square_size
-      gemmy.y = 0
-      gemmy.xScale = Squares.square_size / 128
-      gemmy.yScale = Squares.square_size / 128
-      gemmy.blendMode = 'add'
       square.x = (x - 1) * Squares.square_size
       square.y = 0
       square.xScale = Squares.square_size / 128
@@ -164,10 +151,9 @@ function Squares.new(group, highlights, multiplier)
       square.squares = squares
       square.colorize = Squares.colorize
       square.find = Squares.find_from
-      table.insert(row, square)
       squares[x][y] = square
-      squares.r[y][x] = square
-      square.gemmy = gemmy
+      -- so ipairs will think it's a table with pairs
+      table.insert(squares.r[y], square)
     end
   end
   squares.find = Squares.find

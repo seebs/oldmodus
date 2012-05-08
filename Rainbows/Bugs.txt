@@ -1,6 +1,5 @@
 Known:
-	* Sometimes flagging a square in Cascade2 doesn't do anything.
+	* None right now.
 
 Suspected:
-	* Shifting seems to sometimes screw up, maybe only when shifting
-	  on both axes.
+	* None right now.
