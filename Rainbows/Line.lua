@@ -24,7 +24,7 @@ function Line.new(x1, y1, x2, y2, depth, r, g, b)
   end
   local o = display.newGroup()
   o.hue = hue or math.random(#Rainbow.hues)
-  o.r, o.g, o.b, o.a = r, g, b, 255
+  o.r, o.g, o.b, o.a = r, g, b, 1
   o.depth = depth
   if o.depth < 1 then
     o.depth = 1
@@ -73,10 +73,9 @@ function Line:redraw()
   for i, l in ipairs(self.lines) do
     l.xScale = f.len + .0001
     l.yScale = i * self.thick_scale
-    l:setFillColor(self.r, self.g, self.b)
+    l:setFillColor(self.r, self.g, self.b, self.a)
     l.blendMode = 'add'
   end
-  self.alpha = self.a
   self.rotation = deg(f.theta)
 end
 

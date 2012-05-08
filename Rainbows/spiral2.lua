@@ -118,6 +118,7 @@ function scene:line(color, g, index)
       g.segments[i] = l
       g:insert(l)
     end
+    g.segments[i]:redraw()
     color = color + 1
   end
   return g

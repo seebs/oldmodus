@@ -42,6 +42,7 @@ function scene:line(color, g)
       g.segments[i] = l
       g:insert(l)
     end
+    g.segments[i]:redraw()
   end
   if #self.vecs > 2 then
     if g.segments[#self.vecs] then
@@ -51,6 +52,7 @@ function scene:line(color, g)
       g.segments[#self.vecs] = l
       g:insert(l)
     end
+    g.segments[#self.vecs]:redraw()
   end
   while #g.segments > #self.vecs or (#g.segments > 1 and #self.vecs == 2) do
     local l = table.remove(g.segments)
