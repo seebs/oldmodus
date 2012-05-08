@@ -13,7 +13,7 @@ function scene.setDropVisible(drop, hidden)
   drop.innerc.isVisible = hidden
   drop.innerh.isVisible = hidden
   drop.outerc.isVisible = hidden
-  drop.outerh.isVisible = hidden
+  -- drop.outerh.isVisible = hidden
 end
 
 function scene.setDropScale(drop, reset_or_main, inner, outer)
@@ -21,10 +21,14 @@ function scene.setDropScale(drop, reset_or_main, inner, outer)
     drop.scale = 1
     drop.inner_scale = 1
     drop.outer_scale = 1
-    drop.innerc:scale(drop.iscale, drop.iscale)
-    drop.innerh:scale(drop.iscale, drop.iscale)
-    drop.outerc:scale(drop.oscale, drop.oscale)
-    drop.outerh:scale(drop.oscale, drop.oscale)
+    drop.innerc.xScale = drop.iscale
+    drop.innerc.yScale = drop.iscale
+    drop.innerh.xScale = drop.iscale
+    drop.innerh.yScale = drop.iscale
+    drop.outerc.xScale = drop.iscale
+    drop.outerc.yScale = drop.iscale
+    -- drop.outerh.xScale = drop.iscale
+    -- drop.outerh.yScale = drop.iscale
   else
     local is = drop.iscale * inner * reset_or_main
     local os = drop.iscale * outer * reset_or_main
@@ -37,8 +41,8 @@ function scene.setDropScale(drop, reset_or_main, inner, outer)
     drop.innerh.yScale = is
     drop.outerc.xScale = os
     drop.outerc.yScale = os
-    drop.outerh.xScale = os
-    drop.outerh.yScale = os
+    -- drop.outerh.xScale = os
+    -- drop.outerh.yScale = os
   end
 end
 
@@ -48,20 +52,20 @@ function scene.setDropXY(drop, x, y)
   drop.innerc.x, drop.innerc.y = x, y
   drop.innerh.x, drop.innerh.y = x, y
   drop.outerc.x, drop.outerc.y = x, y
-  drop.outerh.x, drop.outerh.y = x, y
+  -- drop.outerh.x, drop.outerh.y = x, y
 end
 
 function scene.setDropAlpha(drop, reset_or_main, inner, outer)
   if reset_or_main == true then
     drop.innerc.alpha = 1
     drop.innerh.alpha = .8
-    drop.outerc.alpha = .8
-    drop.outerh.alpha = .64
+    drop.outerc.alpha = 1
+    -- drop.outerh.alpha = .64
   else
     drop.innerc.alpha = reset_or_main * inner
     drop.innerh.alpha = reset_or_main * inner * .8
-    drop.outerc.alpha = reset_or_main * outer * .8
-    drop.outerh.alpha = reset_or_main * outer * .64
+    drop.outerc.alpha = reset_or_main * outer
+    -- drop.outerh.alpha = reset_or_main * outer * .64
   end
 end
 
@@ -107,17 +111,17 @@ function scene:createScene(event)
     s:insert(img)
     d.innerh = img
 
-    img = display.newImage(self.sheetc, 1)
-    img:setFillColor(r, g, b, 180)
+    img = display.newImage(self.sheeth, 1)
+    img:setFillColor(r, g, b)
     img.blendMode = 'add'
     s:insert(img)
     d.outerc = img
 
-    img = display.newImage(self.sheeth, 1)
-    img.blendMode = 'add'
-    img:setFillColor(255, 180)
-    s:insert(img)
-    d.outerh = img
+    -- img = display.newImage(self.sheeth, 1)
+    -- img.blendMode = 'add'
+    -- img:setFillColor(255, 180)
+    -- s:insert(img)
+    -- d.outerh = img
 
     d:setScale(true)
     d:setAlpha(true)
@@ -130,7 +134,7 @@ end
 function scene:do_drops()
   local spares = {}
   for i, d in ipairs(self.drops) do
-    d:setScale(d.scale + 0.01, d.inner_scale + 0.01, d.outer_scale + 0.01)
+    d:setScale(d.scale + 0.01, d.inner_scale + 0.008, d.outer_scale + 0.02)
     d.growth = d.growth + 1
     local halfway = d.max_growth / 2
     if d.growth >= d.max_growth then
@@ -148,7 +152,7 @@ function scene:do_drops()
     local idx = table.remove(spares)
     table.insert(self.spare_drops, table.remove(self.drops, idx))
   end
-  if #self.spare_drops > 0 and math.random(#self.spare_drops) > 6 and self.cooldown < 1 then
+  if #self.spare_drops > 0 and math.random(#self.spare_drops) > 8 and self.cooldown < 1 then
     self.cooldown = 10
     local d = table.remove(self.spare_drops, 1)
     if #self.spare_drops > 1 then
@@ -171,10 +175,10 @@ function scene:do_drops()
     local range = scene.MAX_GROWTH - scene.MIN_GROWTH
     local scale = math.random(range)
     d.max_growth = scale + scene.MIN_GROWTH
-    d.factor = (scale / range) * 0.3
+    d.factor = (scale / range) * 0.2
     d:setVisible(true)
     d:setAlpha(true)
-    d:setScale(0.1 + d.factor, .3, 1)
+    d:setScale(0.05 + d.factor, .3, 1)
     d.growth = 0
     table.insert(self.drops, d)
   end
