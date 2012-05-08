@@ -16,11 +16,9 @@ Screen.bottom = Screen.bottomright.y
 function Screen.new(group)
   inset = inset or 0
   local o = display.newGroup()
-  group:insert(o)
   o.x = Screen.origin.x
   o.y = Screen.origin.y
-  o:setReferencePoint(display.TopLeftReferencePoint)
-  o.isVisible = true
+  group:insert(o)
   for idx, value in pairs(Screen) do
     if type(value) ~= 'function' then
       o[idx] = value

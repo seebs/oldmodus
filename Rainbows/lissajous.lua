@@ -34,8 +34,8 @@ function scene:createScene(event)
   self.toward = self.toward or {}
 
   s = Screen.new(self.view)
-  self.x_scale = s.size.x / 2
-  self.y_scale = s.size.y / 2
+  self.x_scale = s.size.x / 2 - (scene.INSET / 2)
+  self.y_scale = s.size.y / 2 - (scene.INSET / 2)
 
   self.x_offset = self.x_scale + (scene.INSET / 2)
   self.y_offset = self.y_scale + (scene.INSET / 2)
