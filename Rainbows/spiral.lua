@@ -19,6 +19,8 @@ scene.POINTS = 3
 scene.TOUCH_ACCEL = 1
 scene.ROTATIONS = 1
 
+local smooth = Rainbow.smooth
+
 local s
 
 function scene:random_velocity()
@@ -126,36 +128,37 @@ function scene:line(color, g, index)
   scene:spiral_from(self.vecs[index], g.points, self.LINE_SEGMENTS)
   g.points[1] = s.center
   g.points[self.LINE_SEGMENTS + 1] = { x = self.vecs[index].x, y = self.vecs[index].y }
-  for i = 1, self.LINE_SEGMENTS do
-    if g.segments[i] then
-      self:one_line(color, g.points[i], g.points[i + 1], g.segments[i])
-    else
-      local l = self:one_line(color, g.points[i], g.points[i + 1])
-      g.segments[i] = l
-      g:insert(l)
+  if #g.segments == self.line_segments then
+    for i, seg in ipairs(g.segments) do
+      seg:setPoints(g.points[i], g.points[i + 1])
+      seg:setColor(unpack(smooth(color, self.COLOR_MULTIPLIER)))
+      seg:redraw()
+      color = color + 1
     end
-    color = color + 1
+  else
+    for i = 1, self.LINE_SEGMENTS do
+      local seg = g.segments[i]
+      local point = g.points[i]
+      local next = g.points[i + 1]
+      if seg then
+	seg:setPoints(point, next)
+	seg:setColor(unpack(smooth(color, self.COLOR_MULTIPLIER)))
+      else
+	local l = Line.new(point, next, 2, unpack(smooth(color, self.COLOR_MULTIPLIER)))
+	l:setThickness(2)
+	seg = l
+	g.segments[i] = l
+	g:insert(l)
+      end
+      seg:redraw()
+      color = color + 1
+    end
   end
   return g
 end
 
 local vec_add = Util.vec_add
 local vec_scale = Util.vec_scale
-
-function scene:one_line(color, vec1, vec2, existing)
-  if not vec1 or not vec2 then
-    return nil
-  end
-  if not existing then
-    local l = Line.new(vec1, vec2, 2, unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
-    l:setThickness(2)
-    return l
-  else
-    existing:setPoints(vec1, vec2)
-    existing:setColor(unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
-    return existing
-  end
-end
 
 function scene:move()
   local bounce = false

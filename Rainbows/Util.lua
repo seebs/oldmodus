@@ -59,10 +59,19 @@ function Util.gcd(x, y)
 end
 
 function Util.line(a, b)
-  local l = Util.between(a, b, 0.5)
-  l.theta = Util.theta(a, b)
-  l.len = Util.dist(a, b)
-  return l
+  local dx = b.x - a.x
+  local dy = b.y - a.y
+  local theta
+  if dx == 0 and dy == 0 then
+    theta = 0
+  else
+    theta = atan2(dy, dx)
+  end
+  return {
+    x = (a.x + b.x) / 2,
+    y = (a.y + b.y) / 2,
+    len = sqrt(dx * dx + dy * dy),
+    theta = theta }
 end
 
 function Util.vec_add(v1, v2)
@@ -89,8 +98,8 @@ function Util.between(a, b, ratio)
 end
 
 function Util.dist(a, b)
-  local dx = (a.x or 0) - (b.x or 0)
-  local dy = (a.y or 0) - (b.y or 0)
+  local dx = a.x - b.x
+  local dy = a.y - b.y
   return sqrt(dx * dx + dy * dy)
 end
 

@@ -1,4 +1,4 @@
-Rainbow = {}
+local Rainbow = {}
 
 Rainbow.hues = {
   { 255, 0, 0 },
@@ -9,17 +9,34 @@ Rainbow.hues = {
   { 180, 0, 200 },
 }
 
+Rainbow.smoothed = {}
+
+local floor = math.floor
+local ceil = math.ceil
+
+function Rainbow.smoothify(denominator)
+  local tab = {}
+  for hue = 1, #Rainbow.hues * denominator do
+    local hue1 = floor(hue / denominator)
+    local hue2 = ceil((hue + 1) / denominator)
+    local increment = hue % denominator
+    local inverse = denominator - increment
+    local color1 = Rainbow.hues[hue1] or Rainbow.hues[6]
+    local color2 = Rainbow.hues[hue2] or Rainbow.hues[1]
+    local r = color1[1] * inverse + color2[1] * increment
+    local g = color1[2] * inverse + color2[2] * increment
+    local b = color1[3] * inverse + color2[3] * increment
+    tab[hue] = { ceil(r / denominator), ceil(g / denominator), ceil(b / denominator) }
+  end
+  Rainbow.smoothed[denominator] = tab
+end
+
 function Rainbow.smooth(hue, denominator)
+  if not Rainbow.smoothed[denominator] then
+    Rainbow.smoothify(denominator)
+  end
   hue = ((hue - 1) % (#Rainbow.hues * denominator)) + 1
-  local hue1 = math.floor(hue / denominator)
-  local hue2 = math.ceil((hue + 1) / denominator)
-  local increment = hue % denominator
-  local color1 = Rainbow.hues[hue1] or Rainbow.hues[6]
-  local color2 = Rainbow.hues[hue2] or Rainbow.hues[1]
-  local r = color1[1] * (denominator - increment) + color2[1] * increment
-  local g = color1[2] * (denominator - increment) + color2[2] * increment
-  local b = color1[3] * (denominator - increment) + color2[3] * increment
-  return { math.ceil(r / denominator), math.ceil(g / denominator), math.ceil(b / denominator) }
+  return Rainbow.smoothed[denominator][hue]
 end
 
 function Rainbow.towards(hue1, hue2)
@@ -38,12 +55,8 @@ function Rainbow.towards(hue1, hue2)
   end
 end
 
-function Rainbow.color(idx, denominator)
-  if denominator and denominator > 1 then
-    return Rainbow.smooth(idx, denominator)
-  else
-    return Rainbow.hues[((idx - 1) % #Rainbow.hues) + 1]
-  end
+function Rainbow.color(idx)
+  return Rainbow.hues[((idx - 1) % #Rainbow.hues) + 1]
 end
 
 function Rainbow.colors(state, value)

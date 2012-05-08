@@ -10,7 +10,7 @@ Squares.sheet = graphics.newImageSheet("square.png", { width = 128, height = 128
 
 function Squares.colorize(square, color)
   square.hue = color or square.hue
-  local r, g, b = unpack(Rainbow.color(square.hue, square.squares.multiplier))
+  local r, g, b = unpack(square.squares.color(square.hue, square.squares.multiplier))
   square:setFillColor(r, g, b)
 end
 
@@ -114,7 +114,12 @@ function Squares.new(group, highlights, multiplier)
   squares.igroup.x = 0
   squares.igroup.y = 0
   squares.igroup:setReferencePoint(display.TopLeftReferencePoint)
-  squares.multiplier = multiplier or 1
+  if multiplier then
+    squares.color = Rainbow.smooth
+  else
+    squares.color = Rainbow.color
+  end
+  squares.multiplier = multiplier
   squares.highlights = {}
   squares.width = Screen.size.x
   squares.height = Screen.size.y

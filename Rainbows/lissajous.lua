@@ -52,10 +52,6 @@ function scene:line(color, g)
   if not color then
     color = self.next_color or 1
   end
-  if g and scene.one_line == scene.old_line then
-    g:removeSelf()
-    g = nil
-  end
   g = g or display.newGroup()
   g.segments = g.segments or {}
   for i = 1, #self.vecs - 1 do
@@ -64,6 +60,7 @@ function scene:line(color, g)
     else
       local l = self:new_line(color, self.vecs[i], self.vecs[i + 1])
       g.segments[i] = l
+      l:redraw()
       g:insert(l)
     end
     color = color + 1
@@ -74,14 +71,15 @@ function scene:line(color, g)
 end
 
 function scene:new_line(color, vec1, vec2)
-  local l = Line.new(vec1, vec2, 2, unpack(Rainbow.color(color, self.COLOR_MULTIPLIER)))
+  local l = Line.new(vec1, vec2, 2, unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
   l:setThickness(2)
   return l
 end
 
 function scene:move_line(color, vec1, vec2, existing)
   existing:setPoints(vec1, vec2)
-  existing:setColor(unpack(Rainbow.color(color, self.COLOR_MULTIPLIER)))
+  existing:setColor(unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
+  existing:redraw()
   return existing
 end
 
