@@ -163,7 +163,7 @@ function scene:do_drops()
     new_point.x = math.random((s.size.x - 50) + 25)
     new_point.y = math.random((s.size.y - 50) + 25)
     if self.toward then
-      local between = Util.between(new_point, self.toward)
+      local between = Util.midpoint(new_point, self.toward)
     end
     d:setXY(new_point.x, new_point.y)
     local range = scene.MAX_GROWTH - scene.MIN_GROWTH

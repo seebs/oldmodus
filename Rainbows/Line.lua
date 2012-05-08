@@ -24,21 +24,22 @@ function Line.new(x1, y1, x2, y2, depth, r, g, b)
   end
   local o = display.newGroup()
   o.hue = hue or math.random(#Rainbow.hues)
-  o.r, o.g, o.b, o.a = r, g, b, 1
+  o.r, o.g, o.b, o.a = r, g, b, 255
   o.depth = depth
   if o.depth < 1 then
     o.depth = 1
   end
+  o.thickness = o.depth
+  o.thick_scale = 1
   o.lines = {}
   for i = 1, o.depth do
     local l = display.newRect(o, 0, 0, 1, 1)
     l.alpha = max(0, min(1, 1.5 / o.depth))
+    l.yScale = i * o.thick_scale
     o:insert(l)
     table.insert(o.lines, l)
   end
   o.blendMode = 'add'
-  o.thickness = o.depth
-  o.thick_scale = 1
   o.p1 = p1
   o.p2 = p2
   o.setPoints = Line.setPoints
@@ -61,6 +62,9 @@ end
 function Line:setThickness(thickness)
   self.thickness = thickness
   self.thick_scale = self.thickness / self.depth
+  for i, l in ipairs(self.lines) do
+    l.yScale = i * self.thick_scale
+  end
 end
 
 function Line:setColor(r, g, b, a)
@@ -72,7 +76,6 @@ function Line:redraw()
   self.x, self.y = f.x, f.y
   for i, l in ipairs(self.lines) do
     l.xScale = f.len + .0001
-    l.yScale = i * self.thick_scale
     l:setFillColor(self.r, self.g, self.b, self.a)
     l.blendMode = 'add'
   end

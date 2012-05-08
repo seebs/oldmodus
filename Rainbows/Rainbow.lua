@@ -10,9 +10,35 @@ Rainbow.hues = {
 }
 
 Rainbow.smoothed = {}
+Rainbow.funcs = {}
 
 local floor = math.floor
 local ceil = math.ceil
+
+function Rainbow.funcs_for(denominator)
+  if #Rainbow.hues ~= 6 then
+    Util.printf("Uh-oh!  Assumptions being broken.")
+  end
+  if not Rainbow.smoothed[denominator] then
+    Rainbow.smoothify(denominator)
+    Rainbow.funcs[denominator] = {}
+    local t = Rainbow.smoothed[denominator]
+    local n = 6 * denominator
+    Rainbow.funcs[denominator].smoothobj = function(o, hue)
+      local v = t[((hue - 1) % n) + 1]
+      o.r, o.g, o.b = v[1], v[2], v[3]
+    end
+    Rainbow.funcs[denominator].setsmoothobj = function(o, hue)
+      local v = t[((hue - 1) % n) + 1]
+      o:setFillColor(v[1], v[2], v[3])
+    end
+    Rainbow.funcs[denominator].smooth = function(hue)
+      local v = t[((hue - 1) % n) + 1]
+      return v[1], v[2], v[3]
+    end
+  end
+  return Rainbow.funcs[denominator]
+end
 
 function Rainbow.smoothify(denominator)
   local tab = {}
@@ -29,6 +55,22 @@ function Rainbow.smoothify(denominator)
     tab[hue] = { ceil(r / denominator), ceil(g / denominator), ceil(b / denominator) }
   end
   Rainbow.smoothed[denominator] = tab
+end
+
+function Rainbow.setsmoothobj(o, hue, denominator)
+  if not Rainbow.smoothed[denominator] then
+    Rainbow.smoothify(denominator)
+  end
+  local v = Rainbow.smoothed[denominator][((hue - 1) % (#Rainbow.hues * denominator)) + 1]
+  o:setFillColor(v[1], v[2], v[3])
+end
+
+function Rainbow.smoothobj(o, hue, denominator)
+  if not Rainbow.smoothed[denominator] then
+    Rainbow.smoothify(denominator)
+  end
+  local v = Rainbow.smoothed[denominator][((hue - 1) % (#Rainbow.hues * denominator)) + 1]
+  o.r, o.g, o.b = v[1], v[2], v[3]
 end
 
 function Rainbow.smooth(hue, denominator)
@@ -53,6 +95,16 @@ function Rainbow.towards(hue1, hue2)
   else
     return ((hue1 - 2) % #Rainbow.hues) + 1
   end
+end
+
+function Rainbow.colorobj(o, idx)
+  local v = Rainbow.hues[((idx - 1) % #Rainbow.hues) + 1]
+  o.r, o.g, o.b = v[1], v[2], v[3]
+end
+
+function Rainbow.setcolorobj(o, idx)
+  local v = Rainbow.hues[((idx - 1) % #Rainbow.hues) + 1]
+  o:setFillColor(v[1], v[2], v[3])
 end
 
 function Rainbow.color(idx)

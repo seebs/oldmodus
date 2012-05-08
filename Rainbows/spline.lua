@@ -9,29 +9,17 @@ scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.LINE_SEGMENTS = scene.TOTAL_COLORS
 scene.VELOCITY_MIN = 5
 scene.VELOCITY_MAX = 15
-scene.VELOCITY_VARIANCE = scene.VELOCITY_MAX - scene.VELOCITY_MIN
 scene.START_POINTS = 4
-scene.LINE_DEPTH = 8
 scene.TOUCH_ACCEL = 1
 
+local rfuncs = Rainbow.funcs_for(scene.COLOR_MULTIPLIER)
+local colorfor = rfuncs.smooth
+local colorize = rfuncs.smoothobj
+local midpoint = Util.midpoint
+local partway = Util.partway
+local ceil = math.ceil
+
 local s
-
-function scene:random_velocity()
-  local d = math.random(self.VELOCITY_VARIANCE) + self.VELOCITY_MIN
-  if math.random(2) == 2 then
-    d = d * -1
-  end
-  return d
-end
-
-function scene:new_vec(void)
-  return {
-    x = math.random(s.width) - 1,
-    y = math.random(s.height) - 1,
-    dx = scene:random_velocity(),
-    dy = scene:random_velocity(),
-  }
-end
 
 function scene:createScene(event)
   self.ids = self.ids or {}
@@ -54,8 +42,8 @@ function scene:spline(vecs, points, lo, hi)
   if lo == hi then
     return
   end
-  local mid = math.ceil((lo + hi) / 2)
-  local midpt = Util.between(vecs[2], vecs[3])
+  local mid = ceil((lo + hi) / 2)
+  local midpt = midpoint(vecs[2], vecs[3])
   local p = points[mid + 1] or {}
   p.x, p.y = midpt.x, midpt.y
   points[mid + 1] = p
@@ -64,11 +52,11 @@ function scene:spline(vecs, points, lo, hi)
   end
   local newvecs = {
     vecs[1],
-    Util.between(vecs[1], vecs[2]),
-    Util.between(vecs[2], vecs[3], .25),
+    midpoint(vecs[1], vecs[2]),
+    partway(vecs[2], vecs[3], .25),
     midpt,
-    Util.between(vecs[2], vecs[3], .75),
-    Util.between(vecs[3], vecs[4]),
+    partway(vecs[2], vecs[3], .75),
+    midpoint(vecs[3], vecs[4]),
     vecs[4]
   }
   -- if mid == lo+1, then this would just overwrite it
@@ -91,15 +79,31 @@ function scene:line(color, g)
   scene:spline(self.vecs, g.points, 0, self.LINE_SEGMENTS)
   g.points[1] = { x = self.vecs[1].x, y = self.vecs[1].y }
   g.points[self.LINE_SEGMENTS + 1] = { x = self.vecs[4].x, y = self.vecs[4].y }
-  for i = 1, self.LINE_SEGMENTS do
-    if g.segments[i] then
-      self:one_line(color, g.points[i], g.points[i + 1], g.segments[i])
-    else
-      local l = self:one_line(color, g.points[i], g.points[i + 1])
-      g.segments[i] = l
-      g:insert(l)
+  if #g.segments == self.line_segments then
+    for i, seg in ipairs(g.segments) do
+      seg:setPoints(g.points[i], g.points[i + 1])
+      colorize(seg, color)
+      seg:redraw()
+      color = color + 1
     end
-    color = color + 1
+  else
+    for i = 1, self.LINE_SEGMENTS do
+      local seg = g.segments[i]
+      local point = g.points[i]
+      local next = g.points[i + 1]
+      if seg then
+	seg:setPoints(point, next)
+	colorize(seg, color)
+      else
+	local l = Line.new(point, next, 2, colorfor(color))
+	l:setThickness(2)
+	seg = l
+	g.segments[i] = l
+	g:insert(l)
+      end
+      seg:redraw()
+      color = color + 1
+    end
   end
   return g
 end
@@ -112,12 +116,12 @@ function scene:one_line(color, vec1, vec2, existing)
     return nil
   end
   if not existing then
-    local l = Line.new(vec1, vec2, 2, unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
+    local l = Line.new(vec1, vec2, 2, colorfor(color))
     l:setThickness(2)
     return l
   else
     existing:setPoints(vec1, vec2)
-    existing:setColor(unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
+    colorize(existing, color)
     return existing
   end
 end
@@ -125,90 +129,14 @@ end
 function scene:move()
   local bounce = false
   for i, v in ipairs(self.vecs) do
-    if self:move_vec(v, i) then
+    if v:move(self.toward[i]) then
       bounce = true
     end
   end
   -- not used during startup
   if bounce and self.next_color then
-    Sounds.play(math.ceil(self.next_color / self.COLOR_MULTIPLIER))
+    Sounds.play(ceil(self.next_color / self.COLOR_MULTIPLIER))
   end
-end
-
-function scene:move_vec(vec, id)
-  local bounce_x, bounce_y = false, false
-  local toward = self.toward[id]
-
-  if toward then
-    if toward.x > vec.x then
-      vec.dx = vec.dx + self.TOUCH_ACCEL
-      if vec.dx == 0 then
-        vec.dx = 1
-      end
-    elseif toward.x < vec.x then
-      vec.dx = vec.dx - self.TOUCH_ACCEL
-      if vec.dx == 0 then
-        vec.dx = -1
-      end
-    end
-
-    if toward.y > vec.y then
-      vec.dy = vec.dy + self.TOUCH_ACCEL
-      if vec.dy == 0 then
-        vec.dy = 1
-      end
-    elseif toward.y < vec.y then
-      vec.dy = vec.dy - self.TOUCH_ACCEL
-      if vec.dy == 0 then
-        vec.dy = -1
-      end
-    end
-  end
-
-  vec.x = vec.x + vec.dx
-  if vec.x < s.left then
-    bounce_x = true
-    vec.x = s.left + (s.left - vec.x)
-  elseif vec.x > s.right then
-    bounce_x = true
-    vec.x = s.right - (vec.x - s.right)
-  end
-
-  vec.y = vec.y + vec.dy
-  if vec.y < s.top then
-    bounce_y = true
-    vec.y = s.top + (s.top - vec.y)
-  elseif vec.y > s.bottom then
-    bounce_y = true
-    vec.y = s.bottom - (vec.y - s.bottom)
-  end
-
-  if bounce_x then
-    sign = vec.dx < 0
-    vec.dx = vec.dx * (sign and -1 or 1)
-    if vec.dx >= scene.VELOCITY_MAX then
-      vec.dx = vec.dx - (math.random(2) - 1)
-    elseif vec.dx <= scene.VELOCITY_MIN then
-      vec.dx = vec.dx + (math.random(2) - 1)
-    else
-      vec.dx = vec.dx + (math.random(3) - 2)
-    end
-    vec.dx = vec.dx * (sign and 1 or -1)
-  end
-
-  if bounce_y then
-    sign = vec.dy < 0
-    vec.dy = vec.dy * (sign and -1 or 1)
-    if vec.dy >= scene.VELOCITY_MAX then
-      vec.dy = vec.dy - (math.random(2) - 1)
-    elseif vec.dy <= scene.VELOCITY_MIN then
-      vec.dy = vec.dy + (math.random(2) - 1)
-    else
-      vec.dy = vec.dy + (math.random(3) - 2)
-    end
-    vec.dy = vec.dy * (sign and 1 or -1)
-  end
-  return bounce_x or bounce_y
 end
 
 function scene:enterFrame(event)
@@ -241,7 +169,7 @@ function scene:enterScene(event)
   self.next_color = nil
   self.vecs = {}
   for i = 1, scene.START_POINTS do
-    self.vecs[i] = self:new_vec(void)
+    self.vecs[i] = Vector.new(s, self)
   end
   self:move()
   for i = 1, scene.HISTORY do

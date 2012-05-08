@@ -1,6 +1,15 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
+local pi = math.pi
+local fmod = math.fmod
+local sin = math.sin
+local min = math.min
+local cos = math.cos
+local floor = math.floor
+local ceil = math.ceil
+local abs = math.abs
+
 scene.COLOR_MULTIPLIER = 10
 -- scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.HISTORY = 6
@@ -10,54 +19,40 @@ scene.LINE_SEGMENTS = scene.TOTAL_COLORS
 scene.SEGMENT_FUDGE = 5
 scene.SEGMENTS_TRIANGLE = (scene.LINE_SEGMENTS * scene.LINE_SEGMENTS + scene.LINE_SEGMENTS) / 2 + (scene.LINE_SEGMENTS * scene.SEGMENT_FUDGE)
 scene.VELOCITY_MIN = 5
-scene.VELOCITY_MAX = 10
-scene.VELOCITY_VARIANCE = scene.VELOCITY_MAX - scene.VELOCITY_MIN
-scene.THETA_MIN = 5 * math.pi
-scene.THETA_MAX = 5 * math.pi
+scene.VELOCITY_MAX = 15
+scene.THETA_MIN = 5 * pi
+scene.THETA_MAX = 5 * pi
 scene.THETA_VARIANCE = scene.THETA_MAX - scene.THETA_MIN
 scene.POINTS = 3
 scene.TOUCH_ACCEL = 1
 scene.ROTATIONS = 1
 
-local smooth = Rainbow.smooth
+local rfuncs = Rainbow.funcs_for(scene.COLOR_MULTIPLIER)
+local colorfor = rfuncs.smooth
+local colorize = rfuncs.smoothobj
 
 local s
-
-function scene:random_velocity()
-  local d = math.random(self.VELOCITY_VARIANCE) + self.VELOCITY_MIN
-  if math.random(2) == 2 then
-    d = d * -1
-  end
-  return d
-end
 
 function scene:random_theta()
   local t = math.random() * self.THETA_VARIANCE + self.THETA_MIN
   return t
 end
 
-function scene:new_vec(void)
-  return {
-    ripples = {},
-    x = math.random(s.size.x) - 1,
-    y = math.random(s.size.y) - 1,
-    dx = scene:random_velocity(),
-    dy = scene:random_velocity(),
-    theta = scene:random_theta(),
-  }
-end
-
 function scene:createScene(event)
   self.ids = self.ids or {}
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
-  s = Screen.new(self.view)
-  -- this is because we might later move it
-  self.center = { x = s.center.x, y = s.center.y }
 
+  s = Screen.new(self.view)
+
+  self.center = Vector.new(s, self, 5)
+  self.center.ripples = {}
+  self.center.theta = self:random_theta()
+  self.center.x = s.center.x
+  self.center.y = s.center.y
   self.lines = {}
   -- so clicks have something to land on
-  self.bg = display.newRect(0, 0, s.size.x, s.size.y)
+  self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
   s:insert(self.bg)
   self.view.alpha = 0
@@ -65,7 +60,7 @@ end
 
 function scene:spiral_from(vec, points, segments)
   local params = Util.line(self.center, vec)
-  params.theta = params.theta + math.fmod(vec.theta, math.pi * 2)
+  params.theta = params.theta + fmod(vec.theta, pi * 2)
   local rip = {}
   local remove = {}
   for idx, r in ipairs(vec.ripples) do
@@ -97,8 +92,8 @@ function scene:spiral_from(vec, points, segments)
       r = r * (1 + 0.03 * rip[i])
     end
     points[i + 1] = points[i + 1] or {}
-    points[i + 1].x = r * math.cos(theta) + self.center.x
-    points[i + 1].y = r * math.sin(theta) + self.center.y
+    points[i + 1].x = r * cos(theta) + self.center.x
+    points[i + 1].y = r * sin(theta) + self.center.y
   end
 end
 
@@ -107,7 +102,7 @@ function scene:all_lines(color, g)
     color = self.next_color or 1
     self.next_color = (color % self.TOTAL_COLORS) + 1
   end
-  local color_scale = math.floor(self.TOTAL_COLORS / self.POINTS)
+  local color_scale = floor(self.TOTAL_COLORS / self.POINTS)
   g = g or display.newGroup()
   g.sublines = g.sublines or {}
   for i = 1, self.POINTS do
@@ -131,7 +126,7 @@ function scene:line(color, g, index)
   if #g.segments == self.line_segments then
     for i, seg in ipairs(g.segments) do
       seg:setPoints(g.points[i], g.points[i + 1])
-      seg:setColor(unpack(smooth(color, self.COLOR_MULTIPLIER)))
+      colorize(seg, color)
       seg:redraw()
       color = color + 1
     end
@@ -142,9 +137,9 @@ function scene:line(color, g, index)
       local next = g.points[i + 1]
       if seg then
 	seg:setPoints(point, next)
-	seg:setColor(unpack(smooth(color, self.COLOR_MULTIPLIER)))
+	colorize(seg, color)
       else
-	local l = Line.new(point, next, 2, unpack(smooth(color, self.COLOR_MULTIPLIER)))
+	local l = Line.new(point, next, 2, colorfor(color))
 	l:setThickness(2)
 	seg = l
 	g.segments[i] = l
@@ -163,105 +158,21 @@ local vec_scale = Util.vec_scale
 function scene:move()
   local bounce = false
   for i, v in ipairs(self.vecs) do
-    if self:move_vec(v, i) then
+    if v:move(self.toward[i]) then
+      table.insert(v.ripples, self.LINE_SEGMENTS + 2)
       bounce = true
     end
   end
   -- not used during startup
   if bounce and self.next_color then
-    Sounds.play(math.ceil(self.next_color / self.COLOR_MULTIPLIER))
+    Sounds.play(ceil(self.next_color / self.COLOR_MULTIPLIER))
   end
-end
-
-function scene:move_vec(vec, id)
-  local bounce_x, bounce_y, bounce_theta = false, false, false
-  local toward = self.toward[id]
-
-  if toward then
-    if toward.x > vec.x then
-      vec.dx = vec.dx + self.TOUCH_ACCEL
-      if vec.dx == 0 then
-        vec.dx = 1
-      end
-    elseif toward.x < vec.x then
-      vec.dx = vec.dx - self.TOUCH_ACCEL
-      if vec.dx == 0 then
-        vec.dx = -1
-      end
-    end
-
-    if toward.y > vec.y then
-      vec.dy = vec.dy + self.TOUCH_ACCEL
-      if vec.dy == 0 then
-        vec.dy = 1
-      end
-    elseif toward.y < vec.y then
-      vec.dy = vec.dy - self.TOUCH_ACCEL
-      if vec.dy == 0 then
-        vec.dy = -1
-      end
-    end
-  end
-
-  vec.x = vec.x + vec.dx
-  if vec.x < s.left then
-    bounce_x = true
-    vec.x = s.left + (s.left - vec.x)
-  elseif vec.x > s.right then
-    bounce_x = true
-    vec.x = s.right - (vec.x - s.right)
-  end
-
-  vec.y = vec.y + vec.dy
-  if vec.y < s.top then
-    bounce_y = true
-    vec.y = s.top + (s.top - vec.y)
-  elseif vec.y > s.bottom then
-    bounce_y = true
-    vec.y = s.bottom - (vec.y - s.bottom)
-  end
-
-  -- vec.theta = vec.theta + vec.dtheta
-  -- if math.abs(vec.theta) > self.THETA_MAX or math.abs(vec.theta) < self.THETA_MIN then
-    -- vec.dtheta = vec.dtheta * -1
-    -- theta_bounce = true
-  -- end
-
-  if bounce_x then
-    sign = vec.dx < 0
-    vec.dx = vec.dx * (sign and -1 or 1)
-    if vec.dx >= scene.VELOCITY_MAX then
-      vec.dx = vec.dx - (math.random(2) - 1)
-    elseif vec.dx <= scene.VELOCITY_MIN then
-      vec.dx = vec.dx + (math.random(2) - 1)
-    else
-      vec.dx = vec.dx + (math.random(3) - 2)
-    end
-    vec.dx = vec.dx * (sign and 1 or -1)
-  end
-
-  if bounce_y then
-    sign = vec.dy < 0
-    vec.dy = vec.dy * (sign and -1 or 1)
-    if vec.dy >= scene.VELOCITY_MAX then
-      vec.dy = vec.dy - (math.random(2) - 1)
-    elseif vec.dy <= scene.VELOCITY_MIN then
-      vec.dy = vec.dy + (math.random(2) - 1)
-    else
-      vec.dy = vec.dy + (math.random(3) - 2)
-    end
-    vec.dy = vec.dy * (sign and 1 or -1)
-  end
-  if bounce_x or bounce_y then
-    table.insert(vec.ripples, self.LINE_SEGMENTS + 2)
-  end
-  return bounce_x or bounce_y
 end
 
 function scene:enterFrame(event)
   Util.enterFrame()
   if self.view.alpha < 1 then
-    self.view.alpha = math.min(self.view.alpha + .01, 1)
+    self.view.alpha = min(self.view.alpha + .01, 1)
   end
   if self.cooldown > 1 then
     self.cooldown = self.cooldown - 1
@@ -288,12 +199,9 @@ function scene:enterScene(event)
   self.next_color = nil
   self.vecs = {}
   for i = 1, scene.POINTS do
-    self.vecs[i] = self:new_vec(void)
-    -- self.vecs[i].dtheta = .03
-    -- if i % 2 == 1 then
-    --   self.vecs[i].theta = self.vecs[i].theta * -1
-    --   self.vecs[i].dtheta = self.vecs[i].dtheta * -1
-    -- end
+    self.vecs[i] = Vector.new(s, self)
+    self.vecs[i].ripples = {}
+    self.vecs[i].theta = self:random_theta()
   end
   self:move()
   for i = 1, scene.HISTORY do

@@ -1,6 +1,15 @@
-
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
+
+local pi = math.pi
+local smooth = Rainbow.smooth
+local fmod = math.fmod
+local sin = math.sin
+local min = math.min
+local cos = math.cos
+local floor = math.floor
+local ceil = math.ceil
+local abs = math.abs
 
 scene.COLOR_MULTIPLIER = 10
 -- scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
@@ -8,11 +17,12 @@ scene.HISTORY = 6
 scene.LINE_DELAY = 2
 scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
 scene.LINE_SEGMENTS = scene.TOTAL_COLORS
-scene.SEGMENTS_TRIANGLE = (scene.LINE_SEGMENTS * scene.LINE_SEGMENTS + scene.LINE_SEGMENTS * 9) / 2
+scene.SEGMENT_FUDGE = 5
+scene.SEGMENTS_TRIANGLE = (scene.LINE_SEGMENTS * scene.LINE_SEGMENTS + scene.LINE_SEGMENTS) / 2 + (scene.LINE_SEGMENTS * scene.SEGMENT_FUDGE)
 scene.VELOCITY_MIN = 5
 scene.VELOCITY_MAX = 15
-scene.THETA_MIN = 5 * math.pi
-scene.THETA_MAX = 5 * math.pi
+scene.THETA_MIN = 5 * pi
+scene.THETA_MAX = 5 * pi
 scene.THETA_VARIANCE = scene.THETA_MAX - scene.THETA_MIN
 scene.POINTS = 3
 scene.TOUCH_ACCEL = 1
@@ -47,7 +57,7 @@ end
 
 function scene:spiral_from(vec, points, segments)
   local params = Util.line(self.center, vec)
-  params.theta = params.theta + math.fmod(vec.theta, math.pi * 2)
+  params.theta = params.theta + fmod(vec.theta, pi * 2)
   local rip = {}
   local remove = {}
   for idx, r in ipairs(vec.ripples) do
@@ -72,15 +82,15 @@ function scene:spiral_from(vec, points, segments)
   local counter = segments
   for i = 1, segments - 1 do
     local scale = i / segments
-    counter = counter + (segments - i) + 4
+    counter = counter + (segments - i) + self.SEGMENT_FUDGE
     local theta = ((counter / self.SEGMENTS_TRIANGLE) * vec.theta) + params.theta
     local r = params.len * scale
     if rip[i] then
       r = r * (1 + 0.03 * rip[i])
     end
     points[i + 1] = points[i + 1] or {}
-    points[i + 1].x = r * math.cos(theta) + self.center.x
-    points[i + 1].y = r * math.sin(theta) + self.center.y
+    points[i + 1].x = r * cos(theta) + self.center.x
+    points[i + 1].y = r * sin(theta) + self.center.y
   end
 end
 
@@ -89,7 +99,7 @@ function scene:all_lines(color, g)
     color = self.next_color or 1
     self.next_color = (color % self.TOTAL_COLORS) + 1
   end
-  local color_scale = math.floor(self.TOTAL_COLORS / self.POINTS)
+  local color_scale = floor(self.TOTAL_COLORS / self.POINTS)
   g = g or display.newGroup()
   g.sublines = g.sublines or {}
   for i = 1, self.POINTS do
@@ -110,37 +120,37 @@ function scene:line(color, g, index)
   scene:spiral_from(self.vecs[index], g.points, self.LINE_SEGMENTS)
   g.points[1] = self.center
   g.points[self.LINE_SEGMENTS + 1] = { x = self.vecs[index].x, y = self.vecs[index].y }
-  for i = 1, self.LINE_SEGMENTS do
-    if g.segments[i] then
-      self:one_line(color, g.points[i], g.points[i + 1], g.segments[i])
-    else
-      local l = self:one_line(color, g.points[i], g.points[i + 1])
-      g.segments[i] = l
-      g:insert(l)
+  if #g.segments == self.line_segments then
+    for i, seg in ipairs(g.segments) do
+      seg:setPoints(g.points[i], g.points[i + 1])
+      seg:setColor(unpack(smooth(color, self.COLOR_MULTIPLIER)))
+      seg:redraw()
+      color = color + 1
     end
-    g.segments[i]:redraw()
-    color = color + 1
+  else
+    for i = 1, self.LINE_SEGMENTS do
+      local seg = g.segments[i]
+      local point = g.points[i]
+      local next = g.points[i + 1]
+      if seg then
+	seg:setPoints(point, next)
+	seg:setColor(unpack(smooth(color, self.COLOR_MULTIPLIER)))
+      else
+	local l = Line.new(point, next, 2, unpack(smooth(color, self.COLOR_MULTIPLIER)))
+	l:setThickness(2)
+	seg = l
+	g.segments[i] = l
+	g:insert(l)
+      end
+      seg:redraw()
+      color = color + 1
+    end
   end
   return g
 end
 
 local vec_add = Util.vec_add
 local vec_scale = Util.vec_scale
-
-function scene:one_line(color, vec1, vec2, existing)
-  if not vec1 or not vec2 then
-    return nil
-  end
-  if not existing then
-    local l = Line.new(vec1, vec2, 2, unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
-    l:setThickness(2)
-    return l
-  else
-    existing:setPoints(vec1, vec2)
-    existing:setColor(unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
-    return existing
-  end
-end
 
 function scene:move()
   local bounce = false
@@ -157,15 +167,14 @@ function scene:move()
   end
   -- not used during startup
   if bounce and self.next_color then
-    Sounds.play(math.ceil(self.next_color / self.COLOR_MULTIPLIER))
+    Sounds.play(ceil(self.next_color / self.COLOR_MULTIPLIER))
   end
 end
-
 
 function scene:enterFrame(event)
   Util.enterFrame()
   if self.view.alpha < 1 then
-    self.view.alpha = math.min(self.view.alpha + .01, 1)
+    self.view.alpha = min(self.view.alpha + .01, 1)
   end
   if self.cooldown > 1 then
     self.cooldown = self.cooldown - 1

@@ -10,6 +10,10 @@ scene.SOUND_DELAY = 3
 scene.DELTA_DELTA = 0.02 * scene.FRAME_DELAY
 scene.INSET = 4
 
+local rfuncs = Rainbow.funcs_for(scene.COLOR_MULTIPLIER)
+local colorfor = rfuncs.smooth
+local colorize = rfuncs.smoothobj
+
 local pi = math.pi
 local ceil = math.ceil
 local twopi = pi * 2
@@ -54,33 +58,34 @@ function scene:line(color, g)
   end
   g = g or display.newGroup()
   g.segments = g.segments or {}
-  for i = 1, #self.vecs - 1 do
-    if g.segments[i] then
-      self:move_line(color, self.vecs[i], self.vecs[i + 1], g.segments[i])
-    else
-      local l = self:new_line(color, self.vecs[i], self.vecs[i + 1])
-      g.segments[i] = l
-      l:redraw()
-      g:insert(l)
+  if #g.segments == self.line_total then
+    for i, seg in ipairs(g.segments) do
+      seg:setPoints(self.vecs[i], self.vecs[i + 1])
+      colorize(seg, color)
+      seg:redraw()
+      color = color + 1
     end
-    color = color + 1
+  else
+    for i = 1, self.line_total do
+      local seg = g.segments[i]
+      local point = self.vecs[i]
+      local next = self.vecs[i + 1]
+      if seg then
+	seg:setPoints(point, next)
+	colorize(seg, color)
+      else
+	local l = Line.new(point, next, 2, colorfor(color))
+	l:setThickness(2)
+	seg = l
+	g.segments[i] = l
+	g:insert(l)
+      end
+      seg:redraw()
+      color = color + 1
+    end
   end
   self.next_color = (color + 2) % scene.line_total
-  s:insert(g)
   return g
-end
-
-function scene:new_line(color, vec1, vec2)
-  local l = Line.new(vec1, vec2, 2, unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
-  l:setThickness(2)
-  return l
-end
-
-function scene:move_line(color, vec1, vec2, existing)
-  existing:setPoints(vec1, vec2)
-  existing:setColor(unpack(Rainbow.smooth(color, self.COLOR_MULTIPLIER)))
-  existing:redraw()
-  return existing
 end
 
 function scene:calc(quiet)
@@ -128,6 +133,7 @@ function scene:calc(quiet)
     self.vecs[i].x = x
     self.vecs[i].y = y
   end
+  self.vecs[self.line_total + 1] = self.vecs[1]
   if play_sound and self.sound_cooldown < 1 then
     Sounds.play(ceil(self.next_color / self.COLOR_MULTIPLIER))
     self.sound_cooldown = self.SOUND_DELAY
@@ -179,6 +185,7 @@ function scene:enterScene(event)
     local l = self:line(i, nil)
     l.alpha = sqrt(i / scene.HISTORY)
     table.insert(self.lines, l)
+    s:insert(l)
     self:calc(true)
   end
   self.next_color = 1

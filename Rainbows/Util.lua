@@ -61,17 +61,11 @@ end
 function Util.line(a, b)
   local dx = b.x - a.x
   local dy = b.y - a.y
-  local theta
-  if dx == 0 and dy == 0 then
-    theta = 0
-  else
-    theta = atan2(dy, dx)
-  end
   return {
     x = (a.x + b.x) / 2,
     y = (a.y + b.y) / 2,
     len = sqrt(dx * dx + dy * dy),
-    theta = theta }
+    theta = atan2(dy, dx) }
 end
 
 function Util.vec_add(v1, v2)
@@ -82,15 +76,12 @@ function Util.vec_scale(v, s)
   return { x = v.x * s, y = v.y * s }
 end
 
-function Util.theta(a, b)
-  if a.x ~= b.x or a.y ~= b.y then
-    return atan2(b.y - a.y, b.x - a.x)
-  else
-    return 0
-  end
+function Util.midpoint(a, b)
+  return { x = (a.x + b.x) / 2,
+           y = (a.y + b.y) / 2 }
 end
 
-function Util.between(a, b, ratio)
+function Util.partway(a, b, ratio)
   ratio = ratio or 0.5
   local scale = 1 - ratio
   return { x = a.x * scale + b.x * ratio,
