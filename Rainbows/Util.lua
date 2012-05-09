@@ -37,19 +37,19 @@ function Util.enterFrame(reset)
   if #last_times > 61 then
     prev = table.remove(last_times, 1)
     time_counter = time_counter - 1
-    small = 9999
-    big = 0
-    for i, next in ipairs(last_times) do
-      t = next - prev
-      prev = next
-      if t < small then
-        small = t
-      end
-      if t > big then
-        big = t
-      end
-    end
     if time_counter < 1 then
+      small = 9999
+      big = 0
+      for i, next in ipairs(last_times) do
+	t = next - prev
+	prev = next
+	if t < small then
+	  small = t
+	end
+	if t > big then
+	  big = t
+	end
+      end
       local time = last_times[61] - last_times[1]
       local frame_time = time / 60
       local fps = 1000 / frame_time

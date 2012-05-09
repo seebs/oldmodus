@@ -12,6 +12,7 @@ Rainbow = require "Rainbow"
 Screen = require "Screen"
 Sounds = require "Sounds"
 Squares = require "Squares"
+Hexes = require "Hexes"
 Touch = require "Touch"
 Vector = require "Vector"
 
@@ -24,17 +25,18 @@ local displays = {
   'spline',
   'cascade',
   'drops',
+  'ants',
   'spiral2',
   'knights2',
   'lines',
   'cascade2',
   'lissajous',
 }
-local debugging_display = nil
+local debugging_display = 'ants2'
 local display_index = 1
-local debugging_performance = true
+local debugging_performance = false
 if debugging_display or debugging_performance then
-  local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 50)
+  local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 35)
   Util.messages_to(message_box)
 end
 

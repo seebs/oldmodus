@@ -34,6 +34,7 @@ end
 
 Hexes.rows = Hexes.vertical_in(Screen.size.y)
 Hexes.columns = Hexes.horizontal_in(Screen.size.x)
+Hexes.directions = { 'north', 'northeast', 'southeast', 'south', 'southwest', 'northwest' }
 Hexes.sheet = graphics.newImageSheet("hex.png", { width = 256, height = 224, numFrames = 1 })
 
 function Hexes.colorize(hex, color)
@@ -80,13 +81,55 @@ Hexes.dir = {
   southwest = Hexes.southwest,
 }
 
-Hexes.right = {
-  north = Hexes.southeast,
-  south = Hexes.northwest,
-  northeast = Hexes.south,
-  southeast = Hexes.southwest,
-  northwest = Hexes.northeast,
-  southwest = Hexes.north,
+Hexes.turn = {
+  north = {
+    ahead = "north",
+    right = "northeast",
+    hard_right = "southeast",
+    left = "northwest",
+    hard_left = "southwest",
+    back = "south",
+  },
+  northeast = {
+    ahead = "northeast",
+    right = "southeast",
+    hard_right = "south",
+    left = "north",
+    hard_left = "northwest",
+    back = "southwest",
+  },
+  southeast = {
+    ahead = "southeast",
+    right = "south",
+    hard_right = "southwest",
+    left = "northeast",
+    hard_left = "north",
+    back = "northwest",
+  },
+  south = {
+    ahead = "south",
+    right = "southwest",
+    hard_right = "northwest",
+    left = "southeast",
+    hard_left = "northeast",
+    back = "north",
+  },
+  southwest = {
+    ahead = "southwest",
+    right = "northwest",
+    hard_right = "north",
+    left = "south",
+    hard_left = "southeast",
+    back = "northeast",
+  },
+  northwest = {
+    ahead = "northwest",
+    right = "north",
+    hard_right = "northeast",
+    left = "southwest",
+    hard_left = "south",
+    back = "southeast",
+  }
 }
 
 function Hexes.splash(hex, mindepth, maxdepth, proc, ...)
@@ -95,12 +138,12 @@ function Hexes.splash(hex, mindepth, maxdepth, proc, ...)
     for k, f in pairs(hex.dir) do
       paths[k] = f(paths[k] or hex)
       if i >= mindepth then
-	coroutine.resume(proc, paths[k], i)
-	local g = Hexes.right[k]
+	coroutine.resume(proc, paths[k], i, ...)
+	local g = Hexes.dir[Hexes.turn[k].hard_right]
 	local h
 	for j = 1, i - 1 do
 	  h = g(h or paths[k])
-	  coroutine.resume(proc, h, i)
+	  coroutine.resume(proc, h, i, ...)
 	end
       end
     end
@@ -154,15 +197,9 @@ function Hexes:shift_hexes(x, y)
 	    ex = ex - self.columns
 	  end
 	  local height_change = (ex % 2) == 1
-	  if idx == 1 then
-	    Util.printf("Col %d, x %d", hex.logical_x, hex.x)
-	  end
 	  hex.logical_x = hex.logical_x + ex
 	  newrow[hex.logical_x] = hex
 	  hex.x = hex.x + (ex * Hexes.per_hex_horizontal)
-	  if idx == 1 then
-	    Util.printf("Col %d, x %d", hex.logical_x, hex.x)
-	  end
 	  if height_change then
 	    if hex.low then
 	      hex.low = false
@@ -223,7 +260,7 @@ end
 function Hexes.move_highlight(light, hex)
   if hex then
     light.x = hex.x + Hexes.hex_size / 2
-    light.y = hex.row.y
+    light.y = hex.row.y + hex.y
     light.hex = hex
     light.isVisible = true
   end
@@ -241,6 +278,8 @@ function Hexes.new(group, highlights, multiplier)
   hexes.igroup:setReferencePoint(display.TopLeftReferencePoint)
   local funcs = Rainbow.funcs_for(multiplier or 1)
   hexes.color = funcs.smooth
+  hexes.towards = funcs.towards
+  hexes.color_dist = funcs.dist
   hexes.multiplier = multiplier
   hexes.highlights = {}
   hexes.width = Screen.size.x
@@ -293,7 +332,8 @@ function Hexes.new(group, highlights, multiplier)
   if highlights then
     for i = 1, highlights do
       local light = display.newImage(Hexes.sheet, 1)
-      light:scale(Hexes.hex_size / 256, Hexes.hex_size / 256)
+      light.xScale = Hexes.hex_size / 512
+      light.yScale = Hexes.hex_size / 512
       light.isVisible = false
       hexes.igroup:insert(light)
       light.alpha = .8

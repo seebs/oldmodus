@@ -14,6 +14,9 @@ Rainbow.funcs = {}
 
 local floor = math.floor
 local ceil = math.ceil
+local abs = math.abs
+local min = math.min
+local max = math.max
 
 function Rainbow.funcs_for(denominator)
   if #Rainbow.hues ~= 6 then
@@ -35,6 +38,33 @@ function Rainbow.funcs_for(denominator)
     Rainbow.funcs[denominator].smooth = function(hue)
       local v = t[((hue - 1) % n) + 1]
       return v[1], v[2], v[3]
+    end
+    Rainbow.funcs[denominator].dist = function(hue1, hue2)
+      local h1 = (hue1 - 1) % n + 1
+      local h2 = (hue2 - 1) % n + 1
+      if h1 == h2 then
+        return 0
+      end
+      if h2 > h1 then
+        return min(h2 - h1, (h1 + n - h2))
+      else
+        return min(h1 - h2, (h2 + n - h1))
+      end
+    end
+    Rainbow.funcs[denominator].towards = function(hue1, hue2)
+      local h1 = (hue1 - 1) % n + 1
+      local h2 = (hue2 - 1) % n + 1
+      if h1 == h2 then
+        return h1
+      end
+      if h2 < h1 then
+        h2 = h2 + n
+      end
+      if h2 - h1 < n / 2 then
+        return (h1 % n) + 1
+      else
+        return ((h1 - 2) % n) + 1
+      end
     end
   end
   return Rainbow.funcs[denominator]
