@@ -115,8 +115,6 @@ function Squares.new(group, highlights, multiplier)
   squares.color = funcs.smooth
   squares.multiplier = multiplier
   squares.highlights = {}
-  squares.width = Screen.size.x
-  squares.height = Screen.size.y
   squares.shift = Squares.shift_squares
   squares.from_screen = Squares.from_screen
   for y = 1, Squares.rows do
@@ -125,8 +123,6 @@ function Squares.new(group, highlights, multiplier)
       -- if imagegroups start working better:
       -- row = display.newImageGroup(Squares.sheet)
       row = display.newGroup()
-      row.width = Screen.size.x
-      row.height = Squares.square_size
       squares.igroup:insert(row)
       row.x = Squares.square_size / 2
       row.y = (y - 0.5) * Squares.square_size

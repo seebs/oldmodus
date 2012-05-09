@@ -4,6 +4,8 @@ local callbacks = {}
 
 Touch.active = nil
 
+local dist = Util.dist
+
 function Touch.handler(callback, ...)
   if callback then
     if not callbacks[callback] then
@@ -100,6 +102,7 @@ function Touch.handle(event)
     func(args[1], state, unpack(args, 2))
   end
   if remove_me then
+    state.touched = state.event[idx].current
     state.event[idx] = nil
     state.known_ids[idx] = nil
     state.active = state.active - 1
@@ -107,12 +110,14 @@ function Touch.handle(event)
   if state.active == 0 and state.peak <= 1 and system.getTimer() - state.stamp
   < 150 then
     local now = system.getTimer()
-    if state.recentTap and now - state.recentTap < 350 then
+    if state.recentTap and now - state.recentTap < 350 and dist(state.touched, state.recentXY) < 20 then
       next_display()
       state.recentTap = nil
+      state.recentXY = nil
       return
     else
       state.recentTap = now
+      state.recentXY = { x = event.x, y = event.y }
     end
   end
   return true
