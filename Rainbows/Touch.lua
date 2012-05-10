@@ -1,129 +1,108 @@
 local Touch = {}
 
-local callbacks = {}
-
 Touch.active = nil
 
 Touch.events = 0
 
 local dist = Util.dist
 
-function Touch.handler(callback, ...)
-  if callback then
-    if not callbacks[callback] then
-      callbacks[callback] = {
-	callback = callback,
-      }
+local active_events = { }
+
+local state = {
+  points = {},
+  events = 0,
+  active = 0,
+  peak = 0,
+}
+local next_idx = 1
+
+local nuke_these = {}
+
+function Touch.state(func, caller)
+  if state.active > 0 then
+    func(caller, state)
+    state.events = 0
+    -- cleanup intermediate states we've already processed
+    for _, e in ipairs(state.points) do
+      if e.done then
+	nuke_these[#nuke_these + 1] = e
+      end
+      e.previous = {}
     end
-    callbacks[callback].args = { ... }
-    callbacks[callback].state = { }
-    Touch.active = callback
-  else
-    Touch.active = nil
+    -- and dispose of extras
+    if #nuke_these > 0 then
+      for _, e in ipairs(nuke_these) do
+	if e.idx < next_idx then
+	  next_idx = e.idx
+	end
+	active_events[e.id] = nil
+	state.points[e.idx] = nil
+	state.active = state.active - 1
+      end
+      nuke_these = {}
+    end
+    if state.active == 0 then
+      state.peak = 0
+      state.stamp = system.getTimer()
+    end
   end
 end
 
+local last_tap = nil
+
 function Touch.handle(event)
   local id = event.id or 'unknown'
-  local idx = nil
-  local last = 0
-  local active = 0
-  local state = {}
-  local args
-  local func = nil
-  local remove_me = false
-  local callback = callbacks[Touch.active]
-  if callback then
-    state = callback.state
-    args = callback.args
-    func = callback.callback
-  end
-  state.event = state.event or {}
-  state.known_ids = state.known_ids or {}
-  state.peak = state.peak or 0
-  state.active = state.active or 0
+  local e
 
-  Touch.events = Touch.events + 1
+  state.events = state.events + 1
 
-  if state.active == 0 then
-    state.peak = 0
-    state.stamp = system.getTimer()
-  end
+  -- Util.printf("event")
+  -- Util.dump(event)
 
-  for i, v in pairs(state.known_ids) do
-    if i > last then
-      last = i
+  e = active_events[id]
+  if not e then
+    active_events[id] = { id = id, idx = next_idx }
+    state.points[next_idx] = active_events[id]
+    e = active_events[id]
+    while state.points[next_idx] do
+      next_idx = next_idx + 1
     end
-    if v == id then
-      idx = i
-    end
-    active = active + 1
-  end
-  if not idx then
-    active = active + 1
-    if not last then
-      state.known_ids[1] = id
-      idx = 1
-      last = 1
-    else
-      last = last + 1
-      state.known_ids[last] = id
-      idx = last
-    end
-  end
-  state.this_event = idx
-
-  if active > state.peak then
-    state.peak = active
+    state.active = state.active + 1
   end
 
-  if not state.event[idx] then
-    state.event[idx] = { start = { x = event.x, y = event.y }, idx = idx}
+  if state.active > state.peak then
+    state.peak = state.active
   end
-  e = state.event[idx]
-  if event.phase == 'began' or event.phase == 'moved' then
-    e.previous = e.current
+
+  e.phase = event.phase
+  if event.phase == 'began' then
+    e.start_stamp = event.time
+    e.start = { x = event.xStart, y = event.yStart }
+    e.current = { x = event.xStart, y = event.yStart }
+    e.previous = {}
+  elseif event.phase == 'moved' then
+    e.previous[#e.previous + 1] = e.current
     e.current = { x = event.x, y = event.y }
-  elseif event.phase == 'ended' then
+  elseif event.phase == 'ended' or event.phase == 'cancelled' then
     -- if an event ended, leave it in for one last process...
-    remove_me = true
-  elseif event.phase == 'cancelled' then
-    state.event[idx] = nil
-    state.known_ids[idx] = nil
-    active = active - 1
+    e.previous[#e.previous + 1] = e.current
+    e.current = { x = event.x, y = event.y }
+    e.done = true
+    e.end_stamp = event.time
   end
-  state.active = active
-  state.phase = event.phase
 
-  state.ordered = {}
-  for k, e in pairs(state.event) do
-    table.insert(state.ordered, e)
-  end
-  table.sort(state.ordered, function(a, b) return a.idx < b.idx end)
+  -- Util.printf("e:")
+  -- Util.dump(e)
+  -- Util.printf("state.active: %d", state.active)
 
-  -- Util.printf("Processed '%s' for idx %d, active %d/%d, func %s.", event.phase, idx, active, state.peak, tostring(func))
-  if func then
-    func(args[1], state, unpack(args, 2))
-  end
-  if remove_me then
-    state.touched = state.event[idx].current
-    state.event[idx] = nil
-    state.known_ids[idx] = nil
-    state.active = state.active - 1
-  end
-  if state.active == 0 and state.peak <= 1 and system.getTimer() - state.stamp
-  < 150 then
-    local now = system.getTimer()
-    if state.recentTap and now - state.recentTap < 350 and dist(state.touched, state.recentXY) < 20 then
+  if e.done and (e.end_stamp - e.start_stamp < 150) and dist(e.start, e.current) < 20 then
+    if last_tap and (e.end_stamp - last_tap.end_stamp < 350) and dist(e.current, last_tap.current) < 20 then
+      last_tap = nil
       next_display()
-      state.recentTap = nil
-      state.recentXY = nil
-      return
-    else
-      state.recentTap = now
-      state.recentXY = { x = event.x, y = event.y }
     end
+    last_tap = e
   end
+
   return true
 end
 
