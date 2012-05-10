@@ -29,9 +29,6 @@ function Util.message(fmt, ...)
 end
 
 function Util.enterFrame(reset)
-  if true then
-    return
-  end
   if reset then
     last_times = {}
   end

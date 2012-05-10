@@ -1,6 +1,9 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
+local frame = Util.enterFrame
+local touch = Touch.state
+
 scene.KNIGHTS = 6
 
 scene.FADED = 0.75
@@ -61,6 +64,19 @@ function scene:move_knight(knight)
   end
   local p_chance = .5
   local s_chance = .5
+  local toward = self.toward[knight.index]
+  if toward then
+    if toward[primary] > knight[primary] then
+      p_chance = .8
+    elseif toward[primary] < knight[primary] then
+      p_chance = .2
+    end
+    if toward[secondary] > knight[secondary] then
+      s_chance = .8
+    elseif toward[secondary] < knight[secondary] then
+      s_chance = .2
+    end
+  end
 
   self.squares[knight.x][knight.y].alpha = scene.FADED + 0.1
 
@@ -83,7 +99,8 @@ function scene:move_knight(knight)
 end
 
 function scene:enterFrame(event)
-  Util.enterFrame()
+  frame()
+  touch(self.touch_magic, self)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(1, self.view.alpha + .03)
   end
@@ -134,44 +151,18 @@ function scene:willEnterScene(event)
 end
 
 function scene:touch_magic(state, ...)
-  if state.ordered[1] and state.phase ~= 'ended' then
-    self.saved_delta = self.saved_delta or { x = 0, y = 0 }
-    local event = state.ordered[1]
-    if event.current and event.previous then
-      local delta = Util.vec_add(event.current, Util.vec_scale(event.previous, -1))
-      delta = Util.vec_add(delta, self.saved_delta)
-      self.saved_delta = { x = 0, y = 0 }
-      if delta.x > 0 then
-	self.saved_delta.x = delta.x % Squares.square_size
-        delta.x = math.floor(delta.x / Squares.square_size)
-      elseif delta.x < 0 then
-	self.saved_delta.x = (delta.x % Squares.square_size)
-        delta.x = math.ceil(delta.x / Squares.square_size)
-	if self.saved_delta.x > 0 then
-	  self.saved_delta.x = self.saved_delta.x - Squares.square_size
-	end
-      end
-      if delta.y > 0 then
-	self.saved_delta.y = delta.y % Squares.square_size
-        delta.y = math.floor(delta.y / Squares.square_size)
-      elseif delta.y < 0 then
-	self.saved_delta.y = (delta.y % Squares.square_size)
-        delta.y = math.ceil(delta.y / Squares.square_size)
-	if self.saved_delta.y > 0 then
-	  self.saved_delta.y = self.saved_delta.y - Squares.square_size
-	end
-      end
-      self.squares:shift(delta.x, delta.y)
+  self.toward = {}
+  for i, v in pairs(state.points) do
+    if not v.done then
+      self.toward[i] = self.squares:from_screen(v.current)
     end
-  else
-    self.saved_delta = nil
   end
-  return true
 end
 
 function scene:enterScene(event)
+  self.toward = {}
+  touch(nil)
   Runtime:addEventListener('enterFrame', scene)
-  Touch.handler(self.touch_magic, self)
 end
 
 function scene:didExitScene(event)
@@ -180,7 +171,6 @@ end
 
 function scene:exitScene(event)
   Runtime:removeEventListener('enterFrame', scene)
-  Touch.handler()
 end
 
 function scene:destroyScene(event)

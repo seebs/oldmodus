@@ -10,6 +10,9 @@ scene.START_LINES = 1
 scene.LINE_DEPTH = 8
 scene.TOUCH_ACCEL = 1
 
+local frame = Util.enterFrame
+local touch = Touch.state
+
 local s
 
 function scene:createScene(event)
@@ -90,7 +93,8 @@ function scene:move()
 end
 
 function scene:enterFrame(event)
-  Util.enterFrame()
+  frame()
+  touch(self.touch_magic, self)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .01, 1)
   end
@@ -111,6 +115,7 @@ function scene:willEnterScene(event)
 end
 
 function scene:enterScene(event)
+  touch(nil)
   self.lines = {}
   self.next_color = nil
   self.vecs = {}
@@ -126,20 +131,23 @@ function scene:enterScene(event)
   self.next_color = 1
   self.last_color = scene.line_total
   Runtime:addEventListener('enterFrame', scene)
-  Touch.handler(self.touch_magic, self)
 end
 
 function scene:touch_magic(state, ...)
   self.toward = {}
-  if state.active > 0 and state.phase ~= 'ended' then
-    for i, v in ipairs(state.ordered) do
+  local highest = 0
+  for i, v in pairs(state.points) do
+    if not v.done then
       self.toward[i] = v.current
+      if i > highest then
+        highest = i
+      end
     end
   end
-  while #state.ordered > #self.vecs do
+  while highest > #self.vecs do
     table.insert(self.vecs, self:new_vec())
   end
-  if #state.ordered == 0 and state.peak < #self.vecs and #self.vecs > 2 then
+  if highest == 0 and state.peak < #self.vecs and #self.vecs > 2 then
     table.remove(self.vecs, 1)
   end
   return true
@@ -158,7 +166,6 @@ function scene:exitScene(event)
   end
   self.lines = {}
   Runtime:removeEventListener('enterFrame', scene)
-  Touch.handler()
 end
 
 function scene:destroyScene(event)

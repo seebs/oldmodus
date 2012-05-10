@@ -1,5 +1,7 @@
 local Squares = {}
 
+local ceil = math.ceil
+
 Squares.square_size = math.max(32, Util.gcd(Screen.size.x, Screen.size.y))
 while (Screen.size.x / Squares.square_size < 13) and Squares.square_size % 2 == 0 do
   Squares.square_size = Squares.square_size / 2
@@ -27,8 +29,7 @@ function Squares:from_screen(t_or_x, y)
   else
     x = t_or_x
   end
-  return { x = math.ceil((x / Squares.square_size) + 0.5),
-           y = math.ceil((y / Squares.square_size) + 0.5) }
+  return self:find(ceil((x / Squares.square_size) + 0.5), ceil((y / Squares.square_size) + 0.5))
 end
 
 function Squares:shift_squares(x, y)

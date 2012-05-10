@@ -25,6 +25,8 @@ local min = math.min
 local max = math.max
 local abs = math.abs
 local fmod = math.fmod
+local frame = Util.enterFrame
+local touch = Touch.state
 
 local s
 
@@ -148,7 +150,8 @@ function scene:calc(quiet)
 end
 
 function scene:enterFrame(event)
-  Util.enterFrame()
+  frame()
+  touch(self.touch_magic, self)
   if self.view.alpha < 1 then
     self.view.alpha = min(self.view.alpha + .01, 1)
   end
@@ -172,6 +175,7 @@ function scene:willEnterScene(event)
 end
 
 function scene:enterScene(event)
+  touch(nil)
   self.lines = {}
   self.next_color = nil
   self.a = 2
@@ -191,12 +195,18 @@ function scene:enterScene(event)
   end
   self.next_color = 1
   Runtime:addEventListener('enterFrame', scene)
-  Touch.handler(self.touch_magic, self)
 end
 
 
-function scene:touch_magic(state, ...)
-  local point = state.ordered[1]
+function scene:touch_magic(state)
+  local point
+  local lowest
+  for i, v in pairs(state.points) do
+    if not lowest or i < lowest then
+      lowest = i
+      point = v
+    end
+  end
   if point and point.current then
     local x = point.current.x - s.origin.x
     local y = point.current.y - s.origin.y
@@ -225,7 +235,6 @@ function scene:touch_magic(state, ...)
     self.target_a = ta
     self.target_b = tb
   end
-  return true
 end
 
 function scene:didExitScene(event)
@@ -240,7 +249,6 @@ function scene:exitScene(event)
   end
   self.lines = {}
   Runtime:removeEventListener('enterFrame', scene)
-  Touch.handler()
 end
 
 function scene:destroyScene(event)

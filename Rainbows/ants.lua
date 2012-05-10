@@ -10,6 +10,8 @@ scene.CYCLE = 6
 
 local max = math.max
 local min = math.min
+local frame = Util.enterFrame
+local touch = Touch.state
 
 local s
 
@@ -19,7 +21,8 @@ function scene:createScene(event)
 end
 
 function scene:enterFrame(event)
-  Util.enterFrame()
+  frame()
+  touch(self.touch_magic, self)
   if self.view.alpha < 1 then
     self.view.alpha = min(1, self.view.alpha + .03)
   end
@@ -111,40 +114,43 @@ end
 local recent_touch = { }
 
 function scene:touch_magic(state, ...)
-  for idx, event in ipairs(state.ordered) do
-    if event.current then
-      local hex = self.hexes:from_screen(event.current)
-      if hex then
-	recent_touch[idx] = recent_touch[idx] or { }
-	local recent = recent_touch[idx]
-	recent.do_splash = false
-        if state.phase == 'began' then
-	  recent.hue = hex.hue
-	  recent.hex = hex
-	  recent.point = { x = hex.logical_x, y = hex.logical_y }
-	  recent.do_splash = true
-	elseif state.phase == 'moved' then
-	  recent.hex = hex
-	  recent.hue = recent.hue or hex.hue
-	  if (not recent.point) or recent.point.x ~= hex.logical_x or recent.point.y ~= hex.logical_y then
-	    recent.do_splash = true
-	    recent.point = { x = hex.logical_x, y = hex.logical_y }
-	  end
-	else
-	  recent_touch[idx] = {}
+  if state.events == 0 then
+    return
+  end
+  for idx, event in ipairs(state.points) do
+    if event.events ~= 0 then
+      local idx = event.idx
+      recent_touch[idx] = recent_touch[idx] or {}
+      local touch = recent_touch[idx]
+      local hit_hexes = {}
+      if not touch.hue then
+	local start_hex = self.hexes:from_screen(event.start)
+	if start_hex then
+	  touch.hue = start_hex.hue
 	end
-      else
-        recent_touch[idx] = {}
+      end
+      Util.dump(event)
+      for i, e in ipairs(event.previous) do
+	local new = self.hexes:from_screen(e)
+	if new and new ~= touch.last_hex then
+	  hit_hexes[new] = true
+	end
+      end
+      if event.current and not event.done then
+	local hex = self.hexes:from_screen(event.current)
+	if hex and hex ~= touch.last_hex then
+	  hit_hexes[hex] = true
+	end
+	touch.last_hex = hex
+      end
+      for hex, _ in pairs(hit_hexes) do
+	table.insert(self.splashes, { cooldown = 1, hex = hex, hue = touch.hue })
+      end
+      if event.done then
+	recent_touch[idx] = nil
       end
     end
   end
-  for i, recent in pairs(recent_touch) do
-    if recent.do_splash then
-      table.insert(self.splashes, { cooldown = 1, hex = recent.hex, hue = recent.hue })
-    end
-  end
-
-  return true
 end
 
 function scene:enterScene(event)
@@ -169,7 +175,6 @@ function scene:enterScene(event)
   end
   self.fade_cooldown = self.FADE_DIVISOR
   Runtime:addEventListener('enterFrame', scene)
-  Touch.handler(self.touch_magic, self)
 end
 
 function scene:didExitScene(event)
@@ -178,7 +183,6 @@ end
 
 function scene:exitScene(event)
   Runtime:removeEventListener('enterFrame', scene)
-  Touch.handler()
 end
 
 function scene:destroyScene(event)

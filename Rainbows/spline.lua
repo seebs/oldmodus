@@ -18,6 +18,8 @@ local colorize = rfuncs.smoothobj
 local midpoint = Util.midpoint
 local partway = Util.partway
 local ceil = math.ceil
+local frame = Util.enterFrame
+local touch = Touch.state
 
 local s
 
@@ -140,7 +142,8 @@ function scene:move()
 end
 
 function scene:enterFrame(event)
-  Util.enterFrame()
+  frame()
+  touch(self.touch_magic, self)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .01, 1)
   end
@@ -165,6 +168,7 @@ function scene:willEnterScene(event)
 end
 
 function scene:enterScene(event)
+  touch(nil)
   self.lines = {}
   self.next_color = nil
   self.vecs = {}
@@ -180,14 +184,13 @@ function scene:enterScene(event)
   end
   self.next_color = 1
   Runtime:addEventListener('enterFrame', scene)
-  Touch.handler(self.touch_magic, self)
 end
 
 function scene:touch_magic(state, ...)
   self.toward = {}
-  if state.active > 0 and state.phase ~= 'ended' then
+  for i, v in pairs(state.points) do
     local lookup = { 1, 4, 2, 3 }
-    for i, v in ipairs(state.ordered) do
+    if not v.done then
       self.toward[lookup[i] or 5] = v.current
     end
   end
@@ -207,7 +210,6 @@ function scene:exitScene(event)
   end
   self.lines = {}
   Runtime:removeEventListener('enterFrame', scene)
-  Touch.handler()
 end
 
 function scene:destroyScene(event)

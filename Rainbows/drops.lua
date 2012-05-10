@@ -1,6 +1,10 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
+local frame = Util.enterFrame
+local touch = Touch.state
+local dist = Util.dist
+
 -- from messing with a rainbow background
 scene.COLOR_MULTIPLIER = 50
 scene.color_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
@@ -8,6 +12,8 @@ scene.DROPS = #Rainbow.hues * 2
 scene.MAX_GROWTH = 125
 scene.MIN_GROWTH = 45
 scene.FRAME_DELAY = 2
+
+scene.future_drops = {}
 
 function scene.setDropVisible(drop, hidden)
   drop.innerc.isVisible = hidden
@@ -165,9 +171,13 @@ function scene:do_drops()
     end
     self.last_hue = d.hue
     Sounds.play(d.hue)
-    local new_point = {}
-    new_point.x = math.random((s.size.x - 50) + 25)
-    new_point.y = math.random((s.size.y - 50) + 25)
+    local new_point
+    if #self.future_drops > 0 then
+      new_point = table.remove(self.future_drops, 1)
+    else
+      new_point = { x = math.random((s.size.x - 50) + 25),
+                    y = math.random((s.size.y - 50) + 25) }
+    end
     if self.toward then
       local between = Util.midpoint(new_point, self.toward)
     end
@@ -186,7 +196,8 @@ function scene:do_drops()
 end
 
 function scene:enterFrame(event)
-  Util.enterFrame()
+  frame()
+  touch(self.touch_magic, self)
   if self.view.alpha < 1 then
     self.view.alpha = math.min(self.view.alpha + .03, 1)
   end
@@ -198,8 +209,16 @@ function scene:enterFrame(event)
 end
 
 function scene:touch_magic(state, ...)
-  self.toward = state.ordered[1] and state.ordered[1].current
-  return true
+  if state.events > 0 then
+    for i, e in pairs(state.points) do
+      if e.events > 0 and not e.done then
+	local last = self.future_drops[#self.future_drops]
+	if not last or dist(last, e.current) > 70 or e.stamp - last.stamp > 60 then
+	  table.insert(self.future_drops, { x = e.current.x, y = e.current.y, stamp = e.stamp })
+	end
+      end
+    end
+  end
 end
 
 function scene:willEnterScene(event)
@@ -209,8 +228,8 @@ end
 
 function scene:enterScene(event)
   self.cooldown = 0
+  touch(nil)
   Runtime:addEventListener('enterFrame', scene)
-  Touch.handler(self.touch_magic, self)
 end
 
 function scene:didExitScene(event)
@@ -228,7 +247,6 @@ end
 
 function scene:exitScene(event)
   Runtime:removeEventListener('enterFrame', scene)
-  Touch.handler()
 end
 
 function scene:destroyScene(event)

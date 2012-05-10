@@ -196,6 +196,7 @@ function scene:willEnterScene(event)
 end
 
 function scene:enterScene(event)
+  touch(nil)
   self.lines = {}
   self.next_color = nil
   self.vecs = {}
@@ -220,8 +221,6 @@ function scene:touch_magic(state, ...)
   self.toward = {}
   for i, v in pairs(state.points) do
     if not v.done then
-      Util.printf("toward[%d] = v [idx %d] %s",
-        i, v.idx, tostring(v.done))
       self.toward[i] = v.current
     end
   end

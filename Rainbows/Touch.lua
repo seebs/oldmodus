@@ -20,14 +20,18 @@ local nuke_these = {}
 
 function Touch.state(func, caller)
   if state.active > 0 then
-    func(caller, state)
+    if func then
+      func(caller, state)
+    end
     state.events = 0
     -- cleanup intermediate states we've already processed
     for _, e in ipairs(state.points) do
       if e.done then
 	nuke_these[#nuke_these + 1] = e
       end
+      e.events = 0
       e.previous = {}
+      e.new_event = false
     end
     -- and dispose of extras
     if #nuke_these > 0 then
@@ -61,7 +65,7 @@ function Touch.handle(event)
 
   e = active_events[id]
   if not e then
-    active_events[id] = { id = id, idx = next_idx }
+    active_events[id] = { id = id, idx = next_idx, new_event = true, events = 0 }
     state.points[next_idx] = active_events[id]
     e = active_events[id]
     while state.points[next_idx] do
@@ -75,6 +79,8 @@ function Touch.handle(event)
   end
 
   e.phase = event.phase
+  e.events = e.events + 1
+  e.stamp = event.time
   if event.phase == 'began' then
     e.start_stamp = event.time
     e.start = { x = event.xStart, y = event.yStart }
