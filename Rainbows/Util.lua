@@ -33,6 +33,10 @@ function Util.enterFrame(reset)
     last_times = {}
   end
   table.insert(last_times, system.getTimer())
+  if Touch.events > 0 then
+    Util.message("%d touches", Touch.events)
+    Touch.events = 0
+  end
   local small, big
   if #last_times > 61 then
     prev = table.remove(last_times, 1)

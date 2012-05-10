@@ -58,6 +58,8 @@ function scene:createScene(event)
   self.view.alpha = 0
 end
 
+local ripple_pattern = { -1, -2, 0, 2, 1, 0, -1, 0, 1 }
+
 function scene:spiral_from(vec, points, segments)
   local params = Util.line(self.center, vec)
   params.theta = params.theta + fmod(vec.theta, pi * 2)
@@ -65,14 +67,9 @@ function scene:spiral_from(vec, points, segments)
   local remove = {}
   for idx, r in ipairs(vec.ripples) do
     if r > 1 then
-      rip[r + 5] = -1
-      rip[r + 4] = 0
-      rip[r + 3] = 1
-      rip[r + 2] = 2
-      rip[r + 1] = 1
-      rip[r] = 0
-      rip[r - 1] = -1
-      rip[r - 2] = -2
+      for i, v in ipairs(ripple_pattern) do
+        rip[r + i] = (rip[r + i] or 0) + v
+      end
       vec.ripples[idx] = r - 2
     else
       remove[#remove] = idx
@@ -159,7 +156,7 @@ function scene:move()
   local bounce = false
   for i, v in ipairs(self.vecs) do
     if v:move(self.toward[i]) then
-      table.insert(v.ripples, self.LINE_SEGMENTS + 2)
+      table.insert(v.ripples, self.LINE_SEGMENTS)
       bounce = true
     end
   end

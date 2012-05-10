@@ -4,6 +4,8 @@ local callbacks = {}
 
 Touch.active = nil
 
+Touch.events = 0
+
 local dist = Util.dist
 
 function Touch.handler(callback, ...)
@@ -40,6 +42,8 @@ function Touch.handle(event)
   state.known_ids = state.known_ids or {}
   state.peak = state.peak or 0
   state.active = state.active or 0
+
+  Touch.events = Touch.events + 1
 
   if state.active == 0 then
     state.peak = 0

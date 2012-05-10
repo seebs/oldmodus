@@ -2,6 +2,8 @@ local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
 scene.COLOR_MULTIPLIER = 4
+scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
+scene.HALF_COLORS = scene.TOTAL_COLORS / 2
 scene.ANTS = 6
 
 scene.FADED = 0.75
@@ -36,7 +38,7 @@ function scene:enterFrame(event)
   }
   for i, ch in ipairs(choices) do
     ch.hex = (Hexes.dir[ch.dir])(ant.hex)
-    ch.dist = self.hexes.color_dist(ch.hex.hue, ant.hue)
+    ch.dist = self.hexes.color_dist(ch.hex.hue, ant.hue) + scene.HALF_COLORS * (1 - ch.hex.alpha) / 2
   end
   table.sort(choices, function(a, b) return a.dist > b.dist end)
   ant.dir = choices[1].dir

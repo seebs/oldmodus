@@ -3,7 +3,7 @@ display.setStatusBar(display.HiddenStatusBar)
 player = { slot = 1, score = 0, location = 1 }
 
 -- profiler = require "Profiler"
--- profiler.startProfiler({time = 20000, delay = 1000, verbose = true})
+-- profiler.startProfiler({time = 30000, delay = 1000, verbose = true})
 
 -- mine get caps so I don't clash
 Util = require "Util"
@@ -31,10 +31,11 @@ local displays = {
   'lines',
   'cascade2',
   'lissajous',
+  'ants2',
 }
-local debugging_display = 'ants2'
+local debugging_display = nil
 local display_index = 1
-local debugging_performance = false
+local debugging_performance = true
 if debugging_display or debugging_performance then
   local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 35)
   Util.messages_to(message_box)
