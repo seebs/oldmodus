@@ -58,6 +58,9 @@ function Touch.handle(event)
   local id = event.id or 'unknown'
   local e
 
+  Util.printf("Touch event:")
+  Util.dump(event, 1, '    ')
+
   state.events = state.events + 1
 
   -- Util.printf("event")

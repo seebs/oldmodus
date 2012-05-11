@@ -325,8 +325,8 @@ function Util.iterate(t, maxdepth, callback, prefix, visited)
   return count
 end
 
-function Util.dump(t, depth)
-  local count = Util.iterate(t, depth, print_item, '', {})
+function Util.dump(t, depth, prefix)
+  local count = Util.iterate(t, depth, print_item, prefix, {})
 end
 
 return Util

@@ -129,7 +129,6 @@ function scene:touch_magic(state, ...)
 	  touch.hue = start_hex.hue
 	end
       end
-      Util.dump(event)
       for i, e in ipairs(event.previous) do
 	local new = self.hexes:from_screen(e)
 	if new and new ~= touch.last_hex then

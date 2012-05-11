@@ -35,7 +35,7 @@ local displays = {
 }
 local debugging_display = nil
 local display_index = 1
-local debugging_performance = true
+local debugging_performance = false
 if debugging_display or debugging_performance then
   local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 35)
   Util.messages_to(message_box)

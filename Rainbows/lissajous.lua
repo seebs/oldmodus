@@ -201,40 +201,46 @@ end
 function scene:touch_magic(state)
   local point
   local lowest
-  for i, v in pairs(state.points) do
-    if not lowest or i < lowest then
-      lowest = i
-      point = v
-    end
-  end
-  if point and point.current then
-    local x = point.current.x - s.origin.x
-    local y = point.current.y - s.origin.y
-    local ta = (ceil(x * 8 / s.size.x) - 4) / 2
-    local tb = ceil(y * 8 / s.size.y) / 2 + 1
-    -- local origa, origb = ta, tb
-    local sign_a = ta < 0 and -1 or 1
-    if abs(ta) < 1 then
-      ta = sign_a
-    end
-    -- avoid degenerate cases
-    local integer_a = fmod(ta, 1) == 0 or fmod(ta, tb) == 0
-    local integer_b = fmod(tb, 1) == 0 or fmod(tb, ta) == 0
-    local multiples = (fmod(ta, tb) == 0 or fmod(tb, ta) == 0)
-    -- if either is a multiple of the other, and neither is 1 exactly,
-    -- we'll get redraw/overlap which looks lame
-    if multiples and (abs(ta) > 1 and tb > 1) then
-      if integer_a then
-        ta = ta + 0.5 * sign_a
-      else
-        tb = tb + 0.5
+  if state.events > 0 then
+    for i, v in pairs(state.points) do
+      if v.events > 0 then
+	if not lowest or i < lowest then
+	  lowest = i
+	  point = v
+	end
       end
     end
-    self.scale_delta_a = max(1, ta - self.a)
-    self.scale_delta_b = max(1, tb - self.b)
-    self.target_a = ta
-    self.target_b = tb
   end
+  if not point or not point.current then
+    return
+  end
+  local x = point.current.x - s.origin.x
+  local y = point.current.y - s.origin.y
+  Util.printf("lissajous moving to relative %d, %d", x, y)
+  local ta = (ceil(x * 8 / s.size.x) - 4) / 2
+  local tb = ceil(y * 8 / s.size.y) / 2 + 1
+  -- local origa, origb = ta, tb
+  local sign_a = ta < 0 and -1 or 1
+  if abs(ta) < 1 then
+    ta = sign_a
+  end
+  -- avoid degenerate cases
+  local integer_a = fmod(ta, 1) == 0 or fmod(ta, tb) == 0
+  local integer_b = fmod(tb, 1) == 0 or fmod(tb, ta) == 0
+  local multiples = (fmod(ta, tb) == 0 or fmod(tb, ta) == 0)
+  -- if either is a multiple of the other, and neither is 1 exactly,
+  -- we'll get redraw/overlap which looks lame
+  if multiples and (abs(ta) > 1 and tb > 1) then
+    if integer_a then
+      ta = ta + 0.5 * sign_a
+    else
+      tb = tb + 0.5
+    end
+  end
+  self.scale_delta_a = max(1, ta - self.a)
+  self.scale_delta_b = max(1, tb - self.b)
+  self.target_a = ta
+  self.target_b = tb
 end
 
 function scene:didExitScene(event)
