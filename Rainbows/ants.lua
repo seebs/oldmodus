@@ -7,6 +7,7 @@ scene.ANTS = 6
 scene.FADED = 0.75
 scene.FADE_DIVISOR = 12
 scene.CYCLE = 6
+scene.META_CYCLE = 12
 
 local max = math.max
 local min = math.min
@@ -45,8 +46,19 @@ function scene:enterFrame(event)
   local ant = table.remove(self.ants, 1)
   ant.hex.hue = ant.hex.hue - 1
   ant.hex:colorize()
-  ant.dir = Hexes.turn[ant.dir][turn]
-  ant.hex = Hexes.dir[ant.dir](ant.hex)
+  self.meta_cooldown = self.meta_cooldown - 1
+  -- every three turns, move towards the next ant
+  if self.meta_cooldown < 1 then
+    local newdir
+    newdir, ant.hex = ant.hex:towards(self.ants[1].hex)
+    if newdir ~= 'here' then
+      ant.dir = newdir
+    end
+    self.meta_cooldown = self.META_CYCLE
+  else
+    ant.dir = Hexes.turn[ant.dir][turn]
+    ant.hex = Hexes.dir[ant.dir](ant.hex)
+  end
   ant.light:move(ant.hex)
   ant.hex.hue = ant.hue
   ant.hex.alpha = 1
@@ -56,12 +68,12 @@ function scene:enterFrame(event)
   local behind
   behind = Hexes.dir[Hexes.turn[ant.dir].hard_right](ant.hex)
   behind.alpha = min(1, behind.alpha + 0.1)
-  behind.hue = self.hexes.towards(behind.hue, ant.hue)
+  behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
   behind:colorize()
 
   behind = Hexes.dir[Hexes.turn[ant.dir].hard_left](ant.hex)
   behind.alpha = min(1, behind.alpha + 0.1)
-  behind.hue = self.hexes.towards(behind.hue, ant.hue)
+  behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
   behind:colorize()
 
   table.insert(self.ants, ant)
@@ -93,7 +105,7 @@ function scene.process_hex(hex, inc, hue)
   local self = scene
   while hex do
     local old = hex.hue
-    hex.hue = hex.hexes.towards(hex.hue, hue)
+    hex.hue = hex.hexes.color_towards(hex.hue, hue)
     hex:colorize()
     hex.alpha = min(1, hex.alpha + 0.1)
     hex, increment, hue = coroutine.yield(true)
@@ -154,6 +166,7 @@ end
 
 function scene:enterScene(event)
   self.cooldown = self.CYCLE
+  self.meta_cooldown = self.META_CYCLE
   self.splashes = {}
   self.ants = {}
   for i, h in ipairs(self.hexes.highlights) do

@@ -68,7 +68,7 @@ function Touch.handle(event)
 
   e = active_events[id]
   if not e then
-    active_events[id] = { id = id, idx = next_idx, new_event = true, events = 0 }
+    active_events[id] = { id = id, idx = next_idx, new_event = true, events = 0, previous = {} }
     state.points[next_idx] = active_events[id]
     e = active_events[id]
     while state.points[next_idx] do

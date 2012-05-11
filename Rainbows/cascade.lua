@@ -29,6 +29,7 @@ function scene:enterFrame(event)
   end
   self.cooldown = self.CYCLE
   local dir = system.orientation
+  -- Util.printf("%s", tostring(dir))
   local step_back = false
   local row_mod, square_mod
   local square_adjust

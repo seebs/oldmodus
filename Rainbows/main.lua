@@ -33,7 +33,7 @@ local displays = {
   'lissajous',
   'ants2',
 }
-local debugging_display = nil
+local debugging_display = 'ants'
 local display_index = 1
 local debugging_performance = false
 if debugging_display or debugging_performance then

@@ -72,7 +72,58 @@ function Hexes.southwest(hex)
   return hex:find(-1, hex.high and 0 or 1)
 end
 
+function Hexes.here(hex)
+  return hex
+end
+
+function Hexes.hex_towards(hex1, hex2)
+  local dx = hex2.logical_x - hex1.logical_x
+  local dy = hex2.logical_y - hex1.logical_y
+  local sign_x = dx > 0 and 1 or (dx < 0 and -1 or 0)
+  local sign_y = dy > 0 and 1 or (dy < 0 and -1 or 0)
+  if abs(dx) > hex1.hexes.columns / 2 then
+    sign_x = 0 - sign_x
+  end
+  if abs(dy) > hex1.hexes.rows / 2 then
+    sign_y = 0 - sign_y
+  end
+  if hex1.low and sign_x ~= 0 and sign_y == -1 then
+    sign_y = 0
+  elseif hex1.high and sign_x ~= 0 and sign_y == 1 then
+    sign_y = 0
+  end
+  local dir, new = Hexes.direction_to(hex1, sign_x, sign_y), hex1.hexes:find(hex1.logical_x + sign_x, hex1.logical_y + sign_y)
+  -- Util.printf("From %d, %d to %d, %d: (%d, %d) %s, %d, %d",
+  --   hex1.logical_x, hex1.logical_y, hex2.logical_x, hex2.logical_y, sign_x, sign_y, dir, new.logical_x, new.logical_y)
+  return dir, new
+end
+
+function Hexes.direction_to(hex, sign_x, sign_y)
+  if sign_x == 0 then
+    if sign_y < 0 then
+      return 'north'
+    elseif sign_y > 0 then
+      return 'south'
+    else
+      return 'here'
+    end
+  elseif sign_x < 0 then
+    if sign_y < 0 or hex.low then
+      return 'northwest'
+    elseif sign_y > 0 or hex.high then
+      return 'southwest'
+    end
+  elseif sign_x > 0 then
+    if sign_y < 0 or hex.low then
+      return 'northeast'
+    elseif sign_y > 0 or hex.high then
+      return 'southeast'
+    end
+  end
+end
+
 Hexes.dir = {
+  here = Hexes.here,
   north = Hexes.north,
   south = Hexes.south,
   northeast = Hexes.northeast,
@@ -278,7 +329,7 @@ function Hexes.new(group, highlights, multiplier)
   hexes.igroup:setReferencePoint(display.TopLeftReferencePoint)
   local funcs = Rainbow.funcs_for(multiplier or 1)
   hexes.color = funcs.smooth
-  hexes.towards = funcs.towards
+  hexes.color_towards = funcs.towards
   hexes.color_dist = funcs.dist
   hexes.multiplier = multiplier
   hexes.highlights = {}
@@ -322,6 +373,7 @@ function Hexes.new(group, highlights, multiplier)
       hex.colorize = Hexes.colorize
       hex.find = Hexes.find_from
       hex.dir = Hexes.dir
+      hex.towards = Hexes.hex_towards
       hex.splash = Hexes.splash
       hexes[x][y] = hex
       -- so ipairs will think it's a table with pairs

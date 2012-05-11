@@ -55,12 +55,12 @@ function scene:enterFrame(event)
   local behind
   behind = Hexes.dir[Hexes.turn[ant.dir].hard_right](ant.hex)
   behind.alpha = min(1, behind.alpha + 0.1)
-  behind.hue = self.hexes.towards(behind.hue, ant.hue)
+  behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
   behind:colorize()
 
   behind = Hexes.dir[Hexes.turn[ant.dir].hard_left](ant.hex)
   behind.alpha = min(1, behind.alpha + 0.1)
-  behind.hue = self.hexes.towards(behind.hue, ant.hue)
+  behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
   behind:colorize()
 
   table.insert(self.ants, ant)
@@ -92,7 +92,7 @@ function scene.process_hex(hex, inc, hue)
   local self = scene
   while hex do
     local old = hex.hue
-    hex.hue = hex.hexes.towards(hex.hue, hue)
+    hex.hue = hex.hexes.color_towards(hex.hue, hue)
     hex:colorize()
     hex.alpha = min(1, hex.alpha + 0.1)
     hex, increment, hue = coroutine.yield(true)
