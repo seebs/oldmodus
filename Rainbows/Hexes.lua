@@ -122,6 +122,15 @@ function Hexes.direction_to(hex, sign_x, sign_y)
   end
 end
 
+Hexes.go = {
+  north = Hexes.north,
+  south = Hexes.south,
+  northeast = Hexes.northeast,
+  southeast = Hexes.southeast,
+  northwest = Hexes.northwest,
+  southwest = Hexes.southwest,
+}
+
 Hexes.dir = {
   here = Hexes.here,
   north = Hexes.north,
@@ -186,7 +195,7 @@ Hexes.turn = {
 function Hexes.splash(hex, mindepth, maxdepth, proc, ...)
   local paths = { }
   for i = 1, maxdepth do
-    for k, f in pairs(hex.dir) do
+    for k, f in pairs(Hexes.go) do
       paths[k] = f(paths[k] or hex)
       if i >= mindepth then
 	coroutine.resume(proc, paths[k], i, ...)
