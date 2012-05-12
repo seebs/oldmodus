@@ -15,9 +15,14 @@ Squares = require "Squares"
 Hexes = require "Hexes"
 Touch = require "Touch"
 Vector = require "Vector"
+Settings = require "Settings"
+Logic = require "Logic"
 
 storyboard = require "storyboard"
 widget = require "widget"
+
+-- debugging and saving memory and things
+storyboard.purgeOnSceneChange = true
 
 local displays = {
   'spiral',
@@ -33,10 +38,11 @@ local displays = {
   'lissajous',
   'ants2',
 }
-local debugging_display = 'ants'
+local debugging_display = nil
 local display_index = 1
-local debugging_performance = false
+local debugging_performance = true
 if debugging_display or debugging_performance then
+  storyboard.isDebug = true
   local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 35)
   Util.messages_to(message_box)
 end
@@ -47,6 +53,9 @@ function next_display(event)
   if debugging_display then
     table.insert(displays, display_index, debugging_display)
     debugging_display = nil
+  end
+  if debugging_performance then
+    storyboard.printMemUsage()
   end
   if not event or event.phase == 'ended' then
     storyboard.gotoScene(displays[display_index], 'fade', 500)

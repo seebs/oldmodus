@@ -105,7 +105,10 @@ function Touch.handle(event)
   -- Util.printf("state.active: %d", state.active)
 
   if e.done and (e.end_stamp - e.start_stamp < 150) and dist(e.start, e.current) < 20 then
-    if last_tap and (e.end_stamp - last_tap.end_stamp < 350) and dist(e.current, last_tap.current) < 20 then
+    if dist(e.current, { x = 0, y = Screen.size.y / 2 }) < 50 then
+      Util.printf("settings!")
+      storyboard.showOverlay('prefpane', { effect = 'fromLeft', time = 500 })
+    elseif last_tap and (e.end_stamp - last_tap.end_stamp < 350) and dist(e.current, last_tap.current) < 20 then
       last_tap = nil
       next_display()
     end

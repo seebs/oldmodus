@@ -1,9 +1,6 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
-local frame = Util.enterFrame
-local touch = Touch.state
-
 scene.KNIGHTS = 6
 
 scene.FADED = 0.75
@@ -83,11 +80,6 @@ function scene:move_knight(knight)
 end
 
 function scene:enterFrame(event)
-  frame()
-  touch(self.touch_magic, self)
-  if self.view.alpha < 1 then
-    self.view.alpha = math.min(1, self.view.alpha + .03)
-  end
   local knight = self.knights[1]
   knight.counter = knight.counter - 1
   if knight.counter < 0 then
@@ -129,7 +121,6 @@ function scene:willEnterScene(event)
     table.insert(self.knights, knight)
     self:adjust(knight, true)
   end
-  self.view.alpha = 0
 end
 
 function scene:touch_magic(state, ...)
@@ -139,35 +130,12 @@ function scene:touch_magic(state, ...)
       self.toward[i] = self.squares:from_screen(v.current)
     end
   end
-  return true
-end
-
-function scene:enterScene(event)
-  touch(nil)
-  Runtime:addEventListener('enterFrame', scene)
-end
-
-function scene:didExitScene(event)
-  self.view.alpha = 0
-end
-
-function scene:exitScene(event)
-  Runtime:removeEventListener('enterFrame', scene)
 end
 
 function scene:destroyScene(event)
+  self.squares:removeSelf()
   self.squares = nil
-  self.sheet = nil
-  self.igroup:removeSelf()
-  self.igroup = nil
   self.knights = nil
 end
-
-scene:addEventListener('createScene', scene)
-scene:addEventListener('enterScene', scene)
-scene:addEventListener('willEnterScene', scene)
-scene:addEventListener('exitScene', scene)
-scene:addEventListener('didExitScene', scene)
-scene:addEventListener('destroyScene', scene)
 
 return scene

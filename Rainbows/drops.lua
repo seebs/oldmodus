@@ -1,8 +1,6 @@
 local storyboard = require('storyboard')
 local scene = storyboard.newScene()
 
-local frame = Util.enterFrame
-local touch = Touch.state
 local dist = Util.dist
 
 -- from messing with a rainbow background
@@ -196,11 +194,6 @@ function scene:do_drops()
 end
 
 function scene:enterFrame(event)
-  frame()
-  touch(self.touch_magic, self)
-  if self.view.alpha < 1 then
-    self.view.alpha = math.min(self.view.alpha + .03, 1)
-  end
   self.cooldown = self.cooldown -1
   if self.cooldown < 1 then
     self:do_drops()
@@ -222,14 +215,12 @@ function scene:touch_magic(state, ...)
 end
 
 function scene:willEnterScene(event)
-  self.view.alpha = 0
   self.toward = nil
 end
 
 function scene:enterScene(event)
   self.cooldown = 0
-  touch(nil)
-  Runtime:addEventListener('enterFrame', scene)
+  self.future_drops = {}
 end
 
 function scene:didExitScene(event)
@@ -242,24 +233,14 @@ function scene:didExitScene(event)
   while #move_these > 0 do
     table.insert(self.spare_drops, table.remove(self.drops, table.remove(move_these)))
   end
-  self.view.alpha = 0
-end
-
-function scene:exitScene(event)
-  Runtime:removeEventListener('enterFrame', scene)
 end
 
 function scene:destroyScene(event)
   self.drops = nil
   self.spare_drops = nil
   self.bg = nil
+  self.sheetc = nil
+  self.sheeth = nil
 end
-
-scene:addEventListener('createScene', scene)
-scene:addEventListener('willEnterScene', scene)
-scene:addEventListener('enterScene', scene)
-scene:addEventListener('didExitScene', scene)
-scene:addEventListener('exitScene', scene)
-scene:addEventListener('destroyScene', scene)
 
 return scene

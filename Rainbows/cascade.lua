@@ -8,8 +8,6 @@ scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
 
 local max = math.max
 local min = math.min
-local frame = Util.enterFrame
-local touch = Touch.state
 
 function scene:createScene(event)
   s = Screen.new(self.view)
@@ -18,8 +16,6 @@ function scene:createScene(event)
 end
 
 function scene:enterFrame(event)
-  frame()
-  touch(self.touch_magic, self)
   if self.view.alpha < 1 then
     self.view.alpha = min(1, self.view.alpha + .03)
   end
@@ -117,7 +113,6 @@ function scene:willEnterScene(event)
   self.squares[1][1].hue = 1 + self.COLOR_MULTIPLIER
   self.squares[1][1]:colorize()
   self.squares[1][1].compute = 1
-  self.view.alpha = 0
 end
 
 function scene:touch_magic(state)
@@ -128,12 +123,14 @@ function scene:touch_magic(state)
 	local square
 	for i, p in ipairs(e.previous) do
 	  square = self.squares:from_screen(p)
+	  -- Util.printf("previous: %d, %d", square.logical_x, square.logical_y)
 	  if square then
 	    hitboxes[square] = true
 	  end
 	end
 	square = self.squares:from_screen(e.current)
 	if square then
+	  -- Util.printf("current: %d, %d", square.logical_x, square.logical_y)
 	  hitboxes[square] = true
 	end
 	for square, _ in pairs(hitboxes) do
@@ -149,31 +146,15 @@ end
 
 function scene:enterScene(event)
   self.toward = nil
-  touch(nil)
-  Runtime:addEventListener('enterFrame', scene)
-end
-
-function scene:didExitScene(event)
-  self.view.alpha = 0
 end
 
 function scene:exitScene(event)
   self.toward = nil
-  Runtime:removeEventListener('enterFrame', scene)
 end
 
 function scene:destroyScene(event)
+  self.squares:removeSelf()
   self.squares = nil
-  self.sheet = nil
-  self.igroup:removeSelf()
-  self.igroup = nil
 end
-
-scene:addEventListener('createScene', scene)
-scene:addEventListener('enterScene', scene)
-scene:addEventListener('willEnterScene', scene)
-scene:addEventListener('exitScene', scene)
-scene:addEventListener('didExitScene', scene)
-scene:addEventListener('destroyScene', scene)
 
 return scene

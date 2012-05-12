@@ -9,8 +9,6 @@ local cos = math.cos
 local floor = math.floor
 local ceil = math.ceil
 local abs = math.abs
-local frame = Util.enterFrame
-local touch = Touch.state
 
 scene.COLOR_MULTIPLIER = 10
 -- scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
@@ -57,7 +55,6 @@ function scene:createScene(event)
   self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
   s:insert(self.bg)
-  self.view.alpha = 0
 end
 
 function scene:spiral_from(vec, points, segments)
@@ -177,11 +174,6 @@ function scene:move()
 end
 
 function scene:enterFrame(event)
-  frame()
-  touch(self.touch_magic, self)
-  if self.view.alpha < 1 then
-    self.view.alpha = min(self.view.alpha + .01, 1)
-  end
   if self.cooldown > 1 then
     self.cooldown = self.cooldown - 1
     return
@@ -198,12 +190,10 @@ function scene:enterFrame(event)
 end
 
 function scene:willEnterScene(event)
-  self.view.alpha = 0
   self.cooldown = 0
 end
 
 function scene:enterScene(event)
-  touch(nil)
   self.lines = {}
   self.next_color = nil
   self.vecs = {}
@@ -221,7 +211,6 @@ function scene:enterScene(event)
     self:move()
   end
   self.next_color = 1
-  Runtime:addEventListener('enterFrame', scene)
 end
 
 function scene:touch_magic(state, ...)
@@ -233,31 +222,18 @@ function scene:touch_magic(state, ...)
   end
 end
 
-function scene:didExitScene(event)
-  self.view.alpha = 0
-end
-
 function scene:exitScene(event)
   self.sorted_ids = {}
   self.toward = {}
-  self.view.alpha = 0
   for i, l in ipairs(self.lines) do
     l:removeSelf()
   end
   self.lines = {}
-  Runtime:removeEventListener('enterFrame', scene)
 end
 
 function scene:destroyScene(event)
   self.bg = nil
   self.lines = nil
 end
-
-scene:addEventListener('createScene', scene)
-scene:addEventListener('willEnterScene', scene)
-scene:addEventListener('enterScene', scene)
-scene:addEventListener('didExitScene', scene)
-scene:addEventListener('exitScene', scene)
-scene:addEventListener('destroyScene', scene)
 
 return scene

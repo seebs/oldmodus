@@ -10,9 +10,6 @@ scene.START_LINES = 1
 scene.LINE_DEPTH = 8
 scene.TOUCH_ACCEL = 1
 
-local frame = Util.enterFrame
-local touch = Touch.state
-
 local s
 
 function scene:createScene(event)
@@ -27,7 +24,6 @@ function scene:createScene(event)
   self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
   self.view:insert(self.bg)
-  self.view.alpha = 0
 end
 
 function scene:line(color, g)
@@ -93,11 +89,6 @@ function scene:move()
 end
 
 function scene:enterFrame(event)
-  frame()
-  touch(self.touch_magic, self)
-  if self.view.alpha < 1 then
-    self.view.alpha = math.min(self.view.alpha + .01, 1)
-  end
   if self.cooldown > 1 then
     self.cooldown = self.cooldown - 1
     return
@@ -115,7 +106,6 @@ function scene:willEnterScene(event)
 end
 
 function scene:enterScene(event)
-  touch(nil)
   self.lines = {}
   self.next_color = nil
   self.vecs = {}
@@ -130,7 +120,6 @@ function scene:enterScene(event)
   end
   self.next_color = 1
   self.last_color = scene.line_total
-  Runtime:addEventListener('enterFrame', scene)
 end
 
 function scene:touch_magic(state, ...)
@@ -153,10 +142,6 @@ function scene:touch_magic(state, ...)
   return true
 end
 
-function scene:didExitScene(event)
-  self.view.alpha = 0
-end
-
 function scene:exitScene(event)
   self.sorted_ids = {}
   self.toward = {}
@@ -165,19 +150,11 @@ function scene:exitScene(event)
     l:removeSelf()
   end
   self.lines = {}
-  Runtime:removeEventListener('enterFrame', scene)
 end
 
 function scene:destroyScene(event)
   self.bg = nil
   self.lines = nil
 end
-
-scene:addEventListener('createScene', scene)
-scene:addEventListener('willEnterScene', scene)
-scene:addEventListener('enterScene', scene)
-scene:addEventListener('didExitScene', scene)
-scene:addEventListener('exitScene', scene)
-scene:addEventListener('destroyScene', scene)
 
 return scene

@@ -390,6 +390,7 @@ function Hexes.new(group, highlights, multiplier)
     end
   end
   hexes.find = Hexes.find
+  hexes.removeSelf = Hexes.removeSelf
   if highlights then
     for i = 1, highlights do
       local light = display.newImage(Hexes.sheet, 1)
@@ -405,6 +406,15 @@ function Hexes.new(group, highlights, multiplier)
     end
   end
   return hexes
+end
+
+function Hexes:removeSelf()
+  if self.igroup then
+    self.igroup:removeSelf()
+  end
+  self.igroup = nil
+  self.r = nil
+  self.highlights = nil
 end
 
 return Hexes

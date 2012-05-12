@@ -154,6 +154,7 @@ function Squares.new(group, highlights, multiplier)
     end
   end
   squares.find = Squares.find
+  squares.removeSelf = Squares.removeSelf
   if highlights then
     for i = 1, highlights do
       local light = display.newImage(Squares.sheet, 1)
@@ -168,6 +169,15 @@ function Squares.new(group, highlights, multiplier)
     end
   end
   return squares
+end
+
+function Squares:removeSelf()
+  if self.igroup then
+    self.igroup:removeSelf()
+  end
+  self.igroup = nil
+  self.r = nil
+  self.highlights = nil
 end
 
 return Squares

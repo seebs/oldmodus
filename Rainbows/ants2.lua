@@ -12,8 +12,6 @@ scene.CYCLE = 6
 
 local max = math.max
 local min = math.min
-local frame = Util.enterFrame
-local touch = Touch.state
 
 local s
 
@@ -23,11 +21,6 @@ function scene:createScene(event)
 end
 
 function scene:enterFrame(event)
-  frame()
-  touch(self.touch_magic, self)
-  if self.view.alpha < 1 then
-    self.view.alpha = min(1, self.view.alpha + .03)
-  end
   self.cooldown = self.cooldown - 1
   if self.cooldown >= 1 then
     return
@@ -173,27 +166,11 @@ function scene:enterScene(event)
     self.ants[i] = ant
   end
   self.fade_cooldown = self.FADE_DIVISOR
-  Runtime:addEventListener('enterFrame', scene)
-end
-
-function scene:didExitScene(event)
-  self.view.alpha = 0
-end
-
-function scene:exitScene(event)
-  Runtime:removeEventListener('enterFrame', scene)
 end
 
 function scene:destroyScene(event)
   self.hexes:removeSelf()
   self.hexes = nil
 end
-
-scene:addEventListener('createScene', scene)
-scene:addEventListener('enterScene', scene)
-scene:addEventListener('willEnterScene', scene)
-scene:addEventListener('exitScene', scene)
-scene:addEventListener('didExitScene', scene)
-scene:addEventListener('destroyScene', scene)
 
 return scene
