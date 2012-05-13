@@ -42,12 +42,12 @@ function scene:adjust(knight)
     knight.light:move(square)
   end
   if knight.index % 3 == 1 then
-    Sounds.playexact(knight.index + self.tone_offset, 0.7)
+    Sounds.playexact(knight.index + self.tone_offset, 1)
     if knight.index == 10 then
       self.tone_offset = (self.tone_offset + 1) % 3
     end
   end
-  Sounds.playexact(square.hue + 5, 0.5)
+  Sounds.playexact(square.hue + 5, 0.8)
   square.alpha = 1
   self:bump(square:find(1, 0))
   self:bump(square:find(-1, 0))

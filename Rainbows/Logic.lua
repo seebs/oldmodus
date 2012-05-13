@@ -2,6 +2,7 @@
 local Logic = {}
 
 local touch = Touch.state
+local min = math.min
 
 local last_times = {}
 
@@ -89,6 +90,8 @@ end
 
 function Logic.enterScene(custom, obj, event)
   Util.message('')
+  -- wipe existing touches
+  touch(nil)
   -- give a few ticks to think about frame rate
   time_counter = 65
   if custom then

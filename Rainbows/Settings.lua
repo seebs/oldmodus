@@ -62,12 +62,14 @@ Settings.scenes = {
   ants = {
     color_multiplier = 4,
     ants = 6,
-    frame_delay = 6,
+    frame_delay = 5,
+    sound_delay = 4,
   },
   ants2 = {
     color_multiplier = 4,
     ants = 6,
-    frame_delay = 6,
+    frame_delay = 5,
+    sound_delay = 4,
   },
 }
 

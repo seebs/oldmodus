@@ -89,7 +89,7 @@ function scene:enterFrame(event)
   self.colors[1] = (self.colors[1] % self.total_colors) + 1
   local idx = self.colors[1] % set.color_multiplier
   if idx == 0 or idx == set.color_multiplier / 2 then
-    Sounds.playexact(2 * self.colors[1] / set.color_multiplier, 0.4)
+    Sounds.playexact(2 * self.colors[1] / set.color_multiplier, 0.8)
   end
   self.colors[2] = (self.colors[2] % self.total_colors) + 1
   for _, column in ipairs(self.squares) do

@@ -6,6 +6,7 @@ scene.META_CYCLE = 12
 
 local max = math.max
 local min = math.min
+local ceil = math.ceil
 local frame = Util.enterFrame
 local touch = Touch.state
 
@@ -33,6 +34,7 @@ function scene:enterFrame(event)
   local ant = table.remove(self.ants, 1)
   ant.hex.hue = ant.hex.hue - 1
   ant.hex:colorize()
+  ant.hex.ant = nil
   self.meta_cooldown = self.meta_cooldown - 1
   -- every three turns, move towards the next ant
   if self.meta_cooldown < 1 then
@@ -48,6 +50,7 @@ function scene:enterFrame(event)
   end
   ant.light:move(ant.hex)
   ant.hex.hue = ant.hue
+  ant.hex.ant = ant
   ant.hex.alpha = 1
   ant.hex:colorize()
 
@@ -56,11 +59,17 @@ function scene:enterFrame(event)
   behind = Hexes.dir[Hexes.turn[ant.dir].hard_right](ant.hex)
   behind.alpha = min(1, behind.alpha + 0.1)
   behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
+  if behind.ant then
+    self.make_sound = behind.ant.hue / set.color_multiplier
+  end
   behind:colorize()
 
   behind = Hexes.dir[Hexes.turn[ant.dir].hard_left](ant.hex)
   behind.alpha = min(1, behind.alpha + 0.1)
   behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
+  if behind.ant then
+    self.make_sound = behind.ant.hue / set.color_multiplier
+  end
   behind:colorize()
 
   table.insert(self.ants, ant)
@@ -77,10 +86,22 @@ function scene:enterFrame(event)
   for k, splash in ipairs(self.splashes) do
     splash.cooldown = splash.cooldown - 1
     if splash.cooldown < 1 then
+      self.make_sound = ceil(splash.hue / set.color_multiplier)
       proc = coroutine.create(scene.process_hex)
       splash.cooldown = 2
       splash.hex:splash(1, 1, proc, splash.hue)
       removes[#removes + 1] = k
+    end
+  end
+  self.sound_delay = self.sound_delay - 1
+  if self.sound_delay < 1 then
+    self.sound_delay = set.sound_delay
+    Sounds.playoctave(ant.hue, 0)
+  end
+  if self.sound_delay % (set.sound_delay / 2) == 0 then
+    if self.make_sound then
+      Sounds.play(self.make_sound)
+      self.make_sound = nil
     end
   end
   while #removes > 0 do
@@ -113,14 +134,15 @@ end
 local recent_touch = { }
 
 function scene:touch_magic(state, ...)
-  if state.events == 0 then
-    return
-  end
+  -- actually, we care because you might be holding a note.
+  -- if state.events == 0 then
+  --   return
+  -- end
   for idx, event in ipairs(state.points) do
+    local idx = event.idx
+    recent_touch[idx] = recent_touch[idx] or {}
+    local touch = recent_touch[idx]
     if event.events ~= 0 then
-      local idx = event.idx
-      recent_touch[idx] = recent_touch[idx] or {}
-      local touch = recent_touch[idx]
       local hit_hexes = {}
       if not touch.hue then
 	local start_hex = self.hexes:from_screen(event.start)
@@ -147,12 +169,16 @@ function scene:touch_magic(state, ...)
       if event.done then
 	recent_touch[idx] = nil
       end
+    elseif not event.done then
+      self.make_sound = (touch and touch.hue) or 1
     end
   end
 end
 
 function scene:enterScene(event)
   self.meta_cooldown = self.META_CYCLE
+  self.make_sound = nil
+  self.sound_delay = 0
   self.splashes = {}
   self.ants = {}
   for i, h in ipairs(self.hexes.highlights) do

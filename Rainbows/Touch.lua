@@ -18,6 +18,13 @@ local next_idx = 1
 
 local nuke_these = {}
 
+local gear = display.newImage('gear.png')
+gear:scale(60 / 533, 60 / 533)
+gear.x = 32 + display.screenOriginX
+gear.y = 32 + display.screenOriginY
+-- gear.blendMode = 'add'
+gear.isVisible = false
+
 function Touch.state(func, caller)
   if state.active > 0 then
     if func then
@@ -104,15 +111,32 @@ function Touch.handle(event)
   -- Util.dump(e)
   -- Util.printf("state.active: %d", state.active)
 
+  local maybe_prefs = false
   if e.done and (e.end_stamp - e.start_stamp < 150) and dist(e.start, e.current) < 20 then
-    if dist(e.current, { x = 0, y = Screen.size.y / 2 }) < 50 then
-      Util.printf("settings!")
-      storyboard.showOverlay('prefpane', { effect = 'fromLeft', time = 500 })
-    elseif last_tap and (e.end_stamp - last_tap.end_stamp < 350) and dist(e.current, last_tap.current) < 20 then
-      last_tap = nil
-      next_display()
+    if dist(e.current, { x = 0, y = 0 }) < 70 then
+      maybe_prefs = true 
     end
-    last_tap = e
+    if last_tap and (e.end_stamp - last_tap.end_stamp < 350) and dist(e.current, last_tap.current) < 20 then
+      if maybe_prefs and last_tap.maybe_prefs then
+	Util.printf("prefs!")
+        storyboard.gotoScene('prefs')
+      else
+        next_display()
+      end
+      gear.isVisible = false
+      last_tap = nil
+    else
+      last_tap = e
+      last_tap.maybe_prefs = maybe_prefs
+      if last_tap.maybe_prefs then
+        gear.isVisible = true
+	gear:toFront()
+      else
+        gear.isVisible = false
+      end
+    end
+  elseif e.done then
+    gear.isVisible = false
   end
 
   return true

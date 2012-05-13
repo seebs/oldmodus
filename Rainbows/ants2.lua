@@ -4,6 +4,7 @@ scene.FADED = 0.75
 scene.FADE_DIVISOR = 12
 scene.CYCLE = 6
 
+local ceil = math.ceil
 local max = math.max
 local min = math.min
 
@@ -24,6 +25,7 @@ function scene:enterFrame(event)
     { dir = Hexes.turn[ant.dir].ahead },
     { dir = Hexes.turn[ant.dir].left },
   }
+  ant.hex.ant = nil
   for i, ch in ipairs(choices) do
     ch.hex = (Hexes.dir[ch.dir])(ant.hex)
     ch.dist = self.hexes.color_dist(ch.hex.hue, ant.hue) + self.half_colors * (1 - ch.hex.alpha) / 2
@@ -31,6 +33,7 @@ function scene:enterFrame(event)
   table.sort(choices, function(a, b) return a.dist > b.dist end)
   ant.dir = choices[1].dir
   ant.hex = choices[1].hex
+  ant.hex.ant = ant
   ant.hex.hue = ant.hue
   ant.hex.alpha = 1
   ant.hex:colorize()
@@ -41,11 +44,17 @@ function scene:enterFrame(event)
   behind = Hexes.dir[Hexes.turn[ant.dir].hard_right](ant.hex)
   behind.alpha = min(1, behind.alpha + 0.1)
   behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
+  if behind.ant then
+    self.make_sound = behind.ant.hue / set.color_multiplier
+  end
   behind:colorize()
 
   behind = Hexes.dir[Hexes.turn[ant.dir].hard_left](ant.hex)
   behind.alpha = min(1, behind.alpha + 0.1)
   behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
+  if behind.ant then
+    self.make_sound = behind.ant.hue / set.color_multiplier
+  end
   behind:colorize()
 
   table.insert(self.ants, ant)
@@ -62,10 +71,22 @@ function scene:enterFrame(event)
   for k, splash in ipairs(self.splashes) do
     splash.cooldown = splash.cooldown - 1
     if splash.cooldown < 1 then
+      self.make_sound = ceil(splash.hue / set.color_multiplier)
       proc = coroutine.create(scene.process_hex)
       splash.cooldown = 2
       splash.hex:splash(1, 1, proc, splash.hue)
       removes[#removes + 1] = k
+    end
+  end
+  self.sound_delay = self.sound_delay - 1
+  if self.sound_delay < 1 then
+    self.sound_delay = set.sound_delay
+    Sounds.playoctave(ant.hue, 0, 0.6)
+  end
+  if self.sound_delay % (set.sound_delay / 2) == 0 then
+    if self.make_sound then
+      Sounds.play(self.make_sound, 0.7)
+      self.make_sound = nil
     end
   end
   while #removes > 0 do
@@ -98,16 +119,19 @@ end
 local recent_touch = { }
 
 function scene:touch_magic(state, ...)
-  if state.events == 0 then
-    return
-  end
+  -- actually, we care because you might be holding a note.
+  -- if state.events == 0 then
+  --   return
+  -- end
   for idx, event in ipairs(state.points) do
+    local idx = event.idx
+    recent_touch[idx] = recent_touch[idx] or {}
+    local touch = recent_touch[idx]
     if event.events ~= 0 then
-      local idx = event.idx
-      recent_touch[idx] = recent_touch[idx] or {}
-      local touch = recent_touch[idx]
       local hit_hexes = {}
       if not touch.hue then
+	Util.printf("start_hex event:")
+	Util.dump(event)
 	local start_hex = self.hexes:from_screen(event.start)
 	if start_hex then
 	  touch.hue = start_hex.hue
@@ -132,6 +156,8 @@ function scene:touch_magic(state, ...)
       if event.done then
 	recent_touch[idx] = nil
       end
+    elseif not event.done then
+      self.make_sound = (touch and touch.hue) or 1
     end
   end
 end
@@ -139,6 +165,8 @@ end
 function scene:enterScene(event)
   self.splashes = {}
   self.ants = {}
+  self.sound_delay = 0
+  self.make_sound = nil
   for i, h in ipairs(self.hexes.highlights) do
     local ant =  {
       x = math.random(self.hexes.columns),

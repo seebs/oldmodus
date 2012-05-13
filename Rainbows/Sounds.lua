@@ -13,7 +13,7 @@ for name, count in pairs(Sounds.counts) do
     table.insert(Sounds.wavs[name], sound)
   end
 end
-audio.setVolume(0.6, 0)
+audio.setVolume(0.5, 0)
 
 local tones = Sounds.wavs[Settings.default.tone]
 local tonecount = Sounds.counts[Settings.default.tone]
@@ -27,14 +27,19 @@ function Sounds.playexact(tone, volume)
     return
   end
   local c = audio.play(tones[(tone - 1) % #tones + 1])
-  if c then
-    audio.setVolume(volume or 0.6, c)
-  end
+  Sounds.volume(c, volume)
 end
 
 local offset = 0
 
-function Sounds.playoctave(hue, octave)
+function Sounds.volume(c, volume)
+  volume = (volume or 1) * 0.5
+  if c and c ~= 0 then
+    audio.setVolume(volume, c)
+  end
+end
+
+function Sounds.playoctave(hue, octave, volume)
   if Sounds.quiet then
     return
   end
@@ -43,12 +48,10 @@ function Sounds.playoctave(hue, octave)
   local off = ((octave or 0) * 5)
   off = off % (tonecount - 1)
   local c = audio.play(tones[note + off])
-  if c then
-    audio.setVolume(0.6, c)
-  end
+  Sounds.volume(c, volume)
 end
 
-function Sounds.play(hue)
+function Sounds.play(hue, volume)
   if Sounds.quiet then
     return
   end
@@ -61,9 +64,7 @@ function Sounds.play(hue)
   end
   -- Util.printf("hue %d, note %d, total %d", hue, note, note + offset)
   local c = audio.play(tones[note + offset])
-  if c then
-    audio.setVolume(0.6, c)
-  end
+  Sounds.volume(c, volume)
 end
 
 return Sounds

@@ -219,6 +219,9 @@ function Hexes:from_screen(t_or_x, y)
   else
     x = t_or_x
   end
+  if not x then
+    return nil
+  end
   local x_insquare = fmod(x, Hexes.per_hex_horizontal) / Hexes.per_hex_horizontal
   -- should run 0-to-1, with 1 for the edges and 0 for the middle
   local y_insquare = fmod(y, Hexes.hex_vertical) - Hexes.vertical_half
