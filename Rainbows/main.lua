@@ -6,17 +6,22 @@ player = { slot = 1, score = 0, location = 1 }
 -- profiler.startProfiler({time = 30000, delay = 1000, verbose = true})
 
 -- mine get caps so I don't clash
+-- stuff everyone else needs
+Settings = require "Settings"
 Util = require "Util"
-Line = require "Line"
+Touch = require "Touch"
+Logic = require "Logic"
+
+-- basic interface bits
 Rainbow = require "Rainbow"
 Screen = require "Screen"
 Sounds = require "Sounds"
+
+-- graphics tools
+Line = require "Line"
 Squares = require "Squares"
 Hexes = require "Hexes"
-Touch = require "Touch"
 Vector = require "Vector"
-Settings = require "Settings"
-Logic = require "Logic"
 
 storyboard = require "storyboard"
 widget = require "widget"
@@ -25,18 +30,17 @@ widget = require "widget"
 storyboard.purgeOnSceneChange = true
 
 local displays = {
+  'spline',
+  'spiral',
+  'knights2',
   'knights',
   'spiral2',
-  'spiral',
 }
 
 local notyet = {
-  'knights',
-  'spline',
   'cascade',
   'drops',
   'ants',
-  'knights2',
   'lines',
   'cascade2',
   'lissajous',

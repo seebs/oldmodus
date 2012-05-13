@@ -39,7 +39,7 @@ function Logic.enterFrame(custom, obj, event)
       local time = last_times[61] - last_times[1]
       local frame_time = time / 60
       local fps = 1000 / frame_time
-      Util.message("%.1f-%.1f %.1fms %.1ffps", small, big, frame_time, fps)
+      -- Util.message("%.1f-%.1f %.1fms %.1ffps", small, big, frame_time, fps)
       time_counter = 60
     end
   end
@@ -90,12 +90,14 @@ function Logic.enterScene(custom, obj, event)
   if custom then
     custom(obj, event)
   end
+  Sounds.suppress(false)
   Runtime:addEventListener('enterFrame', obj)
 end
 
 function Logic.willEnterScene(custom, obj, event)
   obj.frame_cooldown = 0
   obj.view.alpha = 0
+  Sounds.suppress(true)
   if custom then
     custom(obj, event)
   end
@@ -106,6 +108,7 @@ function Logic.exitScene(custom, obj, event)
   if custom then
     custom(obj, event)
   end
+  Sounds.suppress(true)
 end
 
 function Logic.didExitScene(custom, obj, event)

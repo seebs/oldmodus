@@ -1,34 +1,35 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
+local scene = {}
 
-scene.COLOR_MULTIPLIER = 6
--- scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
-scene.HISTORY = 16
-scene.LINE_DELAY = 2
-scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
-scene.LINE_SEGMENTS = scene.TOTAL_COLORS
 scene.VELOCITY_MIN = 5
 scene.VELOCITY_MAX = 15
-scene.START_POINTS = 4
+scene.points = 4
 scene.TOUCH_ACCEL = 1
 
-local rfuncs = Rainbow.funcs_for(scene.COLOR_MULTIPLIER)
-local colorfor = rfuncs.smooth
-local colorize = rfuncs.smoothobj
+local rfuncs
+local colorfor
+local colorize
+
 local midpoint = Util.midpoint
 local partway = Util.partway
 local ceil = math.ceil
 
 local s
+local set
 
 function scene:createScene(event)
+  s = self.screen
+  set = self.settings
+
+  self.total_colors = #Rainbow.hues * set.color_multiplier
+  rfuncs = Rainbow.funcs_for(set.color_multiplier)
+  colorfor = rfuncs.smooth
+  colorize = rfuncs.smoothobj
+
   self.ids = self.ids or {}
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
 
   self.lines = {}
-  
-  s = Screen.new(self.view)
 
   -- so clicks have something to land on
 
@@ -60,24 +61,24 @@ function scene:spline(vecs, points, lo, hi)
   }
   -- if mid == lo+1, then this would just overwrite it
   if mid ~= lo + 1 then
-    scene:spline(newvecs, points, lo, mid)
+    self:spline(newvecs, points, lo, mid)
   end
   if mid ~= hi - 1 then
-    scene:spline({ newvecs[4], newvecs[5], newvecs[6], newvecs[7] }, points, mid, hi)
+    self:spline({ newvecs[4], newvecs[5], newvecs[6], newvecs[7] }, points, mid, hi)
   end
 end
 
 function scene:line(color, g)
   if not color then
     color = self.next_color or 1
-    self.next_color = (color % scene.TOTAL_COLORS) + 1
+    self.next_color = (color % self.total_colors) + 1
   end
   g = g or display.newGroup()
   g.points = g.points or {}
   g.segments = g.segments or {}
-  scene:spline(self.vecs, g.points, 0, self.LINE_SEGMENTS)
+  self:spline(self.vecs, g.points, 0, self.total_colors)
   g.points[1] = { x = self.vecs[1].x, y = self.vecs[1].y }
-  g.points[self.LINE_SEGMENTS + 1] = { x = self.vecs[4].x, y = self.vecs[4].y }
+  g.points[self.total_colors + 1] = { x = self.vecs[4].x, y = self.vecs[4].y }
   if #g.segments == self.line_segments then
     for i, seg in ipairs(g.segments) do
       seg:setPoints(g.points[i], g.points[i + 1])
@@ -86,7 +87,7 @@ function scene:line(color, g)
       color = color + 1
     end
   else
-    for i = 1, self.LINE_SEGMENTS do
+    for i = 1, self.total_colors do
       local seg = g.segments[i]
       local point = g.points[i]
       local next = g.points[i + 1]
@@ -128,47 +129,37 @@ end
 function scene:move()
   local bounce = false
   for i, v in ipairs(self.vecs) do
-    if v:move(self.toward[i]) then
+    if v:move(self.toward[i]) and (i == 1 or i == 4) then
       bounce = true
     end
   end
   -- not used during startup
   if bounce and self.next_color then
-    Sounds.play(ceil(self.next_color / self.COLOR_MULTIPLIER))
+    Sounds.play(ceil(self.next_color / set.color_multiplier))
   end
 end
 
 function scene:enterFrame(event)
-  if self.cooldown > 1 then
-    self.cooldown = self.cooldown - 1
-    return
-  else
-    self.cooldown = self.LINE_DELAY
-  end
   local last = table.remove(self.lines, 1)
   for i, l in ipairs(self.lines) do
-    l.alpha = math.sqrt(i / self.HISTORY)
+    l.alpha = math.sqrt(i / set.history)
   end
-  table.insert(self.lines, scene:line(nil, last))
+  table.insert(self.lines, self:line(nil, last))
   self.lines[#self.lines].alpha = 1
   self:move()
-end
-
-function scene:willEnterScene(event)
-  self.cooldown = 0
 end
 
 function scene:enterScene(event)
   self.lines = {}
   self.next_color = nil
   self.vecs = {}
-  for i = 1, scene.START_POINTS do
-    self.vecs[i] = Vector.new(s, self)
+  for i = 1, self.points do
+    self.vecs[i] = Vector.new(s, set)
   end
   self:move()
-  for i = 1, scene.HISTORY do
+  for i = 1, set.history do
     local l = self:line(i, nil)
-    l.alpha = math.sqrt(i / scene.HISTORY)
+    l.alpha = math.sqrt(i / set.history)
     table.insert(self.lines, l)
     self:move()
   end

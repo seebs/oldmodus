@@ -19,10 +19,11 @@ scene.segment_fudge = 5
 local rfuncs
 local colorfor
 local colorize
+local color_scale
 
 function scene:createScene(event)
   set = self.settings
-  Util.dump(set)
+  s = self.screen
 
   rfuncs = Rainbow.funcs_for(set.color_multiplier)
   colorfor = rfuncs.smooth
@@ -32,12 +33,11 @@ function scene:createScene(event)
   self.line_segments = self.total_colors
   self.segments_triangle = (self.line_segments * self.line_segments + self.line_segments) / 2
   self.segments_triangle = self.segments_triangle + (self.line_segments * self.segment_fudge)
+  color_scale = floor(self.total_colors / set.points)
 
   self.ids = self.ids or {}
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
-
-  s = self.screen
 
   self.center = Vector.new(s, set, 5)
   self.center.ripples = {}
@@ -91,7 +91,6 @@ function scene:all_lines(color, g)
     color = self.next_color or 1
     self.next_color = (color % self.total_colors) + 1
   end
-  local color_scale = floor(self.total_colors / set.points)
   g = g or display.newGroup()
   g.sublines = g.sublines or {}
   for i = 1, set.points do
@@ -154,12 +153,12 @@ function scene:move()
   for i, v in ipairs(self.vecs) do
     if v:move(self.toward[i + offset]) then
       table.insert(v.ripples, self.line_segments)
-      bounce = true
+      bounce = i
     end
   end
   -- not used during startup
   if bounce and self.next_color then
-    Sounds.play(ceil(self.next_color / set.color_multiplier))
+    Sounds.playoctave(ceil(self.next_color / set.color_multiplier) + bounce * color_scale, bounce)
   end
 end
 

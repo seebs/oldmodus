@@ -1,13 +1,16 @@
 local scene = {}
 
-scene.KNIGHTS = 6
+scene.KNIGHTS = 12
 
 scene.FADED = 0.75
 
 local s
+local set
 
 function scene:createScene(event)
-  s = Screen.new(self.view)
+  s = self.screen
+  set = self.settings
+
   self.squares = Squares.new(s, self.KNIGHTS)
   self.knights = {}
 end
@@ -22,7 +25,7 @@ function scene:bump(square)
   end
 end
 
-function scene:adjust(knight, quiet)
+function scene:adjust(knight)
   local square = self.squares[knight.x][knight.y]
   self:bump(square)
   self:bump(square)
@@ -38,9 +41,13 @@ function scene:adjust(knight, quiet)
     end
     knight.light:move(square)
   end
-  if not quiet then
-    Sounds.play(square.hue)
+  if knight.index % 3 == 1 then
+    Sounds.playexact(knight.index + self.tone_offset, 0.7)
+    if knight.index == 10 then
+      self.tone_offset = (self.tone_offset + 1) % 3
+    end
   end
+  Sounds.playexact(square.hue + 5, 0.5)
   square.alpha = 1
   self:bump(square:find(1, 0))
   self:bump(square:find(-1, 0))
@@ -101,7 +108,7 @@ function scene:enterFrame(event)
   if knight.index == 1 then
     for _, column in ipairs(self.squares) do
       for _, square in ipairs(column) do
-	square.alpha = math.max(0, square.alpha - .0001)
+	square.alpha = math.max(0, square.alpha - .003)
       end
     end
   end
@@ -115,6 +122,7 @@ function scene:willEnterScene(event)
       square:colorize()
     end
   end
+  self.tone_offset = 0
   self.knights = {}
   for i = 1, self.KNIGHTS do
     local knight = {
@@ -124,11 +132,11 @@ function scene:willEnterScene(event)
       light = self.squares.highlights[i]
     }
     if knight.light then
-      knight.light.hue = knight.index
+      knight.light.hue = (knight.index - 1) % #Rainbow.hues + 1
       knight.light:colorize()
     end
     table.insert(self.knights, knight)
-    self:adjust(knight, true)
+    self:adjust(knight)
   end
   self.frame_cooldown = self.frame_cooldown + 30
 end
@@ -144,6 +152,7 @@ end
 
 function scene:enterScene(event)
   self.toward = {}
+  self.tone_offset = 0
 end
 
 function scene:destroyScene(event)
