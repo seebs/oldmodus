@@ -3,8 +3,8 @@ local Vector = {}
 function Vector.move(vector)
 end
 
-function Vector.random_velocity(params)
-  local d = math.random(params.VELOCITY_MAX - params.VELOCITY_MIN) + params.VELOCITY_MIN
+function Vector.random_velocity(settings)
+  local d = math.random(settings.v_max - settings.v_min) + settings.v_min
   if math.random(2) == 2 then
     d = d * -1
   end
@@ -13,7 +13,7 @@ end
 
 function Vector.move_vec(vec, toward)
   local bounce_x, bounce_y, bounce_theta = false, false, false
-  local accel = vec.params.TOUCH_ACCEL or 2
+  local accel = vec.settings.touch_accel or 2
 
   if toward then
     if toward.x > vec.x then
@@ -76,8 +76,8 @@ end
 
 function Vector.coerce(vec, member, big)
   local v = vec[member]
-  local max_v = vec.params.VELOCITY_MAX / (vec.limiter or 1)
-  local min_v = vec.params.VELOCITY_MIN / (vec.limiter or 1)
+  local max_v = vec.settings.v_max / (vec.limiter or 1)
+  local min_v = vec.settings.v_min / (vec.limiter or 1)
   local sign = v < 0
   local mag = sign and (0 - v) or v
   if big and not vec.controlled then
@@ -98,19 +98,19 @@ function Vector.coerce(vec, member, big)
   vec[member] = sign and (0 - mag) or mag
 end
 
-function Vector.new(screen, params, limiter)
+function Vector.new(screen, settings, limiter)
   local o = {
     x = math.random(screen.size.x) - 1,
     y = math.random(screen.size.y) - 1,
     limiter = limiter or 1,
     screen = screen,
-    params = params,
+    settings = settings,
   }
   if o.limiter < 0.1 then
     o.limiter = 1
   end
-  o.dx = Vector.random_velocity(o.params) / o.limiter
-  o.dy = Vector.random_velocity(o.params) / o.limiter
+  o.dx = Vector.random_velocity(o.settings) / o.limiter
+  o.dy = Vector.random_velocity(o.settings) / o.limiter
   o.move = Vector.move_vec
   return o
 end

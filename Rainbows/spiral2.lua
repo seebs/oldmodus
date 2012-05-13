@@ -1,5 +1,4 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
+local scene = {}
 
 local pi = math.pi
 local fmod = math.fmod
@@ -9,45 +8,39 @@ local cos = math.cos
 local floor = math.floor
 local ceil = math.ceil
 local abs = math.abs
+local find_line = Util.line
 
-scene.COLOR_MULTIPLIER = 10
--- scene.line_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
-scene.HISTORY = 6
-scene.LINE_DELAY = 2
-scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
-scene.LINE_SEGMENTS = scene.TOTAL_COLORS
-scene.SEGMENT_FUDGE = 5
-scene.SEGMENTS_TRIANGLE = (scene.LINE_SEGMENTS * scene.LINE_SEGMENTS + scene.LINE_SEGMENTS) / 2 + (scene.LINE_SEGMENTS * scene.SEGMENT_FUDGE)
-scene.VELOCITY_MIN = 5
-scene.VELOCITY_MAX = 15
-scene.THETA_MIN = 5 * pi
-scene.THETA_MAX = 5 * pi
-scene.THETA_VARIANCE = scene.THETA_MAX - scene.THETA_MIN
-scene.POINTS = 3
-scene.TOUCH_ACCEL = 1
-scene.ROTATIONS = 1
-
-local rfuncs = Rainbow.funcs_for(scene.COLOR_MULTIPLIER)
-local colorfor = rfuncs.smooth
-local colorize = rfuncs.smoothobj
-
+-- settings and the Screen object
+local set
 local s
 
-function scene:random_theta()
-  local t = math.random() * self.THETA_VARIANCE + self.THETA_MIN
-  return t
-end
+scene.segment_fudge = 5
+
+local rfuncs
+local colorfor
+local colorize
 
 function scene:createScene(event)
+  set = self.settings
+  Util.dump(set)
+
+  rfuncs = Rainbow.funcs_for(set.color_multiplier)
+  colorfor = rfuncs.smooth
+  colorize = rfuncs.smoothobj
+
+  self.total_colors = #Rainbow.hues * set.color_multiplier
+  self.line_segments = self.total_colors
+  self.segments_triangle = (self.line_segments * self.line_segments + self.line_segments) / 2
+  self.segments_triangle = self.segments_triangle + (self.line_segments * self.segment_fudge)
+
   self.ids = self.ids or {}
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
 
-  s = Screen.new(self.view)
+  s = self.screen
 
-  self.center = Vector.new(s, self, 5)
+  self.center = Vector.new(s, set, 5)
   self.center.ripples = {}
-  self.center.theta = self:random_theta()
   self.center.x = s.center.x
   self.center.y = s.center.y
   self.lines = {}
@@ -57,21 +50,18 @@ function scene:createScene(event)
   s:insert(self.bg)
 end
 
+local ripple_pattern = { -1, -2, 0, 2, 1, 0, -1, 0, 1 }
+
 function scene:spiral_from(vec, points, segments)
-  local params = Util.line(self.center, vec)
+  local params = find_line(self.center, vec)
   params.theta = params.theta + fmod(vec.theta, pi * 2)
   local rip = {}
   local remove = {}
   for idx, r in ipairs(vec.ripples) do
     if r > 1 then
-      rip[r + 5] = -1
-      rip[r + 4] = 0
-      rip[r + 3] = 1
-      rip[r + 2] = 2
-      rip[r + 1] = 1
-      rip[r] = 0
-      rip[r - 1] = -1
-      rip[r - 2] = -2
+      for i, v in ipairs(ripple_pattern) do
+        rip[r + i] = (rip[r + i] or 0) + v
+      end
       vec.ripples[idx] = r - 2
     else
       remove[#remove] = idx
@@ -84,8 +74,8 @@ function scene:spiral_from(vec, points, segments)
   local counter = segments
   for i = 1, segments - 1 do
     local scale = i / segments
-    counter = counter + (segments - i) + self.SEGMENT_FUDGE
-    local theta = ((counter / self.SEGMENTS_TRIANGLE) * vec.theta) + params.theta
+    counter = counter + (segments - i) + self.segment_fudge
+    local theta = ((counter / self.segments_triangle) * vec.theta) + params.theta
     local r = params.len * scale
     if rip[i] then
       r = r * (1 + 0.03 * rip[i])
@@ -99,17 +89,17 @@ end
 function scene:all_lines(color, g)
   if not color then
     color = self.next_color or 1
-    self.next_color = (color % self.TOTAL_COLORS) + 1
+    self.next_color = (color % self.total_colors) + 1
   end
-  local color_scale = floor(self.TOTAL_COLORS / self.POINTS)
+  local color_scale = floor(self.total_colors / set.points)
   g = g or display.newGroup()
   g.sublines = g.sublines or {}
-  for i = 1, self.POINTS do
+  for i = 1, set.points do
     if not g.sublines[i] then
-      g.sublines[i] = scene:line(color + i * color_scale, g.sublines[i], i)
+      g.sublines[i] = self:line(color + i * color_scale, g.sublines[i], i)
       g:insert(g.sublines[i])
     else
-      scene:line(color + i * color_scale, g.sublines[i], i)
+      self:line(color + i * color_scale, g.sublines[i], i)
     end
   end
   return g
@@ -119,9 +109,9 @@ function scene:line(color, g, index)
   g = g or display.newGroup()
   g.points = g.points or {}
   g.segments = g.segments or {}
-  scene:spiral_from(self.vecs[index], g.points, self.LINE_SEGMENTS)
+  self:spiral_from(self.vecs[index], g.points, self.line_segments)
   g.points[1] = self.center
-  g.points[self.LINE_SEGMENTS + 1] = { x = self.vecs[index].x, y = self.vecs[index].y }
+  g.points[self.line_segments + 1] = { x = self.vecs[index].x, y = self.vecs[index].y }
   if #g.segments == self.line_segments then
     for i, seg in ipairs(g.segments) do
       seg:setPoints(g.points[i], g.points[i + 1])
@@ -130,7 +120,7 @@ function scene:line(color, g, index)
       color = color + 1
     end
   else
-    for i = 1, self.LINE_SEGMENTS do
+    for i = 1, self.line_segments do
       local seg = g.segments[i]
       local point = g.points[i]
       local next = g.points[i + 1]
@@ -163,50 +153,40 @@ function scene:move()
   end
   for i, v in ipairs(self.vecs) do
     if v:move(self.toward[i + offset]) then
-      table.insert(v.ripples, self.LINE_SEGMENTS + 2)
+      table.insert(v.ripples, self.line_segments)
       bounce = true
     end
   end
   -- not used during startup
   if bounce and self.next_color then
-    Sounds.play(ceil(self.next_color / self.COLOR_MULTIPLIER))
+    Sounds.play(ceil(self.next_color / set.color_multiplier))
   end
 end
 
 function scene:enterFrame(event)
-  if self.cooldown > 1 then
-    self.cooldown = self.cooldown - 1
-    return
-  else
-    self.cooldown = self.LINE_DELAY
-  end
   local last = table.remove(self.lines, 1)
   for i, l in ipairs(self.lines) do
-    l.alpha = i / self.HISTORY
+    l.alpha = i / set.history
   end
-  table.insert(self.lines, scene:all_lines(nil, last))
+  table.insert(self.lines, self:all_lines(nil, last))
   self.lines[#self.lines].alpha = 1
   self:move()
-end
-
-function scene:willEnterScene(event)
-  self.cooldown = 0
 end
 
 function scene:enterScene(event)
   self.lines = {}
   self.next_color = nil
   self.vecs = {}
-  for i = 1, scene.POINTS do
-    self.vecs[i] = Vector.new(s, self)
+  for i = 1, set.points do
+    self.vecs[i] = Vector.new(s, set)
     self.vecs[i].ripples = {}
-    self.vecs[i].theta = self:random_theta()
+    self.vecs[i].theta = 5 * pi
   end
   self:move()
-  for i = 1, scene.HISTORY do
+  for i = 1, set.history do
     local g = self:all_lines(i, nil)
     self.view:insert(g)
-    g.alpha = i / scene.HISTORY
+    g.alpha = i / set.history
     table.insert(self.lines, g)
     self:move()
   end
@@ -225,6 +205,7 @@ end
 function scene:exitScene(event)
   self.sorted_ids = {}
   self.toward = {}
+  self.view.alpha = 0
   for i, l in ipairs(self.lines) do
     l:removeSelf()
   end

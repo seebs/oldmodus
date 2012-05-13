@@ -2,12 +2,27 @@ local Settings = {}
 
 Settings.default = {
   frame_delay = 2,
+  touch_accel = 1,
+  v_min = 5,
+  v_max = 15,
+  color_multiplier = 1,
+  history = 6,
 }
 
 Settings.scenes = {
   spiral = {
     points = 3,
-  }
+    history = 6,
+    color_multiplier = 10,
+  },
+  spiral2 = {
+    points = 3,
+    history = 6,
+    color_multiplier = 10,
+  },
+  knights = {
+    frame_delay = 12,
+  },
 }
 
 function Settings.scene(scene)

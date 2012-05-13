@@ -11,9 +11,6 @@ function Util.scale(o)
   return pow(1.1, level)
 end
 
-local last_times = {}
-local time_counter = 60
-
 local message_box
 
 function Util.messages_to(frame)

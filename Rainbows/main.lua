@@ -25,19 +25,39 @@ widget = require "widget"
 storyboard.purgeOnSceneChange = true
 
 local displays = {
+  'knights',
+  'spiral2',
   'spiral',
+}
+
+local notyet = {
   'knights',
   'spline',
   'cascade',
   'drops',
   'ants',
-  'spiral2',
   'knights2',
   'lines',
   'cascade2',
   'lissajous',
   'ants2',
 }
+
+local display_code = {}
+local scenes = {}
+
+for i, v in ipairs(displays) do
+  display_code[v] = require(v)
+  if display_code[v] then
+    scenes[v] = storyboard.newScene(v)
+    scenes[v].name = v
+    for key, value in pairs(display_code[v]) do
+      scenes[v][key] = value
+    end
+    Logic:logicize(scenes[v])
+  end
+end
+
 local debugging_display = nil
 local display_index = 1
 local debugging_performance = true

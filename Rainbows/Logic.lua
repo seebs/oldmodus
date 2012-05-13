@@ -5,6 +5,18 @@ local touch = Touch.state
 
 local last_times = {}
 
+function Logic.wrap(object, method)
+  local custom_func = object[method]
+  local logic_func = Logic[method]
+  if not logic_func then
+    Util.printf("Fatal:  No Logic[%s] to wrap.", tostring(method))
+    return
+  end
+  return function(...) return logic_func(custom_func, ...) end
+end
+
+local time_counter = 65
+
 function Logic.enterFrame(custom, obj, event)
   table.insert(last_times, system.getTimer())
   if #last_times > 61 then
@@ -31,25 +43,20 @@ function Logic.enterFrame(custom, obj, event)
       time_counter = 60
     end
   end
-  if obj.touch_magic then
-    touch(obj.touch_magic, self)
+  obj.frame_cooldown = obj.frame_cooldown - 1
+  if obj.frame_cooldown > 0 then
+    return
   end
-  if self.view.alpha < 1 then
-    self.view.alpha = min(self.view.alpha + .01, 1)
+  if obj.view.alpha < 1 then
+    obj.view.alpha = min(obj.view.alpha + .01, 1)
+  end
+  obj.frame_cooldown = obj.settings.frame_delay
+  if obj.touch_magic then
+    touch(obj.touch_magic, obj)
   end
   if custom then
     custom(obj, event)
   end
-end
-
-function Logic.wrap(object, method)
-  local custom_func = object[method]
-  local logic_func = Logic[method]
-  if not logic_func then
-    Util.printf("Fatal:  No Logic[%s] to wrap.", tostring(method))
-    return
-  end
-  return function(...) return logic_func(custom_func, ...) end
 end
 
 function Logic.overlayBegan(custom, obj, event)
@@ -67,9 +74,9 @@ function Logic.overlayEnded(custom, obj, event)
 end
 
 function Logic.createScene(custom, obj, event)
-  Util.dump(obj)
   local settings = Settings.scene(obj.name)
   obj.settings = settings
+  obj.screen = Screen.new(obj.view)
   if custom then
     custom(obj, event)
   end
@@ -77,6 +84,9 @@ function Logic.createScene(custom, obj, event)
 end
 
 function Logic.enterScene(custom, obj, event)
+  Util.message('')
+  -- give a few ticks to think about frame rate
+  time_counter = 65
   if custom then
     custom(obj, event)
   end
@@ -84,24 +94,25 @@ function Logic.enterScene(custom, obj, event)
 end
 
 function Logic.willEnterScene(custom, obj, event)
+  obj.frame_cooldown = 0
+  obj.view.alpha = 0
   if custom then
     custom(obj, event)
   end
-  obj.view.alpha = 0
 end
 
 function Logic.exitScene(custom, obj, event)
+  Runtime:removeEventListener('enterFrame', obj)
   if custom then
     custom(obj, event)
   end
-  Runtime:removeEventListener('enterFrame', obj)
 end
 
 function Logic.didExitScene(custom, obj, event)
+  obj.view.alpha = 0
   if custom then
     custom(obj, event)
   end
-  obj.view.alpha = 0
 end
 
 function Logic.destroyScene(custom, obj, event)
@@ -112,13 +123,14 @@ end
 
 Logic.handled_events = {
   'createScene',
+  'destroyScene',
+  'didExitScene',
+  'enterFrame',
+  'enterScene',
+  'exitScene',
   'overlayBegan',
   'overlayEnded',
   'willEnterScene',
-  'enterScene',
-  'didExitScene',
-  'exitScene',
-  'destroyScene',
 }
 
 function Logic:logicize(scene)

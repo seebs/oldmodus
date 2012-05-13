@@ -1,10 +1,8 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
+local scene = {}
 
 scene.KNIGHTS = 6
 
 scene.FADED = 0.75
-scene.CYCLE = 12
 
 local s
 
@@ -18,16 +16,16 @@ function scene:bump(square)
   if square then
     square.hue = ((square.hue + 1) % #Rainbow.hues)
     square:colorize()
-    if square.alpha < scene.FADED then
-      square.alpha = (scene.FADED + square.alpha) / 2
+    if square.alpha < self.FADED then
+      square.alpha = (self.FADED + square.alpha) / 2
     end
   end
 end
 
 function scene:adjust(knight, quiet)
   local square = self.squares[knight.x][knight.y]
-  scene:bump(square)
-  scene:bump(square)
+  self:bump(square)
+  self:bump(square)
   if knight.light then
     knight.light.hue = square.hue
     knight.light:colorize()
@@ -44,10 +42,10 @@ function scene:adjust(knight, quiet)
     Sounds.play(square.hue)
   end
   square.alpha = 1
-  scene:bump(square:find(1, 0))
-  scene:bump(square:find(-1, 0))
-  scene:bump(square:find(0, 1))
-  scene:bump(square:find(0, -1))
+  self:bump(square:find(1, 0))
+  self:bump(square:find(-1, 0))
+  self:bump(square:find(0, 1))
+  self:bump(square:find(0, -1))
 end
 
 function scene:move_knight(knight)
@@ -75,7 +73,7 @@ function scene:move_knight(knight)
     end
   end
 
-  self.squares[knight.x][knight.y].alpha = scene.FADED + 0.1
+  self.squares[knight.x][knight.y].alpha = self.FADED + 0.1
 
   if math.random() < p_chance then
     knight[primary] = knight[primary] + 2
@@ -97,17 +95,13 @@ end
 
 function scene:enterFrame(event)
   local knight = self.knights[1]
-  knight.counter = knight.counter - 1
-  if knight.counter < 0 then
-    scene:move_knight(knight)
-    table.remove(self.knights, 1)
-    knight.counter = self.CYCLE
-    table.insert(self.knights, knight)
-    if knight.index == 1 then
-      for _, column in ipairs(self.squares) do
-	for _, square in ipairs(column) do
-	  square.alpha = math.max(0, square.alpha - .0001)
-	end
+  self:move_knight(knight)
+  table.remove(self.knights, 1)
+  table.insert(self.knights, knight)
+  if knight.index == 1 then
+    for _, column in ipairs(self.squares) do
+      for _, square in ipairs(column) do
+	square.alpha = math.max(0, square.alpha - .0001)
       end
     end
   end
@@ -126,9 +120,7 @@ function scene:willEnterScene(event)
     local knight = {
       x = math.random(self.squares.columns),
       y = math.random(self.squares.rows),
-      counter = self.CYCLE,
       index = i,
-      cooldown = self.CYCLE,
       light = self.squares.highlights[i]
     }
     if knight.light then
@@ -138,7 +130,7 @@ function scene:willEnterScene(event)
     table.insert(self.knights, knight)
     self:adjust(knight, true)
   end
-  self.knights[1].counter = self.knights[1].counter + 30
+  self.frame_cooldown = self.frame_cooldown + 30
 end
 
 function scene:touch_magic(state, ...)
@@ -159,7 +151,5 @@ function scene:destroyScene(event)
   self.squares = nil
   self.knights = nil
 end
-
-Logic:logicize(scene)
 
 return scene
