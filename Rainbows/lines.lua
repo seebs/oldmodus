@@ -1,23 +1,24 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
-
-scene.LINE_MULTIPLIER = 8
-scene.line_total = #Rainbow.hues * scene.LINE_MULTIPLIER
-scene.LINE_DELAY = 2
-scene.VELOCITY_MIN = 10
-scene.VELOCITY_MAX = 20
-scene.START_LINES = 1
-scene.LINE_DEPTH = 8
-scene.TOUCH_ACCEL = 1
+local scene = {}
 
 local s
+local set
+local rfuncs
+local colorfor
+local colorize
 
 function scene:createScene(event)
   self.ids = self.ids or {}
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
 
-  s = Screen.new(self.view)
+  s = self.screen
+  set = self.settings
+
+  rfuncs = Rainbow.funcs_for(set.color_multiplier)
+  colorfor = rfuncs.smooth
+  colorize = rfuncs.smoothobj
+
+  self.line_total = #Rainbow.hues * set.color_multiplier
 
   self.lines = {}
   -- so clicks have something to land on
@@ -29,7 +30,7 @@ end
 function scene:line(color, g)
   if not color then
     color = self.next_color or 1
-    self.next_color = (color % scene.line_total) + 1
+    self.next_color = (color % self.line_total) + 1
   end
   g = g or display.newGroup()
   g.segments = g.segments or {}
@@ -65,12 +66,12 @@ function scene:one_line(color, vec1, vec2, existing)
     return nil
   end
   if not existing then
-    local l = Line.new(vec1, vec2, 5, unpack(Rainbow.smooth(color, self.LINE_MULTIPLIER)))
+    local l = Line.new(vec1, vec2, 5, colorfor(color))
     l:setThickness(3)
     return l
   else
     existing:setPoints(vec1, vec2)
-    existing:setColor(unpack(Rainbow.smooth(self.next_color, self.LINE_MULTIPLIER)))
+    colorize(existing, color)
     return existing
   end
 end
@@ -83,43 +84,31 @@ function scene:move()
     end
   end
   -- not used during startup
-  if bounce and self.next_color then
-    Sounds.play(math.ceil(self.next_color / self.LINE_MULTIPLIER))
+  if bounce then
+    Sounds.play(math.ceil(self.next_color / set.color_multiplier))
   end
 end
 
 function scene:enterFrame(event)
-  if self.cooldown > 1 then
-    self.cooldown = self.cooldown - 1
-    return
-  else
-    self.cooldown = self.LINE_DELAY
-  end
   local last = table.remove(self.lines, 1)
-  table.insert(self.lines, scene:line(nil, last))
+  table.insert(self.lines, self:line(nil, last))
   self:move()
-end
-
-function scene:willEnterScene(event)
-  self.view.alpha = 0
-  self.cooldown = self.LINE_DELAY
 end
 
 function scene:enterScene(event)
   self.lines = {}
-  self.next_color = nil
+  self.next_color = 1
   self.vecs = {}
   s = Screen.new(self.view)
-  for i = 1, scene.START_LINES + 1 do
-    self.vecs[i] = Vector.new(s, self)
+  for i = 1, 2 do
+    self.vecs[i] = Vector.new(s, set)
   end
-  for i = 1, scene.line_total do
+  for i = 1, self.line_total do
     local l = self:line(i, nil)
     self:move()
     table.insert(self.lines, l)
   end
-  self.next_color = 1
-  self.last_color = scene.line_total
+  self.last_color = self.line_total
 end
 
 function scene:touch_magic(state, ...)
@@ -139,7 +128,6 @@ function scene:touch_magic(state, ...)
   if highest == 0 and state.peak < #self.vecs and #self.vecs > 2 then
     table.remove(self.vecs, 1)
   end
-  return true
 end
 
 function scene:exitScene(event)

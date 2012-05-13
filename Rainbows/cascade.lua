@@ -1,29 +1,21 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
+local scene = {}
 
 scene.FADED = 0.75
-scene.CYCLE = 12
-scene.COLOR_MULTIPLIER = 12
-scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
 
 local max = math.max
 local min = math.min
 
+local s
+local set
+
 function scene:createScene(event)
-  s = Screen.new(self.view)
-  self.squares = Squares.new(s, 0, self.COLOR_MULTIPLIER)
-  self.cooldown = self.CYCLE
+  s = self.screen
+  set = self.settings
+  self.squares = Squares.new(s, 0, set.color_multiplier)
+  self.total_colors = set.color_multiplier * #Rainbow.hues
 end
 
 function scene:enterFrame(event)
-  if self.view.alpha < 1 then
-    self.view.alpha = min(1, self.view.alpha + .03)
-  end
-  self.cooldown = self.cooldown - 1
-  if self.cooldown > 1 then
-    return
-  end
-  self.cooldown = self.CYCLE
   local dir = system.orientation
   -- Util.printf("%s", tostring(dir))
   local step_back = false
@@ -66,6 +58,8 @@ function scene:enterFrame(event)
   if self.active_row == 1 then
     step_back = true
   end
+  local previous_state = 0
+  local toggles = 0
   for i, square in ipairs(next) do
     local above = prev[i]
     local before = prev[(i + square_adjust) % square_mod + 1]
@@ -79,6 +73,10 @@ function scene:enterFrame(event)
     end
     new = new % 2
     square.compute = new
+    if square.compute ~= previous_state then
+      toggles = toggles + 1
+      previous_state = square.compute
+    end
     if square.compute == 1 then
       square.alpha = 1
       -- math.min(1, square.alpha + (.022 * self.squares.rows))
@@ -88,14 +86,18 @@ function scene:enterFrame(event)
     square.hue = self.colors[square.compute % 2 + 1]
     square:colorize()
   end
-  self.colors[1] = (self.colors[1] % self.TOTAL_COLORS) + 1
-  self.colors[2] = (self.colors[2] % self.TOTAL_COLORS) + 1
+  self.colors[1] = (self.colors[1] % self.total_colors) + 1
+  local idx = self.colors[1] % set.color_multiplier
+  if idx == 0 or idx == set.color_multiplier / 2 then
+    Sounds.playexact(2 * self.colors[1] / set.color_multiplier, 0.4)
+  end
+  self.colors[2] = (self.colors[2] % self.total_colors) + 1
   for _, column in ipairs(self.squares) do
     for _, square in ipairs(column) do
       square.alpha = max(0.005, square.alpha - .01)
     end
   end
-  Sounds.play(i)
+  Sounds.play(toggles)
 end
 
 function scene:willEnterScene(event)
@@ -109,8 +111,8 @@ function scene:willEnterScene(event)
   end
   self.active_row = 1
   self.index = 0
-  self.colors = { 1, 1 + self.COLOR_MULTIPLIER }
-  self.squares[1][1].hue = 1 + self.COLOR_MULTIPLIER
+  self.colors = { 1, 1 + set.color_multiplier }
+  self.squares[1][1].hue = 1 + set.color_multiplier
   self.squares[1][1]:colorize()
   self.squares[1][1].compute = 1
 end
@@ -136,7 +138,7 @@ function scene:touch_magic(state)
 	for square, _ in pairs(hitboxes) do
 	  square.flag = true
 	  square.alpha = 1
-	  square.hue = square.hue + self.COLOR_MULTIPLIER
+	  square.hue = square.hue + set.color_multiplier
 	  square:colorize()
 	end
       end

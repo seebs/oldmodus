@@ -1,12 +1,7 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
-
-scene.COLOR_MULTIPLIER = 4
-scene.ANTS = 6
+local scene = {}
 
 scene.FADED = 0.75
 scene.FADE_DIVISOR = 12
-scene.CYCLE = 6
 scene.META_CYCLE = 12
 
 local max = math.max
@@ -15,18 +10,15 @@ local frame = Util.enterFrame
 local touch = Touch.state
 
 local s
+local set
 
 function scene:createScene(event)
-  s = Screen.new(self.view)
-  self.hexes = Hexes.new(s, self.ANTS, self.COLOR_MULTIPLIER)
+  s = self.screen
+  set = self.settings
+  self.hexes = Hexes.new(s, set.ants, set.color_multiplier)
 end
 
 function scene:enterFrame(event)
-  self.cooldown = self.cooldown - 1
-  if self.cooldown >= 1 then
-    return
-  end
-  self.cooldown = self.CYCLE
   local chance = math.random(100)
   local turn = 'ahead'
   if chance > 90 then
@@ -110,7 +102,7 @@ end
 function scene:willEnterScene(event)
   for x, column in ipairs(self.hexes) do
     for y, hex in ipairs(column) do
-      hex.hue = math.random(6 * self.COLOR_MULTIPLIER)
+      hex.hue = math.random(6 * set.color_multiplier)
       hex.alpha = self.FADED
       hex:colorize()
     end
@@ -160,7 +152,6 @@ function scene:touch_magic(state, ...)
 end
 
 function scene:enterScene(event)
-  self.cooldown = self.CYCLE
   self.meta_cooldown = self.META_CYCLE
   self.splashes = {}
   self.ants = {}
@@ -171,7 +162,7 @@ function scene:enterScene(event)
       index = i,
       light = h,
       dir = Hexes.directions[math.random(#Hexes.directions)],
-      hue = i * scene.COLOR_MULTIPLIER,
+      hue = i * set.color_multiplier,
     }
     ant.hex = self.hexes:find(ant.x, ant.y)
     ant.hex.hue = ant.hue

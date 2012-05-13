@@ -1,29 +1,21 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
+local scene = {}
 
 scene.FADED = 0.75
-scene.CYCLE = 8
-scene.COLOR_MULTIPLIER = 12
-scene.TOTAL_COLORS = scene.COLOR_MULTIPLIER * #Rainbow.hues
 
 local max = math.max
 local min = math.min
 
+local s
+local set
+
 function scene:createScene(event)
-  s = Screen.new(self.view)
-  self.squares = Squares.new(s, 0, self.COLOR_MULTIPLIER)
-  self.cooldown = self.CYCLE
+  s = self.screen
+  set = self.settings
+  self.squares = Squares.new(s, 0, set.color_multiplier)
+  self.total_colors = #Rainbow.hues * set.color_multiplier
 end
 
 function scene:enterFrame(event)
-  if self.view.alpha < 1 then
-    self.view.alpha = min(1, self.view.alpha + .03)
-  end
-  self.cooldown = self.cooldown - 1
-  if self.cooldown > 1 then
-    return
-  end
-  self.cooldown = self.CYCLE
   self.toggle = not self.toggle
 
   if self.toggle then
@@ -32,13 +24,14 @@ function scene:enterFrame(event)
     self.squares:shift(0, -1)
     last = self.squares.r[self.squares.rows]
     last.flag = 0
-    self.colors[1] = (self.colors[1] % self.TOTAL_COLORS) + 1
-    self.colors[2] = (self.colors[2] % self.TOTAL_COLORS) + 1
+    self.colors[1] = (self.colors[1] % self.total_colors) + 1
+    self.colors[2] = (self.colors[2] % self.total_colors) + 1
     last.colors = { unpack(self.colors) }
   end
 
   local prow = nil
   local flags = {}
+  local sound_effect = 0
   for y, row in ipairs(self.squares.r) do
     prow = self.squares.r[y - 1]
     if self.toggle then
@@ -61,19 +54,26 @@ function scene:enterFrame(event)
       end
     end
     if process then
+      local previous_state = 0
+      local toggles = 0
       for i, square in ipairs(row) do
 	-- shift left occasionally
-	if row.colors[1] % self.COLOR_MULTIPLIER == 0 then
+	if row.colors[1] % set.color_multiplier == 0 then
 	  square = square:find(-1, 0)
 	end
 	local after = prow[i]
 	local before = after:find(-1, 0)
 
 	square.compute = (before.compute + after.compute) % 2
-	square.hue = row.colors[square.compute % 2 + 1]
+	square.hue = row.colors[square.compute + 1]
 	square:colorize()
 	square.flag = nil
-	if square.compute % 2 == 1 then
+
+	if square.compute ~= previous_state then
+	  previous_state = square.compute
+	  toggles = toggles + 1
+	end
+	if square.compute == 1 then
 	  -- square.alpha = min(1, square.alpha + (.03 * self.squares.rows))
 	  square.alpha = 1
 	else
@@ -83,17 +83,18 @@ function scene:enterFrame(event)
 	  end
 	end
       end
+      sound_effect = toggles
     end
   end
   if self.toggle then
-    Sounds.play()
+    Sounds.play(sound_effect)
   end
 end
 
 function scene:willEnterScene(event)
   self.colors = {
-    self.TOTAL_COLORS - self.squares.rows,
-    self.TOTAL_COLORS - self.squares.rows + self.COLOR_MULTIPLIER
+    self.total_colors - self.squares.rows,
+    self.total_colors - self.squares.rows + set.color_multiplier
   }
   for y, row in ipairs(self.squares.r) do
     row.colors = { unpack(self.colors) }
@@ -105,8 +106,8 @@ function scene:willEnterScene(event)
       square.flag = false
       square:colorize()
     end
-    self.colors[1] = (self.colors[1] % self.TOTAL_COLORS) + 1
-    self.colors[2] = (self.colors[2] % self.TOTAL_COLORS) + 1
+    self.colors[1] = (self.colors[1] % self.total_colors) + 1
+    self.colors[2] = (self.colors[2] % self.total_colors) + 1
   end
   self.index = 0
   local square = self.squares:find(1, 0)
@@ -141,7 +142,7 @@ function scene:touch_magic(state)
 	    square.alpha = 1
 	    square.flag = true
 	    square.compute = square.compute + 1
-	    square.hue = square.hue + self.COLOR_MULTIPLIER
+	    square.hue = square.hue + set.color_multiplier
 	    square:colorize()
 	  end
 	end

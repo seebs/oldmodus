@@ -1,15 +1,9 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
+local scene = {}
 
 local dist = Util.dist
 
--- from messing with a rainbow background
-scene.COLOR_MULTIPLIER = 50
-scene.color_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
-scene.DROPS = #Rainbow.hues * 2
-scene.MAX_GROWTH = 125
-scene.MIN_GROWTH = 45
-scene.FRAME_DELAY = 2
+local s
+local set
 
 scene.future_drops = {}
 
@@ -73,15 +67,14 @@ function scene.setDropAlpha(drop, reset_or_main, inner, outer)
   end
 end
 
-local s
-
 function scene:createScene(event)
   self.drops = {}
-  s = Screen.new(self.view)
+  s = self.screen
+  set = self.settings
   -- so clicks have something to land on
   self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
-  scene.last_color = 1
+  self.last_color = 1
   s:insert(self.bg)
   self.spare_drops = {}
   self.last_hue = nil
@@ -89,8 +82,7 @@ function scene:createScene(event)
   self.sheeth = graphics.newImageSheet("drop_wideh.png", { width = 512, height = 512, numFrames = 1 })
   self.iscale = 200 / 512
   self.oscale = 300 / 512
-  self.cooldown = self.FRAME_DELAY
-  for i = 1, scene.DROPS do
+  for i = 1, set.total_drops do
     local d = {
       iscale = self.iscale,
       oscale = self.oscale,
@@ -100,8 +92,9 @@ function scene:createScene(event)
       setXY = self.setDropXY,
     }
     local img
-    d.hue = i
+    d.hue = ((i - 1) % #Rainbow.hues) + 1
     d.id = i
+    d.octave = math.floor((i - 1) / #Rainbow.hues)
     local r, g, b = unpack(Rainbow.color(i - 1))
 
     img = display.newImage(self.sheetc, 1)
@@ -156,8 +149,9 @@ function scene:do_drops()
     local idx = table.remove(spares)
     table.insert(self.spare_drops, table.remove(self.drops, idx))
   end
-  if #self.spare_drops > 0 and math.random(#self.spare_drops) > 8 and self.cooldown < 1 then
-    self.cooldown = 10
+  self.drop_cooldown = self.drop_cooldown - 1
+  if #self.spare_drops > 0 and math.random(#self.spare_drops) > set.drop_threshold and self.drop_cooldown < 1 then
+    self.drop_cooldown = math.random(set.max_cooldown - set.min_cooldown) + set.min_cooldown
     local d = table.remove(self.spare_drops, 1)
     if #self.spare_drops > 1 then
       local counter = #self.spare_drops
@@ -168,21 +162,21 @@ function scene:do_drops()
       end
     end
     self.last_hue = d.hue
-    Sounds.play(d.hue)
+    Sounds.playoctave(d.hue, d.octave)
     local new_point
     if #self.future_drops > 0 then
       new_point = table.remove(self.future_drops, 1)
     else
-      new_point = { x = math.random((s.size.x - 50) + 25),
-                    y = math.random((s.size.y - 50) + 25) }
+      new_point = { x = math.random((s.size.x - 150) + 75),
+                    y = math.random((s.size.y - 200) + 100) }
     end
     if self.toward then
       local between = Util.midpoint(new_point, self.toward)
     end
     d:setXY(new_point.x, new_point.y)
-    local range = scene.MAX_GROWTH - scene.MIN_GROWTH
+    local range = set.max_growth - set.min_growth
     local scale = math.random(range)
-    d.max_growth = scale + scene.MIN_GROWTH
+    d.max_growth = scale + set.min_growth
     d.factor = (scale / range) * 0.2
     d:setVisible(true)
     d:setAlpha(true)
@@ -190,15 +184,10 @@ function scene:do_drops()
     d.growth = 0
     table.insert(self.drops, d)
   end
-  self.cooldown = self.cooldown - 1
 end
 
 function scene:enterFrame(event)
-  self.cooldown = self.cooldown -1
-  if self.cooldown < 1 then
-    self:do_drops()
-    self.cooldown = self.FRAME_DELAY
-  end
+  self:do_drops()
 end
 
 function scene:touch_magic(state, ...)
@@ -219,8 +208,8 @@ function scene:willEnterScene(event)
 end
 
 function scene:enterScene(event)
-  self.cooldown = 0
   self.future_drops = {}
+  self.drop_cooldown = 0
 end
 
 function scene:didExitScene(event)

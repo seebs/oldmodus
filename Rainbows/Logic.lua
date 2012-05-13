@@ -54,8 +54,12 @@ function Logic.enterFrame(custom, obj, event)
   if obj.touch_magic then
     touch(obj.touch_magic, obj)
   end
-  if custom then
-    custom(obj, event)
+  if custom and not obj.NEVER_DO_FRAME then
+    status, error = pcall(custom, obj, event)
+    if not status then
+      Util.printf("error calling custom frame: %s", error)
+      obj.NEVER_DO_FRAME = true
+    end
   end
 end
 

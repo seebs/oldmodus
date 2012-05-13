@@ -1,19 +1,10 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
+local scene = {}
 
-scene.HISTORY = 8
-scene.COLOR_MULTIPLIER = 16
-scene.LINE_MULTIPLIER = 16
-scene.point_total = #Rainbow.hues * scene.COLOR_MULTIPLIER
-scene.line_total = scene.point_total - 1
-scene.FRAME_DELAY = 3
-scene.SOUND_DELAY = 3
-scene.DELTA_DELTA = 0.02 * scene.FRAME_DELAY
 scene.INSET = 4
 
-local rfuncs = Rainbow.funcs_for(scene.COLOR_MULTIPLIER)
-local colorfor = rfuncs.smooth
-local colorize = rfuncs.smoothobj
+local rfuncs
+local colorfor
+local colorize
 
 local pi = math.pi
 local ceil = math.ceil
@@ -27,25 +18,34 @@ local abs = math.abs
 local fmod = math.fmod
 
 local s
+local set
 
 function scene:createScene(event)
+  s = self.screen
+  set = self.settings
+
+  self.total_lines = #Rainbow.hues * set.color_multiplier
+  self.total_points = self.total_lines + 1
+
+  rfuncs = Rainbow.funcs_for(set.color_multiplier)
+  colorfor = rfuncs.smooth
+  colorize = rfuncs.smoothobj
+
   self.ids = self.ids or {}
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
 
-  s = Screen.new(self.view)
-  self.x_scale = s.size.x / 2 - (scene.INSET / 2)
-  self.y_scale = s.size.y / 2 - (scene.INSET / 2)
+  self.x_scale = s.size.x / 2 - (self.INSET / 2)
+  self.y_scale = s.size.y / 2 - (self.INSET / 2)
 
-  self.x_offset = self.x_scale + (scene.INSET / 2)
-  self.y_offset = self.y_scale + (scene.INSET / 2)
+  self.x_offset = self.x_scale + (self.INSET / 2)
+  self.y_offset = self.y_scale + (self.INSET / 2)
 
   self.lines = {}
-  self.cooldown = 0
   self.a = 1
   self.b = 1
   self.delta = 1
-  self.line_scale = twopi / self.line_total
+  self.line_scale = twopi / self.total_lines
   -- so clicks have something to land on
   self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
   self.bg:setFillColor(0, 0)
@@ -58,7 +58,7 @@ function scene:line(color, g)
   end
   g = g or display.newGroup()
   g.segments = g.segments or {}
-  if #g.segments == self.line_total then
+  if #g.segments == self.total_lines then
     for i, seg in ipairs(g.segments) do
       seg:setPoints(self.vecs[i], self.vecs[i + 1])
       colorize(seg, color)
@@ -66,7 +66,7 @@ function scene:line(color, g)
       color = color + 1
     end
   else
-    for i = 1, self.line_total do
+    for i = 1, self.total_lines do
       local seg = g.segments[i]
       local point = self.vecs[i]
       local next = self.vecs[i + 1]
@@ -84,7 +84,7 @@ function scene:line(color, g)
       color = color + 1
     end
   end
-  self.next_color = (color % scene.line_total) + 1
+  self.next_color = (color % self.total_lines) + 1
   return g
 end
 
@@ -114,11 +114,11 @@ function scene:calc(quiet)
   self.sign_y = self.sign_y or {}
   self.sound_cooldown = self.sound_cooldown or 0
   local play_sound = false
-  for i = 1, self.point_total do
+  for i = 1, self.total_points do
     local t = i * self.line_scale
     local x = sin(self.a * t + self.delta)
     local y = sin(self.b * t - self.delta)
-    if not quiet and i % self.LINE_MULTIPLIER == 0 then
+    if not quiet and i % set.color_multiplier == 0 then
       local new_sign_x = x < 0
       local new_sign_y = y < 0
       if new_sign_x ~= self.sign_x[i] or new_sign_y ~= self.sign_y[i] then
@@ -134,35 +134,26 @@ function scene:calc(quiet)
     self.vecs[i].y = y
   end
   if play_sound and self.sound_cooldown < 1 then
-    Sounds.play(ceil(self.next_color / self.COLOR_MULTIPLIER))
-    self.sound_cooldown = self.SOUND_DELAY
+    Sounds.play(ceil(self.next_color / set.color_multiplier))
+    self.sound_cooldown = set.sound_delay
   else
     self.sound_cooldown = self.sound_cooldown - 1
   end
   local delta_scale = max(max(abs(self.b), abs(self.a)), 1)
-  self.delta = self.delta + self.DELTA_DELTA / delta_scale
+  self.delta = self.delta + set.delta_delta / delta_scale
   if self.delta > twopi then
     self.delta = self.delta - twopi
   end
 end
 
 function scene:enterFrame(event)
-  if self.cooldown > 1 then
-    self.cooldown = self.cooldown - 1
-    return
-  end
-  self.cooldown = self.FRAME_DELAY
   local last = table.remove(self.lines, 1)
   for i, l in ipairs(self.lines) do
-    l.alpha = sqrt(i / self.HISTORY)
+    l.alpha = sqrt(i / set.history)
   end
   self:calc()
-  table.insert(self.lines, scene:line(nil, last))
+  table.insert(self.lines, self:line(nil, last))
   self.lines[#self.lines].alpha = 1
-end
-
-function scene:willEnterScene(event)
-  self.cooldown = 0
 end
 
 function scene:enterScene(event)
@@ -175,9 +166,9 @@ function scene:enterScene(event)
   self.scale_delta_a = 1
   self.scale_delta_b = 1
   self:calc(true)
-  for i = 1, scene.HISTORY do
+  for i = 1, set.history do
     local l = self:line(i, nil)
-    l.alpha = sqrt(i / scene.HISTORY)
+    l.alpha = sqrt(i / set.history)
     table.insert(self.lines, l)
     s:insert(l)
     l.y = 0

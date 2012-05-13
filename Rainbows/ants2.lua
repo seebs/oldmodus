@@ -1,10 +1,4 @@
-local storyboard = require('storyboard')
-local scene = storyboard.newScene()
-
-scene.COLOR_MULTIPLIER = 4
-scene.TOTAL_COLORS = #Rainbow.hues * scene.COLOR_MULTIPLIER
-scene.HALF_COLORS = scene.TOTAL_COLORS / 2
-scene.ANTS = 6
+local scene = {}
 
 scene.FADED = 0.75
 scene.FADE_DIVISOR = 12
@@ -14,18 +8,16 @@ local max = math.max
 local min = math.min
 
 local s
+local set
 
 function scene:createScene(event)
-  s = Screen.new(self.view)
-  self.hexes = Hexes.new(s, self.ANTS, self.COLOR_MULTIPLIER)
+  s = self.screen
+  set = self.settings
+  self.hexes = Hexes.new(s, set.ants, set.color_multiplier)
+  self.half_colors = set.total_colors / 2
 end
 
 function scene:enterFrame(event)
-  self.cooldown = self.cooldown - 1
-  if self.cooldown >= 1 then
-    return
-  end
-  self.cooldown = self.CYCLE
   local ant = table.remove(self.ants, 1)
   local choices = {
     { dir = Hexes.turn[ant.dir].right },
@@ -34,7 +26,7 @@ function scene:enterFrame(event)
   }
   for i, ch in ipairs(choices) do
     ch.hex = (Hexes.dir[ch.dir])(ant.hex)
-    ch.dist = self.hexes.color_dist(ch.hex.hue, ant.hue) + scene.HALF_COLORS * (1 - ch.hex.alpha) / 2
+    ch.dist = self.hexes.color_dist(ch.hex.hue, ant.hue) + self.half_colors * (1 - ch.hex.alpha) / 2
   end
   table.sort(choices, function(a, b) return a.dist > b.dist end)
   ant.dir = choices[1].dir
@@ -95,7 +87,7 @@ end
 function scene:willEnterScene(event)
   for x, column in ipairs(self.hexes) do
     for y, hex in ipairs(column) do
-      hex.hue = math.random(6 * self.COLOR_MULTIPLIER)
+      hex.hue = math.random(6 * set.color_multiplier)
       hex.alpha = self.FADED
       hex:colorize()
     end
@@ -145,7 +137,6 @@ function scene:touch_magic(state, ...)
 end
 
 function scene:enterScene(event)
-  self.cooldown = self.CYCLE
   self.splashes = {}
   self.ants = {}
   for i, h in ipairs(self.hexes.highlights) do
@@ -155,7 +146,7 @@ function scene:enterScene(event)
       index = i,
       light = h,
       dir = Hexes.directions[math.random(#Hexes.directions)],
-      hue = i * scene.COLOR_MULTIPLIER,
+      hue = i * set.color_multiplier,
     }
     ant.hex = self.hexes:find(ant.x, ant.y)
     ant.hex.hue = ant.hue

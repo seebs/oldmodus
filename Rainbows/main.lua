@@ -7,13 +7,13 @@ player = { slot = 1, score = 0, location = 1 }
 
 -- mine get caps so I don't clash
 -- stuff everyone else needs
+Rainbow = require "Rainbow"
 Settings = require "Settings"
 Util = require "Util"
 Touch = require "Touch"
 Logic = require "Logic"
 
 -- basic interface bits
-Rainbow = require "Rainbow"
 Screen = require "Screen"
 Sounds = require "Sounds"
 
@@ -30,21 +30,18 @@ widget = require "widget"
 storyboard.purgeOnSceneChange = true
 
 local displays = {
+  'ants2',
+  'ants',
+  'lissajous',
+  'lines',
+  'drops',
+  'cascade2',
+  'cascade',
   'spline',
   'spiral',
   'knights2',
   'knights',
   'spiral2',
-}
-
-local notyet = {
-  'cascade',
-  'drops',
-  'ants',
-  'lines',
-  'cascade2',
-  'lissajous',
-  'ants2',
 }
 
 local display_code = {}
