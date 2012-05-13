@@ -170,7 +170,8 @@ function scene:touch_magic(state, ...)
 	recent_touch[idx] = nil
       end
     elseif not event.done then
-      self.make_sound = (touch and touch.hue) or 1
+      local hue = touch and touch.hue or 1
+      self.make_sound = ceil(hue / set.color_multiplier)
     end
   end
 end

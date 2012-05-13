@@ -23,7 +23,6 @@ end
 
 function scene:touch_magic(state)
   if state.events > 0 then
-    Util.dump(state)
     next_display()
   end
 end

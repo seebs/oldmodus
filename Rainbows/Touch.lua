@@ -65,13 +65,10 @@ function Touch.handle(event)
   local id = event.id or 'unknown'
   local e
 
-  Util.printf("Touch event:")
-  Util.dump(event, 1, '    ')
+  -- Util.printf("Touch event:")
+  -- Util.dump(event, 1, '    ')
 
   state.events = state.events + 1
-
-  -- Util.printf("event")
-  -- Util.dump(event)
 
   e = active_events[id]
   if not e then
@@ -113,6 +110,7 @@ function Touch.handle(event)
 
   local maybe_prefs = false
   if e.done and (e.end_stamp - e.start_stamp < 150) and dist(e.start, e.current) < 20 then
+    Util.printf("touch at distance %.1f", dist(e.current, { x = 0, y = 0 }))
     if dist(e.current, { x = 0, y = 0 }) < 70 then
       maybe_prefs = true 
     end
