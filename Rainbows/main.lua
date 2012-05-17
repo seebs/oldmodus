@@ -1,9 +1,11 @@
+local debugging_display = nil
+local display_index = 1
+local debugging_performance = false
+
 display.setStatusBar(display.HiddenStatusBar)
 
-player = { slot = 1, score = 0, location = 1 }
-
 -- profiler = require "Profiler"
--- profiler.startProfiler({time = 30000, delay = 1000, verbose = true})
+-- profiler.startProfiler({time = 30000, delay = 1000, verbose = true })
 
 -- mine get caps so I don't clash
 -- stuff everyone else needs
@@ -59,15 +61,18 @@ function make_scene(name)
   end
 end
 
+-- pick up any local settings
+local have_settings = Settings.load()
+
 for i, v in ipairs(displays) do
   make_scene(v)
 end
 make_scene('prefs')
+make_scene('benchmark')
 
-local debugging_display = nil
-local display_index = 1
-local debugging_performance = true
 if debugging_display or debugging_performance then
+  Logic.debugging_display = debugging_display
+  Logic.debugging_performance = debugging_performance
   storyboard.isDebug = true
   local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 35)
   Util.messages_to(message_box)
@@ -91,4 +96,8 @@ end
 
 Runtime:addEventListener('touch', Touch.handle)
 
-next_display()
+if not have_settings then
+  storyboard.gotoScene('benchmark')
+else
+  next_display()
+end

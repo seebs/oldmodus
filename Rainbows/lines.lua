@@ -123,7 +123,14 @@ function scene:touch_magic(state, ...)
     end
   end
   while highest > #self.vecs do
-    table.insert(self.vecs, self:new_vec())
+    local v = Vector.new(s, set)
+    local t = self.toward[#self.vecs + 1]
+    -- start it at the new finger
+    if t then
+      v.x = t.x
+      v.y = t.y
+    end
+    table.insert(self.vecs, v)
   end
   if highest == 0 and state.peak < #self.vecs and #self.vecs > 2 then
     table.remove(self.vecs, 1)

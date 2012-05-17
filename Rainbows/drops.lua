@@ -195,7 +195,7 @@ function scene:touch_magic(state, ...)
     for i, e in pairs(state.points) do
       if e.events > 0 and not e.done then
 	local last = self.future_drops[#self.future_drops]
-	if not last or dist(last, e.current) > 70 or e.stamp - last.stamp > 60 then
+	if not last or dist(last, e.current) > 80 or e.stamp - last.stamp > 100 then
 	  table.insert(self.future_drops, { x = e.current.x, y = e.current.y, stamp = e.stamp })
 	end
       end

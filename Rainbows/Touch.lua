@@ -18,6 +18,9 @@ local next_idx = 1
 
 local nuke_these = {}
 
+local ignore_prefs = false
+local ignore_doubletaps = false
+
 local gear = display.newImage('gear.png')
 gear:scale(60 / 533, 60 / 533)
 gear.x = 32 + display.screenOriginX
@@ -25,7 +28,16 @@ gear.y = 32 + display.screenOriginY
 -- gear.blendMode = 'add'
 gear.isVisible = false
 
+function Touch.ignore_prefs(flag)
+  ignore_prefs = flag
+end
+
+function Touch.ignore_doubletaps(flag)
+  ignore_doubletaps = flag
+end
+
 function Touch.state(func, caller)
+  local now = system.getTimer()
   if state.active > 0 then
     if func then
       func(caller, state)
@@ -35,6 +47,9 @@ function Touch.state(func, caller)
     for _, e in ipairs(state.points) do
       if e.done then
 	nuke_these[#nuke_these + 1] = e
+      elseif now - e.stamp > 1000 then
+	-- flag for cleanup
+        e.done = true
       end
       e.events = 0
       e.previous = {}
@@ -109,12 +124,11 @@ function Touch.handle(event)
   -- Util.printf("state.active: %d", state.active)
 
   local maybe_prefs = false
-  if e.done and (e.end_stamp - e.start_stamp < 150) and dist(e.start, e.current) < 20 then
-    Util.printf("touch at distance %.1f", dist(e.current, { x = 0, y = 0 }))
+  if e.done and (e.end_stamp - e.start_stamp < 200) and dist(e.start, e.current) < 30 then
     if dist(e.current, { x = 0, y = 0 }) < 70 then
       maybe_prefs = true 
     end
-    if last_tap and (e.end_stamp - last_tap.end_stamp < 350) and dist(e.current, last_tap.current) < 20 then
+    if last_tap and (e.end_stamp - last_tap.end_stamp < 450) and dist(e.current, last_tap.current) < 30 then
       if maybe_prefs and last_tap.maybe_prefs then
 	Util.printf("prefs!")
         storyboard.gotoScene('prefs')

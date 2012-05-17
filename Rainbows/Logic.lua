@@ -19,29 +19,31 @@ end
 local time_counter = 65
 
 function Logic.enterFrame(custom, obj, event)
-  table.insert(last_times, system.getTimer())
-  if #last_times > 61 then
-    local small, big
-    prev = table.remove(last_times, 1)
-    time_counter = time_counter - 1
-    if time_counter < 1 then
-      small = 9999
-      big = 0
-      for i, next in ipairs(last_times) do
-	t = next - prev
-	prev = next
-	if t < small then
-	  small = t
+  if Logic.debugging_performance or (Logic.debugging_display and obj.name == Logic.debugging_display) then
+    table.insert(last_times, system.getTimer())
+    if #last_times > 61 then
+      local small, big
+      prev = table.remove(last_times, 1)
+      time_counter = time_counter - 1
+      if time_counter < 1 then
+	small = 9999
+	big = 0
+	for i, next in ipairs(last_times) do
+	  t = next - prev
+	  prev = next
+	  if t < small then
+	    small = t
+	  end
+	  if t > big then
+	    big = t
+	  end
 	end
-	if t > big then
-	  big = t
-	end
+	local time = last_times[61] - last_times[1]
+	local frame_time = time / 60
+	local fps = 1000 / frame_time
+	Util.message("%.1f-%.1f %.1fms %.1ffps", small, big, frame_time, fps)
+	time_counter = 60
       end
-      local time = last_times[61] - last_times[1]
-      local frame_time = time / 60
-      local fps = 1000 / frame_time
-      -- Util.message("%.1f-%.1f %.1fms %.1ffps", small, big, frame_time, fps)
-      time_counter = 60
     end
   end
   obj.frame_cooldown = obj.frame_cooldown - 1
@@ -123,6 +125,9 @@ function Logic.didExitScene(custom, obj, event)
   if custom then
     custom(obj, event)
   end
+  -- so I can't forget to re-enable touches
+  Touch.ignore_prefs(false)
+  Touch.ignore_doubletaps(false)
 end
 
 function Logic.destroyScene(custom, obj, event)

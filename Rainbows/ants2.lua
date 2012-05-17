@@ -130,8 +130,10 @@ function scene:touch_magic(state, ...)
     if event.events ~= 0 then
       local hit_hexes = {}
       if not touch.hue then
-	Util.printf("start_hex event:")
-	Util.dump(event)
+	if not event.start or not event.start.x then
+	  Util.printf("start_hex event bogosity:")
+	  Util.dump(event)
+	end
 	local start_hex = self.hexes:from_screen(event.start)
 	if start_hex then
 	  touch.hue = start_hex.hue

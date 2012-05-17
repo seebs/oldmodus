@@ -1,5 +1,7 @@
 local Settings = {}
 
+local json = require('json')
+
 Settings.default = {
   frame_delay = 2,
   touch_accel = 1,
@@ -10,7 +12,10 @@ Settings.default = {
   tone = 'breath',
 }
 
-Settings.scenes = {
+Settings.scene_defaults = {
+  benchmark = {
+    frame_delay = 1,
+  },
   spiral = {
     points = 3,
     history = 6,
@@ -73,13 +78,54 @@ Settings.scenes = {
   },
 }
 
+Settings.default_overrides = {
+}
+
+Settings.scene_overrides = {
+}
+
+Settings.file_path = system.pathForFile('settings.json', system.DocumentsDirectory)
+
+function Settings.load()
+  local stream = io.open(Settings.file_path, "r")
+  if stream then
+    stream_json = stream:read("*a")
+    io.close(stream)
+    local data, _, errors = json.decode(stream_json, 1, nil, {}, {})
+    if data then
+      Settings.default_overrides = data.default
+      Settings.scene_overrides = data.scene
+      return true
+    end
+  end
+  return false
+end
+
+function Settings.save()
+  local data = { default = Settings.default_overrides, scene = Settings.scene_overrides }
+  local data_json = json.encode(data)
+  local stream = io.open(Settings.file_path, "w")
+  if stream then
+    stream:write(data_json)
+    io.close(stream)
+  end
+end
+
 function Settings.scene(scene)
   local o = {}
   for k, v in pairs(Settings.default) do
     o[k] = v
   end
-  if Settings.scenes[scene] then
-    for k, v in pairs(Settings.scenes[scene]) do
+  if Settings.scene_defaults[scene] then
+    for k, v in pairs(Settings.scene_defaults[scene]) do
+      o[k] = v
+    end
+  end
+  for k, v in pairs(Settings.default_overrides) do
+    o[k] = v
+  end
+  if Settings.scene_overrides[scene] then
+    for k, v in pairs(Settings.scene_overrides[scene]) do
       o[k] = v
     end
   end

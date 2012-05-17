@@ -26,6 +26,7 @@ function Line.new(x1, y1, x2, y2, depth, r, g, b)
   o.hue = hue or math.random(#Rainbow.hues)
   o.r, o.g, o.b, o.a = r, g, b, 255
   o.depth = depth
+  o.theta = 0
   if o.depth < 1 then
     o.depth = 1
   end
@@ -45,6 +46,7 @@ function Line.new(x1, y1, x2, y2, depth, r, g, b)
   o.setPoints = Line.setPoints
   o.setThickness = Line.setThickness
   o.setAlpha = Line.setAlpha
+  o.setTheta = Line.setTheta
   o.setColor = Line.setColor
   o.redraw = Line.redraw
   return o
@@ -52,6 +54,10 @@ end
 
 function Line:setAlpha(a)
   self.a = a
+end
+
+function Line:setTheta(theta)
+  self.theta = theta
 end
 
 function Line:setPoints(p1, p2)
@@ -79,7 +85,7 @@ function Line:redraw()
     l:setFillColor(self.r, self.g, self.b, self.a)
     l.blendMode = 'add'
   end
-  self.rotation = deg(f.theta)
+  self.rotation = deg(f.theta) + self.theta
 end
 
 return Line
