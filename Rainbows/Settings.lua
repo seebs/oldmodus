@@ -95,6 +95,7 @@ function Settings.load()
     if data then
       Settings.default_overrides = data.default
       Settings.scene_overrides = data.scene
+      Settings.benchmark = data.benchmark
       return true
     end
   end
@@ -102,7 +103,7 @@ function Settings.load()
 end
 
 function Settings.save()
-  local data = { default = Settings.default_overrides, scene = Settings.scene_overrides }
+  local data = { default = Settings.default_overrides, scene = Settings.scene_overrides, benchmark = Settings.benchmark }
   local data_json = json.encode(data)
   local stream = io.open(Settings.file_path, "w")
   if stream then

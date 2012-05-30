@@ -1,11 +1,11 @@
-local debugging_display = nil
+local debugging_display = 'spiral'
 local display_index = 1
-local debugging_performance = false
+local debugging_performance = true
 
 display.setStatusBar(display.HiddenStatusBar)
 
--- profiler = require "Profiler"
--- profiler.startProfiler({time = 30000, delay = 1000, verbose = true })
+profiler = require "Profiler"
+profiler.startProfiler({time = 30000, delay = 1000, verbose = true })
 
 -- mine get caps so I don't clash
 -- stuff everyone else needs
@@ -96,8 +96,8 @@ end
 
 Runtime:addEventListener('touch', Touch.handle)
 
-if not have_settings then
-  storyboard.gotoScene('benchmark')
-else
+if have_settings and scenes.benchmark.settings_complete() then
   next_display()
+else
+  storyboard.gotoScene('benchmark')
 end

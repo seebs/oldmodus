@@ -70,9 +70,9 @@ function scene.do_rects(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 19) * 40
-      local y_loc = floor(spot / 19) * 40 + 250
-      local l = rect_new(s, x_loc, y_loc, 30, 30)
+      local x_loc = (spot % 40) * 19
+      local y_loc = floor(spot / 40) * 19 + 250
+      local l = rect_new(s, x_loc, y_loc, 15, 15)
       l:setFillColor(120, 120, 255)
       l.blendMode = 'add'
       do_rects_stash.rects[#do_rects_stash.rects + 1] = l
@@ -98,9 +98,9 @@ function scene.do_lines(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 19) * 40
-      local y_loc = floor(spot / 19) * 40 + 250
-      local l = line_new(x_loc, y_loc, x_loc + 35, y_loc + 35, 5, 120, 120, 255)
+      local x_loc = (spot % 30) * 25
+      local y_loc = floor(spot / 30) * 25 + 250
+      local l = line_new(x_loc, y_loc, x_loc + 30, y_loc + 30, 5, 120, 120, 255)
       l.blendMode = 'add'
       do_lines_stash.lines[#do_lines_stash.lines + 1] = l
       do_lines_stash:insert(l)
@@ -120,8 +120,8 @@ local measuring
 
 local benchmarks = {
   { name = 'baseline', base = 5000, inc = 5000, func = scene.do_nothing, max = 50000 },
-  { name = 'lines', base = 10, inc = 5, func = scene.do_lines, max = 400 },
-  { name = 'rectangles', base = 20, inc = 10, func = scene.do_rects, max = 500 },
+  { name = 'lines', base = 20, inc = 10, func = scene.do_lines, max = 900 },
+  { name = 'rectangles', base = 20, inc = 20, func = scene.do_rects, max = 1600 },
 }
 
 local stats = {
@@ -132,9 +132,22 @@ function scene:enterScene(event)
   s:insert(self.help)
   self:state1("Please be patient -- gathering performance data.")
   self:state2("")
+  self.view.alpha = 1
   measuring = 1
   Touch.ignore_prefs(true)
   Touch.ignore_doubletaps(true)
+end
+
+function scene.settings_complete()
+  if not Settings.benchmark then
+    return false
+  end
+  for i, bench in ipairs(benchmarks) do
+    if not Settings.benchmark[bench.name] then
+      return false
+    end
+  end
+  return true
 end
 
 local last_frame
@@ -161,7 +174,7 @@ function scene:enterFrame(event)
       self:state1("Measuring %s.", bench.name)
     else
       self:state1("Done benchmarking.")
-      Settings.default_overrides.benchmark = stats
+      Settings.benchmark = stats
       Settings:save()
       next_display()
       return

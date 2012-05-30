@@ -190,13 +190,21 @@ function scene:enterFrame(event)
   self:do_drops()
 end
 
+local last_drops = {}
+
 function scene:touch_magic(state, ...)
   if state.events > 0 then
     for i, e in pairs(state.points) do
-      if e.events > 0 and not e.done then
-	local last = self.future_drops[#self.future_drops]
-	if not last or dist(last, e.current) > 80 or e.stamp - last.stamp > 100 then
-	  table.insert(self.future_drops, { x = e.current.x, y = e.current.y, stamp = e.stamp })
+      if e.events > 0 then
+        if e.done then
+	  local last = last_drops[i]
+	  local next = { x = e.current.x, y = e.current.y, stamp = e.stamp }
+	  if not last or dist(last, e.current) > 80 or e.stamp - last.stamp > 100 then
+	    table.insert(self.future_drops, next)
+	    last_drops[i] = next
+	  end
+        else
+	  last_drops[i] = nil
 	end
       end
     end
@@ -208,6 +216,7 @@ function scene:willEnterScene(event)
 end
 
 function scene:enterScene(event)
+  last_drops = {}
   self.future_drops = {}
   self.drop_cooldown = 0
 end

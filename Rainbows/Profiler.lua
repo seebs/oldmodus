@@ -65,7 +65,7 @@ local timelineHTMLEnd = [[]);
 ]]
 
 local filetimeline 
-local maxFunctionsToShow = 100
+local maxFunctionsToShow = 10
 local json = require "json"
 
 local initMemory,initTime,previousFunction,previousMemory,previousLineAll,profilerTimer
@@ -191,9 +191,8 @@ local function recordMemoryTimeline(funcKey, memory, event)
 --	memoryTimeline[memoryTimelineIndex].event = event --1 = called, 2 = returned, 3 = line	
 --	memoryTimelineIndex = memoryTimelineIndex+1
 end
-local baseDir = system.pathForFile("gear.png", system.ResourcesDirectory)
+local baseDir = system.pathForFile("main.lua", system.ResourcesDirectory)
 baseDir = string.sub(baseDir, 1,-9)
-print("baseDir: ", baseDir)
 local function extractFile(text)
 	
 	if(text == nil) then return nil end
@@ -209,8 +208,6 @@ local function extractFile(text)
 	 return filename, lineNum
 end
 
-local dumped_counter = 0
-
 local resolutionCounter = 0
 local function returned(phase,l,err)
 		debug.sethook (returned, "",0 )	
@@ -218,7 +215,7 @@ local function returned(phase,l,err)
 			print(err)
 		end
 		local info = debug.getinfo(2,"Sln")
-		local funcKey = info.name
+		local funcKey = info.source
 		local lineKey = funcKey..info.currentline
 		local isLuaFunction = currentParams.verbose or string.len(funcKey) > 6
 		funcKey = funcKey..info.linedefined		
@@ -240,12 +237,6 @@ local function returned(phase,l,err)
 				local func = functions[funcKey]	
 			if(phase == "call" ) then
 			
-			  if info.name and info.name ~= '?' and info.what ~= "C" then
-			    if dumped_counter < 50 then
-			      print("call ", dumped_counter, info.name, info.source, info.currentline)
-			      dumped_counter = dumped_counter + 1
-			    end
-			  end
 				if(isLuaFunction or currentParams.mode==1) then --we must profile all functions including the verbose ones in performance profiling b/c they are called by library functions
 
 					local currentTime = system.getTimer() 
@@ -616,7 +607,6 @@ local function generateReport()
 weighNodes(objects)
 nameNodes(objects)
 	local path = system.pathForFile( currentParams.name..".profile"..currentParams.mode, system.DocumentsDirectory)
-	print("Trying to save profile as ", path)
 	local file = io.open( path, "w" ) 
 	if file then
 			file:write( "var json = "..json.encode(objects) ) 
@@ -810,8 +800,6 @@ local function createResourceFile(data, filename)
 	if file then
 			file:write( data ) 
 			io.close( file )
-	else
-	  print("Failed to create ", filename)
 	end	
 end
 local resourceFile
