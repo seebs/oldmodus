@@ -15,10 +15,10 @@ IMAGES = $(wildcard *.png)
 	rm -f $*.box $*.alpha
 
 images: $(patsubst %.png,%.wng,$(IMAGES))
-	for img in $(IMAGES); do mv $${img%.png}.wng rainbows/$${img%.png}-highlight.png; cp $$img rainbows/.; done
+	for img in $(IMAGES); do mv $${img%.png}.wng Modus/$${img%.png}-highlight.png; cp $$img Modus/.; done
 
 run:
-	/Applications/Corona$(SDK)/simulator Rainbows/main.lua
+	/Applications/Corona$(SDK)/simulator Modus/main.lua
 
 perf:
 	/Applications/Corona$(SDK)/simulator Perftest/main.lua

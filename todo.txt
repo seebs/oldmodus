@@ -1,0 +1,31 @@
+Vector
+	adjust total velocity, not velocity in each direction
+Benchmark
+	figure out how to use settings
+Icons
+	Figure out where I was on Android icons
+Sound
+	more bells
+	smaller samples
+	primary/secondary distinction for at least some modes
+Cascade
+	orientation
+	detect all-bits-zero failures.
+Hexes
+	Finger location on Android.
+Preferences
+	add speed setting
+	allow sound selection
+Speed calculation
+	figure out how many frames of delay to add (if any) to get a given
+	speed, and how many lines/squares can be drawn to get under it
+Business
+	federal tax ID
+	state tax ID
+	bank account
+Apple store
+	Convert to business name (see email)
+Android store
+	Create account (?)
+Line mode:
+	More string art
