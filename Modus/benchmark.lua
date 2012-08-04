@@ -12,6 +12,7 @@ local timer = system.getTimer
 local co = coroutine
 local to_s = tostring
 local floor = math.floor
+local ceil = math.ceil
 
 function scene:createScene(event)
   s = self.screen
@@ -85,7 +86,7 @@ function scene.do_hexes(self, count)
       do_hexes_stash:insert(l)
     end
     old_count = count
-    for i = 1, count do 
+    for i = ceil(count / 2), count do 
       do_hexes_stash.hexes[i].rotation = (i + count)
     end
     self, count = co.yield(count)
@@ -113,7 +114,7 @@ function scene.do_rects(self, count)
       do_rects_stash:insert(l)
     end
     old_count = count
-    for i = 1, count do 
+    for i = ceil(count / 2), count do 
       do_rects_stash.rects[i].rotation = (i + count)
     end
     self, count = co.yield(count)
@@ -140,7 +141,7 @@ function scene.do_lines(self, count)
       do_lines_stash:insert(l)
     end
     old_count = count
-    for i = 1, count do 
+    for i = ceil(count / 2), count do 
       do_lines_stash.lines[i]:setTheta(i + count)
       do_lines_stash.lines[i]:redraw()
     end
@@ -154,17 +155,17 @@ local measuring
 
 local benchmarks = {
   { name = 'baseline', base = 5000, inc = 5000, func = scene.do_nothing, max = 50000 },
-  { name = 'lines', base = 20, inc = 10, func = scene.do_lines, max = 900 },
-  { name = 'rectangles', base = 20, inc = 20, func = scene.do_rects, max = 1600 },
-  { name = 'hexes', base = 20, inc = 20, func = scene.do_hexes, max = 1600 },
+  { name = 'line', base = 20, inc = 10, func = scene.do_lines, max = 900 },
+  { name = 'square', base = 20, inc = 20, func = scene.do_rects, max = 1600 },
+  { name = 'hex', base = 20, inc = 20, func = scene.do_hexes, max = 1600 },
 }
 
 local stats = {
 }
 
 function scene:enterScene(event)
-  self.help = display.newImage('benchmark.png')
-  s:insert(self.help)
+  -- self.help = display.newImage('benchmark.png')
+  -- s:insert(self.help)
   self:state1("Please be patient -- gathering performance data.")
   self:state2("")
   self.view.alpha = 1
@@ -207,6 +208,7 @@ function scene:enterFrame(event)
       per_frame = bench.base
       samples[per_frame] = {}
       self:state1("Measuring %s.", bench.name)
+      collectgarbage('collect')
     else
       self:state1("Done benchmarking.")
       Settings.benchmark = stats
@@ -218,13 +220,17 @@ function scene:enterFrame(event)
     local cur = samples[per_frame]
     cur[#cur + 1] = elapsed
     self:state2("%.1fms for %d repetitions.", elapsed, per_frame)
-    if #cur >= 5 then
+    if #cur >= 6 then
       local avg = 0
+      -- disregard the first two reported values, which seem to be wonky
+      -- because of item creation
+      table.remove(cur, 1)
       for idx, time in ipairs(cur) do
         avg = avg + time
       end
-      avg = avg / #cur
-      if avg > last_average or per_frame > bench.max then
+      -- we will tolerate one slipped frame per five
+      avg = (avg - (60 / 1000)) / #cur
+      if avg >= last_average or per_frame >= bench.max then
         averages[per_frame] = avg
 	last_average = avg
       end
@@ -242,6 +248,7 @@ function scene:enterFrame(event)
 	return
       else
 	samples[per_frame] = {}
+        collectgarbage('collect')
       end
     end
   end
@@ -249,8 +256,8 @@ function scene:enterFrame(event)
 end
 
 function scene:exitScene(event)
-  self.help:removeSelf()
-  self.help = nil
+  -- self.help:removeSelf()
+  -- self.help = nil
   if self.state1text then
     self.state1text:removeSelf()
     self.state1text = nil

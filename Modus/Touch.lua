@@ -49,13 +49,15 @@ function Touch.state(func, caller)
     for _, e in ipairs(state.points) do
       if e.done then
 	nuke_these[#nuke_these + 1] = e
-      elseif now - e.stamp > 1000 then
-	-- flag for cleanup
-        e.done = true
+      else
+        if now - e.stamp > 1000 then
+	  -- flag for cleanup on next pass
+          e.done = true
+        end
+	e.events = 0
+	e.previous = {}
+	e.new_event = false
       end
-      e.events = 0
-      e.previous = {}
-      e.new_event = false
     end
     -- and dispose of extras
     if #nuke_these > 0 then
@@ -120,7 +122,6 @@ function Touch.handle(event)
     e.current = { x = event.x, y = event.y }
   elseif event.phase == 'ended' or event.phase == 'cancelled' then
     -- if an event ended, leave it in for one last process...
-    e.previous[#e.previous + 1] = e.current
     e.current = { x = event.x, y = event.y }
     e.done = true
     e.end_stamp = event.time

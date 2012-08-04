@@ -80,6 +80,27 @@ end
 
 system.activate("multitouch")
 
+function reload_display(event)
+  if debugging_performance then
+    storyboard.printMemUsage()
+  end
+  if not event or event.phase == 'ended' then
+    local prev = ((display_index - 2) % #displays) + 1
+    storyboard.gotoScene(displays[prev], 'fade', 500)
+  end
+end
+
+function last_display(event)
+  if debugging_performance then
+    storyboard.printMemUsage()
+  end
+  if not event or event.phase == 'ended' then
+    local prev = ((display_index - 3) % #displays) + 1
+    storyboard.gotoScene(displays[prev], 'fade', 500)
+    display_index = (prev % #displays) + 1
+  end
+end
+
 function next_display(event)
   if debugging_display then
     table.insert(displays, display_index, debugging_display)

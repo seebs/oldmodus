@@ -23,7 +23,7 @@ end
 
 function scene:touch_magic(state)
   if state.events > 0 then
-    next_display()
+    reload_display()
   end
 end
 

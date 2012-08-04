@@ -60,6 +60,8 @@ function scene:enterFrame(event)
   end
   local previous_state = 0
   local toggles = 0
+  local all_true = true
+  local all_false = true
   for i, square in ipairs(next) do
     local above = prev[i]
     local before = prev[(i + square_adjust) % square_mod + 1]
@@ -78,11 +80,21 @@ function scene:enterFrame(event)
       previous_state = square.compute
     end
     if square.compute == 1 then
+      all_false = false
       square.alpha = 1
       -- math.min(1, square.alpha + (.022 * self.squares.rows))
     else
+      all_true = false
       square.alpha = min(1, square.alpha + (.0065 * self.squares.rows))
     end
+    square.hue = self.colors[square.compute % 2 + 1]
+    square:colorize()
+  end
+  -- turn one light on randomly next time.
+  if all_false then
+    local square = next[math.random(#next)]
+    square.compute = 1
+    square.alpha = 1
     square.hue = self.colors[square.compute % 2 + 1]
     square:colorize()
   end
@@ -119,18 +131,18 @@ end
 
 function scene:touch_magic(state)
   if state.events > 0 then
-    for i, e in pairs(state.points) do
-      if e.events > 0 then
+    for i, event in pairs(state.points) do
+      if event.events > 0 then
         local hitboxes = {}
 	local square
-	for i, p in ipairs(e.previous) do
-	  square = self.squares:from_screen(p)
+	for i, e in ipairs(event.previous) do
+	  square = self.squares:from_screen(e)
 	  -- Util.printf("previous: %d, %d", square.logical_x, square.logical_y)
 	  if square then
 	    hitboxes[square] = true
 	  end
 	end
-	square = self.squares:from_screen(e.current)
+	square = self.squares:from_screen(event.current)
 	if square then
 	  -- Util.printf("current: %d, %d", square.logical_x, square.logical_y)
 	  hitboxes[square] = true

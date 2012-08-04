@@ -3,6 +3,7 @@ local Logic = {}
 
 local touch = Touch.state
 local min = math.min
+local floor = math.floor
 
 local last_times = {}
 
@@ -17,10 +18,13 @@ function Logic.wrap(object, method)
 end
 
 local time_counter = 65
+local timer = system.getTimer
+Logic.last_frame = 0
 
 function Logic.enterFrame(custom, obj, event)
+  local this_frame = timer()
   if Logic.debugging_performance or (Logic.debugging_display and obj.name == Logic.debugging_display) then
-    table.insert(last_times, system.getTimer())
+    table.insert(last_times, this_frame)
     if #last_times > 61 then
       local small, big
       prev = table.remove(last_times, 1)
@@ -46,7 +50,10 @@ function Logic.enterFrame(custom, obj, event)
       end
     end
   end
-  obj.frame_cooldown = obj.frame_cooldown - 1
+  local frames = math.floor(((this_frame - Logic.last_frame) * 60 / 1000) + 0.1)
+  event.actual_frames = frames
+  Logic.last_frame = this_frame
+  obj.frame_cooldown = obj.frame_cooldown - frames
   if obj.frame_cooldown > 0 then
     return
   end

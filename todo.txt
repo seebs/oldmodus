@@ -1,31 +1,29 @@
-Vector
-	adjust total velocity, not velocity in each direction
+Sound
+	make the octave-choosing smarter/prettier
+	possibly allow random selection between notes for intermediate colors
 Benchmark
 	figure out how to use settings
-Icons
-	Figure out where I was on Android icons
-Sound
-	more bells
-	smaller samples
-	primary/secondary distinction for at least some modes
-Cascade
-	orientation
-	detect all-bits-zero failures.
-Hexes
-	Finger location on Android.
 Preferences
 	add speed setting
 	allow sound selection
-Speed calculation
-	figure out how many frames of delay to add (if any) to get a given
-	speed, and how many lines/squares can be drawn to get under it
-Business
-	federal tax ID
-	state tax ID
-	bank account
+Spiral
+	why is performance abysmal during drags on-device?
 Apple store
+	Get DUNS number (filed for, expect early August?)
 	Convert to business name (see email)
 Android store
 	Create account (?)
+
+POST-RELEASE:
+
+Lite mode?
+	Limited version (fewer features/settings)
+
+VERSION 2:
+
 Line mode:
 	More string art
+Sound
+	primary/secondary distinction for at least some modes
+Vector
+	adjust total velocity, not velocity in each direction

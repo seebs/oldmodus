@@ -73,7 +73,7 @@ function scene:enterFrame(event)
   behind:colorize()
 
   table.insert(self.ants, ant)
-  self.fade_cooldown = self.fade_cooldown - 1
+  self.fade_cooldown = self.fade_cooldown - event.actual_frames
   if self.fade_cooldown < 1 then
     for _, column in ipairs(self.hexes) do
       for _, hex in ipairs(column) do
@@ -93,7 +93,7 @@ function scene:enterFrame(event)
       removes[#removes + 1] = k
     end
   end
-  self.sound_delay = self.sound_delay - 1
+  self.sound_delay = self.sound_delay - event.actual_frames
   if self.sound_delay < 1 then
     self.sound_delay = set.sound_delay
     Sounds.playoctave(ant.hue, 0)
