@@ -1,5 +1,10 @@
 local scene = {}
 
+scene.meta = {
+  name = "Cascading Squares 2",
+  description = "Cellular automaton with more interesting change propagation."
+}
+
 scene.FADED = 0.75
 
 local max = math.max

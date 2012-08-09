@@ -1,5 +1,10 @@
 local scene = {}
 
+scene.meta = {
+  name = "Lissajous Figures",
+  description = "Lissajous curves, with alpha and beta controlled by touch."
+}
+
 scene.INSET = 4
 
 local rfuncs

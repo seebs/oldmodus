@@ -1,9 +1,11 @@
 local scene = {}
 
-scene.VELOCITY_MIN = 5
-scene.VELOCITY_MAX = 15
+scene.meta = {
+  name = "Bouncing Spline",
+  description = "The control points for the spline bounce around the screen or follow touch events."
+}
+
 scene.points = 4
-scene.TOUCH_ACCEL = 1
 
 local rfuncs
 local colorfor

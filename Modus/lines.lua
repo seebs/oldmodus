@@ -1,5 +1,10 @@
 local scene = {}
 
+scene.meta = {
+  name = "Bouncing lines",
+  description = "A line segment bounces around the screen; multitouch adds or removes segments."
+}
+
 local s
 local set
 local rfuncs

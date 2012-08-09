@@ -1,5 +1,10 @@
 local scene = {}
 
+scene.meta = {
+  name = "Raindrops",
+  description = "Raindrops splash and fade, tending to follow touch events."
+}
+
 local dist = Util.dist
 
 local s

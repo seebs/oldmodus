@@ -1,5 +1,10 @@
 local scene = {}
 
+scene.meta = {
+  name = "Spiraling Shape",
+  description = "The arms will drift towards touch events."
+}
+
 local pi = math.pi
 local fmod = math.fmod
 local sin = math.sin

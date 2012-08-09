@@ -25,6 +25,9 @@ Squares = require "Squares"
 Hexes = require "Hexes"
 Vector = require "Vector"
 
+-- Overall stuff I want to use:
+Modus = {}
+
 storyboard = require "storyboard"
 widget = require "widget"
 
@@ -57,6 +60,12 @@ function make_scene(name)
     for key, value in pairs(display_code[name]) do
       scenes[name][key] = value
     end
+    if not scenes[name].meta then
+      scenes[name].meta = {
+        name = name,
+	description = "There is no description for this scene."
+      }
+    end
     Logic:logicize(scenes[name])
   end
 end
@@ -69,6 +78,8 @@ for i, v in ipairs(displays) do
 end
 make_scene('prefs')
 make_scene('benchmark')
+Modus.displays = displays
+Modus.scenes = scenes
 
 if debugging_display or debugging_performance then
   Logic.debugging_display = debugging_display

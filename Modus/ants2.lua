@@ -1,5 +1,10 @@
 local scene = {}
 
+scene.meta = {
+  name = "Wandering Ants 2",
+  description = "Ants wander around the screen, moving towards greatest change."
+}
+
 scene.FADED = 0.75
 scene.FADE_DIVISOR = 12
 scene.CYCLE = 6

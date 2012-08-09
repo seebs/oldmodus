@@ -158,7 +158,8 @@ function Settings.compute_properties(set, benchmark)
     -- instance, the 3 arms of the spiral mode).  number of lines
     -- onscreen will be points * history * multiplier
     while not giving_up do
-      local effective_n = set.points * set.history * set.color_multiplier
+      -- color_multiplier * 6 because color_multiplier multiplies colors
+      local effective_n = set.points * set.history * set.color_multiplier * 6
       local delay = Settings.time_for(effective_n, benchmark)
       Util.printf("Considering effective display of %d lines, expecting %.1fms.",
         effective_n, delay)

@@ -1,5 +1,10 @@
 local scene = {}
 
+scene.meta = {
+  name = "Knights",
+  description = "Glowing squares perform random knight's moves, advancing colors towards their own."
+}
+
 scene.KNIGHTS = 6
 
 scene.FADED = 0.75
