@@ -80,9 +80,26 @@ end
 
 local last_tap = nil
 
+Touch.is_disabled = false
+
+function Touch.disable()
+  Touch.is_disabled = true
+end
+
+function Touch.enable()
+  Touch.is_disabled = false
+end
+
 function Touch.handle(event)
   local id = event.id or 'unknown'
   local e
+
+  if Touch.is_disabled then
+    Util.printf("discarding an event, target %s, phase %s", tostring(event.target), event.phase)
+    return false
+  else
+    Util.printf("accepting an event, target %s, phase %s", tostring(event.target), event.phase)
+  end
 
   -- Util.printf("Touch event:")
   -- Util.dump(event, 1, '    ')
@@ -131,23 +148,32 @@ function Touch.handle(event)
   -- Util.dump(e)
   -- Util.printf("state.active: %d", state.active)
 
-  local maybe_prefs = false
-  if e.done and (e.end_stamp - e.start_stamp < 200) and dist(e.start, e.current) < 30 then
-    if dist(e.current, { x = 0, y = 0 }) < 70 then
+  local tapped = false
+  if e.done then
+    if e.end_stamp and e.start_stamp and (e.end_stamp - e.start_stamp < 200) then
+      if e.start and e.current and dist(e.start, e.current) < 30 then
+        tapped = true
+      end
+    end
+  end
+  if tapped then
+    local maybe_prefs = false
+    if dist(e.current, { x = 0, y = 0 }) < 80 then
       maybe_prefs = true 
     end
     if last_tap and (e.end_stamp - last_tap.end_stamp < 450) and dist(e.current, last_tap.current) < 30 then
       if maybe_prefs and last_tap.maybe_prefs then
-	Util.printf("prefs!")
         storyboard.gotoScene('prefs')
       else
-        next_display()
+        Modus.next_display()
       end
       gear.isVisible = false
       last_tap = nil
     else
+      local previous_maybe = last_tap and last_tap.maybe_prefs
       last_tap = e
-      last_tap.maybe_prefs = maybe_prefs
+      -- if you tap again, but it's not a double-tap, we clear the gear
+      last_tap.maybe_prefs = maybe_prefs and (not previous_maybe)
       if last_tap.maybe_prefs then
         gear.isVisible = true
 	gear:toFront()

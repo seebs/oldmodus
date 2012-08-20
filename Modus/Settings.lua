@@ -10,6 +10,7 @@ Settings.default = {
   v_max = 15,
   color_multiplier = 1,
   history = 6,
+  enabled = true,
   tone = 'breath',
 }
 
@@ -202,16 +203,16 @@ function Settings.scene(scene)
   for k, v in pairs(Settings.default_overrides) do
     o[k] = v
   end
-  if Settings.scene_overrides[scene] then
-    for k, v in pairs(Settings.scene_overrides[scene]) do
-      o[k] = v
-    end
+  Settings.scene_overrides[scene] = Settings.scene_overrides[scene] or {}
+  o.setting_overrides = Settings.scene_overrides[scene]
+  for k, v in pairs(o.setting_overrides) do
+    o[k] = v
   end
   if o.frame_delay and o.type then
     bench = Settings.benchmark[o.type]
     if bench then
       Settings.compute_properties(o, bench)
-      Util.printf("computed settings for frame delay %d", o.frame_delay)
+      Util.printf("Computed settings for %s frame delay %d", o.type, o.frame_delay)
     end
   end
   -- because everyone wants to know

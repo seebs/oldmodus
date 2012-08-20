@@ -26,7 +26,7 @@ end
 
 function scene:touch_magic(state)
   if state.events > 0 then
-    next_display()
+    Modus.next_display()
   end
 end
 
@@ -135,7 +135,7 @@ function scene.do_lines(self, count)
       local spot = i - 1
       local x_loc = (spot % 30) * 25
       local y_loc = floor(spot / 30) * 20 + 275
-      local l = line_new(x_loc, y_loc, x_loc + 30, y_loc + 30, 5, 120, 120, 255)
+      local l = line_new(x_loc, y_loc, x_loc + 30, y_loc + 30, 2, 120, 120, 255)
       l.blendMode = 'add'
       do_lines_stash.lines[#do_lines_stash.lines + 1] = l
       do_lines_stash:insert(l)
@@ -213,7 +213,7 @@ function scene:enterFrame(event)
       self:state1("Done benchmarking.")
       Settings.benchmark = stats
       Settings:save()
-      next_display()
+      Modus.next_display()
       return
     end
   else
@@ -222,7 +222,7 @@ function scene:enterFrame(event)
     self:state2("%.1fms for %d repetitions.", elapsed, per_frame)
     if #cur >= 6 then
       local avg = 0
-      -- disregard the first two reported values, which seem to be wonky
+      -- disregard the first reported value, which seems to be wonky
       -- because of item creation
       table.remove(cur, 1)
       for idx, time in ipairs(cur) do
@@ -234,6 +234,7 @@ function scene:enterFrame(event)
         averages[per_frame] = avg
 	last_average = avg
       end
+      Util.printf("Average for %d items: %.1fms", per_frame, avg)
       per_frame = per_frame + bench.inc
       if avg > 60 or per_frame > bench.max then
 	-- we're done here

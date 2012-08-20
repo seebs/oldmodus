@@ -1,5 +1,6 @@
 local debugging_display = nil
 local display_index = 1
+local previous_display = 1
 local debugging_performance = false
 
 display.setStatusBar(display.HiddenStatusBar)
@@ -30,6 +31,7 @@ Modus = {}
 
 storyboard = require "storyboard"
 widget = require "widget"
+widget.setTheme("theme_ios")
 
 -- debugging and saving memory and things
 storyboard.purgeOnSceneChange = true
@@ -67,6 +69,7 @@ function make_scene(name)
       }
     end
     Logic:logicize(scenes[name])
+    scenes[name].settings = Settings.scene(name)
   end
 end
 
@@ -81,38 +84,43 @@ make_scene('benchmark')
 Modus.displays = displays
 Modus.scenes = scenes
 
+-- we always want the option of displaying stuff:
+local message_box = display.newText('', Screen.center.x, Screen.center.y, Screen.size.x - 10, 0, native.defaultFont, 35)
+Util.messages_to(message_box)
+
 if debugging_display or debugging_performance then
   Logic.debugging_display = debugging_display
   Logic.debugging_performance = debugging_performance
   storyboard.isDebug = true
-  local message_box = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 35)
-  Util.messages_to(message_box)
 end
 
 system.activate("multitouch")
 
-function reload_display(event)
+function Modus.reload_display(event)
   if debugging_performance then
     storyboard.printMemUsage()
   end
-  if not event or event.phase == 'ended' then
+  if not event or event.phase == 'ended' or event.phase == 'release' then
+    if not scenes[displays[display_index]].settings.enabled then
+      Modus.next_display(event)
+    else
+      storyboard.gotoScene(displays[display_index], 'fade', 100)
+    end
+  end
+end
+
+function Modus.last_display(event)
+  if debugging_performance then
+    storyboard.printMemUsage()
+  end
+  if not event or event.phase == 'ended' or event.phase == 'release' then
     local prev = ((display_index - 2) % #displays) + 1
-    storyboard.gotoScene(displays[prev], 'fade', 500)
+    storyboard.gotoScene(displays[prev], 'fade', 100)
+    display_index = prev
   end
 end
 
-function last_display(event)
-  if debugging_performance then
-    storyboard.printMemUsage()
-  end
-  if not event or event.phase == 'ended' then
-    local prev = ((display_index - 3) % #displays) + 1
-    storyboard.gotoScene(displays[prev], 'fade', 500)
-    display_index = (prev % #displays) + 1
-  end
-end
-
-function next_display(event)
+function Modus.next_display(event)
   if debugging_display then
     table.insert(displays, display_index, debugging_display)
     debugging_display = nil
@@ -120,16 +128,30 @@ function next_display(event)
   if debugging_performance then
     storyboard.printMemUsage()
   end
-  if not event or event.phase == 'ended' then
-    storyboard.gotoScene(displays[display_index], 'fade', 500)
-    display_index = (display_index % #displays) + 1
+  local next_place = nil
+  if not event or event.phase == 'ended' or event.phase == 'release' then
+    local started_at = display_index
+    while not next_place do
+      display_index = (display_index % #displays) + 1
+      if display_index == started_at then
+	next_place = 'prefs'
+	Util.message("You do not appear to have any other scenes enabled.  Enable some scenes.")
+	break
+      end
+      next_place = displays[display_index]
+      local enabled = scenes[displays[display_index]].settings.enabled
+      if not enabled then
+	next_place = nil
+      end
+    end
+    storyboard.gotoScene(next_place, 'fade', 100)
   end
 end
 
 Runtime:addEventListener('touch', Touch.handle)
 
 if have_settings and scenes.benchmark.settings_complete() then
-  next_display()
+  Modus.next_display()
 else
   storyboard.gotoScene('benchmark')
 end

@@ -201,7 +201,7 @@ function scene:touch_magic(state, ...)
   if state.events > 0 then
     for i, e in pairs(state.points) do
       if e.events > 0 then
-        if e.done then
+        if not e.done then
 	  local last = last_drops[i]
 	  local next = { x = e.current.x, y = e.current.y, stamp = e.stamp }
 	  if not last or dist(last, e.current) > 80 or e.stamp - last.stamp > 100 then

@@ -14,6 +14,7 @@ local floor = math.floor
 local ceil = math.ceil
 local abs = math.abs
 local find_line = Util.line
+local line_new = Line.new
 
 -- settings and the Screen object
 local set
@@ -132,7 +133,7 @@ function scene:line(color, g, index)
 	seg:setPoints(point, next)
 	colorize(seg, color)
       else
-	local l = Line.new(point, next, 2, colorfor(color))
+	local l = line_new(point, next, 2, colorfor(color))
 	l:setThickness(2)
 	seg = l
 	g.segments[i] = l

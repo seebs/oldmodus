@@ -20,8 +20,18 @@ end
 local time_counter = 65
 local timer = system.getTimer
 Logic.last_frame = 0
+Logic.skip_to_new_scene = nil
+
+function Logic.next_frame_go_to(scene)
+  Logic.skip_to_new_scene = scene
+end
 
 function Logic.enterFrame(custom, obj, event)
+  if Logic.skip_to_new_scene then
+    storyboard.gotoScene(Logic.skip_to_new_scene)
+    Logic.skip_to_new_scene = nil
+    return
+  end
   local this_frame = timer()
   if Logic.debugging_performance or (Logic.debugging_display and obj.name == Logic.debugging_display) then
     table.insert(last_times, this_frame)
@@ -53,12 +63,13 @@ function Logic.enterFrame(custom, obj, event)
   local frames = math.floor(((this_frame - Logic.last_frame) * 60 / 1000) + 0.1)
   event.actual_frames = frames
   Logic.last_frame = this_frame
+  if obj.view.alpha < 1 then
+    obj.view.alpha = min(obj.view.alpha + .02, 1)
+    Util.printf("setting view alpha to %.2f", obj.view.alpha)
+  end
   obj.frame_cooldown = obj.frame_cooldown - frames
   if obj.frame_cooldown > 0 then
     return
-  end
-  if obj.view.alpha < 1 then
-    obj.view.alpha = min(obj.view.alpha + .01, 1)
   end
   obj.frame_cooldown = obj.settings.frame_delay
   if obj.touch_magic then
@@ -88,13 +99,20 @@ function Logic.overlayEnded(custom, obj, event)
 end
 
 function Logic.createScene(custom, obj, event)
-  local settings = Settings.scene(obj.name)
+  local settings
+  if Modus.scenes[obj.name] and Modus.scenes[obj.name].settings then
+    settings = Modus.scenes[obj.name].settings
+  else
+    Modus.scenes[obj.name] = Modus.scenes[obj.name] or {}
+    settings = Settings.scene(obj.name)
+    Modus.scenes[obj.name].settings = settings
+  end
   obj.settings = settings
   obj.screen = Screen.new(obj.view)
+  obj.view.alpha = 0
   if custom then
     custom(obj, event)
   end
-  obj.view.alpha = 0
 end
 
 function Logic.enterScene(custom, obj, event)
@@ -112,11 +130,12 @@ end
 
 function Logic.willEnterScene(custom, obj, event)
   obj.frame_cooldown = 0
-  obj.view.alpha = 0
+  obj.view.alpha = 1
   Sounds.suppress(true)
   if custom then
     custom(obj, event)
   end
+  Touch.enable()
 end
 
 function Logic.exitScene(custom, obj, event)

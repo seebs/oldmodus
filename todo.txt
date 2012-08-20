@@ -1,16 +1,19 @@
 Sound
 	make the octave-choosing smarter/prettier
 	possibly allow random selection between notes for intermediate colors
+Drops
+	Apparently not following whole path?
 Benchmark
-	figure out how to use settings
+	improve settings usage
+	compare on a couple of devices
 Preferences
 	add speed setting
 	allow sound selection
-Spiral
-	why is performance abysmal during drags on-device?
+Touch
+	error from dist() thinking it didn't get a valid object for the
+	calculation on 135 (determining distance of touch)
 Apple store
-	Get DUNS number (filed for, expect early August?)
-	Convert to business name (see email)
+	Verify conversion
 Android store
 	Create account (?)
 
