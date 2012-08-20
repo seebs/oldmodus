@@ -133,15 +133,15 @@ function scene.do_lines(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 30) * 25
-      local y_loc = floor(spot / 30) * 20 + 275
-      local l = line_new(x_loc, y_loc, x_loc + 30, y_loc + 30, 2, 120, 120, 255)
+      local x_loc = (spot % 40) * 19
+      local y_loc = floor(spot / 40) * 18 + 275
+      local l = line_new(x_loc, y_loc, x_loc + 25, y_loc + 25, 2, 120, 120, 255)
       l.blendMode = 'add'
       do_lines_stash.lines[#do_lines_stash.lines + 1] = l
       do_lines_stash:insert(l)
     end
     old_count = count
-    for i = ceil(count / 2), count do 
+    for i = count - ceil(count / 4), count do 
       do_lines_stash.lines[i]:setTheta(i + count)
       do_lines_stash.lines[i]:redraw()
     end
@@ -155,7 +155,7 @@ local measuring
 
 local benchmarks = {
   { name = 'baseline', base = 5000, inc = 5000, func = scene.do_nothing, max = 50000 },
-  { name = 'line', base = 20, inc = 10, func = scene.do_lines, max = 900 },
+  { name = 'line', base = 20, inc = 10, func = scene.do_lines, max = 1600 },
   { name = 'square', base = 20, inc = 20, func = scene.do_rects, max = 1600 },
   { name = 'hex', base = 20, inc = 20, func = scene.do_hexes, max = 1600 },
 }

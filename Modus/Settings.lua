@@ -11,7 +11,7 @@ Settings.default = {
   color_multiplier = 1,
   history = 6,
   enabled = true,
-  tone = 'breath',
+  timbre = 'breath',
 }
 
 Settings.scene_defaults = {
@@ -70,7 +70,7 @@ Settings.scene_defaults = {
   },
   lissajous = {
     history = 8,
-    color_multiplier = 16,
+    color_multiplier = 24,
     sound_delay = 3,
     delta_delta = 0.1,
     frame_delay = 3,
@@ -129,9 +129,11 @@ end
 function Settings.time_for(n, benchmark)
   local best_count
   local best_msec = 1000
+  local highest_count = 0
   for count, msec in pairs(benchmark) do
+    count = tonumber(count)
     if best_count then
-      if tonumber(count) > n and tonumber(msec) < best_msec then
+      if count > n and tonumber(msec) < best_msec then
         best_count = count
 	best_msec = msec
       end
@@ -139,12 +141,20 @@ function Settings.time_for(n, benchmark)
       best_count = count
       best_msec = msec
     end
+    if best_count > highest_count then
+      highest_count = best_count
+    end
   end
   if best_msec == 1000 then
     -- maybe we got lucky
     return Settings.frametime
   else
-    return best_msec
+    if n > highest_count then
+      -- scale to actual N, if N is larger than anything the benchmark tried
+      return best_msec * n / highest_count
+    else
+      return best_msec
+    end
   end
 end
 
@@ -209,7 +219,7 @@ function Settings.scene(scene)
     o[k] = v
   end
   if o.frame_delay and o.type then
-    bench = Settings.benchmark[o.type]
+    bench = Settings.benchmark and Settings.benchmark[o.type]
     if bench then
       Settings.compute_properties(o, bench)
       Util.printf("Computed settings for %s frame delay %d", o.type, o.frame_delay)

@@ -26,6 +26,9 @@ function Logic.next_frame_go_to(scene)
   Logic.skip_to_new_scene = scene
 end
 
+Logic.frames_missed = 0
+Logic.times_missed = 0
+
 function Logic.enterFrame(custom, obj, event)
   if Logic.skip_to_new_scene then
     storyboard.gotoScene(Logic.skip_to_new_scene)
@@ -33,43 +36,60 @@ function Logic.enterFrame(custom, obj, event)
     return
   end
   local this_frame = timer()
-  if Logic.debugging_performance or (Logic.debugging_display and obj.name == Logic.debugging_display) then
-    table.insert(last_times, this_frame)
-    if #last_times > 61 then
+  local this_time = this_frame - Logic.last_frame
+  local frames = math.floor((this_time * 60 / 1000) + 0.1)
+  event.actual_frames = frames
+  Logic.last_frame = this_frame
+  if obj.view.alpha < 1 then
+    obj.view.alpha = min(obj.view.alpha + .02, 1)
+  end
+  if not Logic.ignore_time and (Logic.debugging_performance or (Logic.debugging_display and obj.name == Logic.debugging_display)) then
+    last_times[#last_times + 1] = this_time
+    if #last_times > 60 then
       local small, big
-      prev = table.remove(last_times, 1)
       time_counter = time_counter - 1
+      local total = 0
       if time_counter < 1 then
 	small = 9999
 	big = 0
-	for i, next in ipairs(last_times) do
-	  t = next - prev
-	  prev = next
+	for i, t in ipairs(last_times) do
+	  total = total + t
 	  if t < small then
 	    small = t
 	  end
 	  if t > big then
 	    big = t
 	  end
+	  if i > 60 then
+	    break
+	  end
 	end
-	local time = last_times[61] - last_times[1]
-	local frame_time = time / 60
+	local frame_time = total / 60
 	local fps = 1000 / frame_time
-	Util.message("%.1f-%.1f %.1fms %.1ffps", small, big, frame_time, fps)
-	time_counter = 60
+	Util.message("%.1f-%.1f %.1fms %.1ffps %d/%d drop",
+		small, big, frame_time, fps,
+		Logic.frames_missed, Logic.times_missed)
+	Logic.frames_missed = 0
+	Logic.times_missed = 0
+	time_counter = 30
+	new_times = {}
+	for i = 31,60 do
+	  new_times[i - 30] = last_times[i]
+	end
+	last_times = new_times
       end
     end
   end
-  local frames = math.floor(((this_frame - Logic.last_frame) * 60 / 1000) + 0.1)
-  event.actual_frames = frames
-  Logic.last_frame = this_frame
-  if obj.view.alpha < 1 then
-    obj.view.alpha = min(obj.view.alpha + .02, 1)
-    Util.printf("setting view alpha to %.2f", obj.view.alpha)
-  end
   obj.frame_cooldown = obj.frame_cooldown - frames
   if obj.frame_cooldown > 0 then
+    Logic.ignore_time = true
     return
+  end
+  Logic.ignore_time = false
+  if obj.frame_cooldown < 0 then
+    Logic.frames_missed = Logic.frames_missed - obj.frame_cooldown
+    Logic.times_missed = Logic.frames_missed + 1
+    Util.printf("%d frames late.", -obj.frame_cooldown)
   end
   obj.frame_cooldown = obj.settings.frame_delay
   if obj.touch_magic then
@@ -99,14 +119,9 @@ function Logic.overlayEnded(custom, obj, event)
 end
 
 function Logic.createScene(custom, obj, event)
-  local settings
-  if Modus.scenes[obj.name] and Modus.scenes[obj.name].settings then
-    settings = Modus.scenes[obj.name].settings
-  else
-    Modus.scenes[obj.name] = Modus.scenes[obj.name] or {}
-    settings = Settings.scene(obj.name)
-    Modus.scenes[obj.name].settings = settings
-  end
+  -- regenerate settings in case of changes
+  local settings = Settings.scene(obj.name)
+  Modus.scenes[obj.name].settings = settings
   obj.settings = settings
   obj.screen = Screen.new(obj.view)
   obj.view.alpha = 0
@@ -126,6 +141,7 @@ function Logic.enterScene(custom, obj, event)
   end
   Sounds.suppress(false)
   Runtime:addEventListener('enterFrame', obj)
+  Logic.last_frame = timer()
 end
 
 function Logic.willEnterScene(custom, obj, event)

@@ -2,6 +2,7 @@ local scene = {}
 
 scene.ROW_HEIGHT = 120
 scene.NAME_OFFSET = 275
+scene.GLOBAL_SPACE = 250
 
 local frame = Util.enterFrame
 local touch = Touch.state
@@ -25,6 +26,19 @@ end
 
 function scene.onRowTouch(event)
   -- row.reRender = true
+end
+
+function scene.pick_sound(event)
+  if event.phase ~= 'release' and event.phase ~= 'tap' then
+    return true
+  end
+  local button = event.target
+  local sound_name = button.id
+  Util.printf("picked: %s", sound_name)
+  Settings.default_overrides.timbre = sound_name
+  scene.make_sound_buttons()
+  -- and reload sounds if needed
+  Sounds.update()
 end
 
 function scene.toggle_scene(event)
@@ -74,7 +88,7 @@ function scene.onRowRender(event)
   if not enabled then
     text:setTextColor(180)
   end
-  text = display.newText(sc.meta.description .. string.format("%.1f", system.getTimer()), scene.NAME_OFFSET, 10, s.size.x - scene.NAME_OFFSET - 5, scene.ROW_HEIGHT - 10, native.systemFont, 20)
+  text = display.newText(sc.meta.description, scene.NAME_OFFSET, 10, s.size.x - scene.NAME_OFFSET - 5, scene.ROW_HEIGHT - 10, native.systemFont, 20)
   row_group:insert(text)
   text = display.newText(settings.enabled and "Enabled" or "Disabled", 5, 35, native.systemFont, 25)
   row_group:insert(text)
@@ -94,27 +108,6 @@ function scene.onRowRender(event)
   row_group:insert(button)
 end
 
-function scene:display_one_scene(name)
-  local sc = modus.scenes[name]
-  if not sc then
-    sc = { meta = { name = name, description = "Does not exist." } }
-  end
-  local g = display.newGroup(scene.scene_grouping)
-  g.user_height = 100
-  local t
-  t = display.newText(g, sc.meta.name, 0, 0, native.systemFont, 22)
-  t:setReferencePoint(display.topLeftReferencePoint)
-  t.x = 0
-  t.y = 0
-  g:insert(t)
-  t = display.newText(g, sc.meta.description, 0, 0, (s.size.x / 2) - 50, 72, native.systemFont, 20)
-  t.x = 0
-  t.y = 42
-  t:setReferencePoint(display.topLeftReferencePoint)
-  g:insert(t)
-  return g
-end
-
 function scene:willEnterScene(event)
   -- I don't want the standard touch events
   Touch.disable()
@@ -125,14 +118,12 @@ function scene:createScene(event)
   s = self.screen
   set = self.settings
   self.scene_displays = {}
-  -- reserve some space for global preferences
-  base = 250
 
   scene.scene_list = widget.newTableView({
     hideBackground = true,
     width = s.size.x,
     height = s.size.y,
-    topPadding = base,
+    topPadding = scene.GLOBAL_SPACE,
     listener = self
   })
   s:insert(scene.scene_list)
@@ -149,10 +140,10 @@ function scene:createScene(event)
     })
   end
   local button = widget.newButton({
-    left = s.size.x - 220,
-    top = (base * -1) + 5,
+    left = s.size.x - 450,
+    top = 10 - scene.GLOBAL_SPACE,
     width = 215,
-    height = 30,
+    height = 35,
     label = "Rerun Benchmarks",
     onEvent = function(event)
       if event.phase == "release" then
@@ -162,21 +153,80 @@ function scene:createScene(event)
   })
   scene.scene_list:insert(button)
   button = widget.newButton({
-    left = s.size.x - 220,
-    top = (base * -1) + 40,
+    left = s.size.x - 225,
+    top = 10 - scene.GLOBAL_SPACE,
     width = 215,
-    height = 30,
+    height = 35,
     label = "Resume",
+    labelColor = {
+      default = { 0, 128, 0, 255 },
+      over = { 0, 128, 0, 255 }
+    },
     onEvent = Modus.reload_display
   })
   scene.scene_list:insert(button)
   local text
-  text = display.newText("Global Settings:", 5, -base, native.systemFont, 36)
+  text = display.newText("Global Settings:", 5, 0 - scene.GLOBAL_SPACE, native.systemFont, 36)
   scene.scene_list:insert(text)
+  text = display.newText("Sounds:", 5, 50 - scene.GLOBAL_SPACE, native.systemFont, 28)
+  scene.scene_list:insert(text)
+  scene.make_sound_buttons()
   text = display.newText("Scene Settings:", 5, -45, native.systemFont, 36)
   scene.scene_list:insert(text)
 end
 
+function scene.make_sound_buttons()
+  local using = Settings.default_overrides.timbre or Settings.default.timbre
+  Util.printf("make_sound_buttons: using %s", tostring(using))
+  local sounds, descriptions = Sounds.list()
+  local left = 115
+  local top = 55 - scene.GLOBAL_SPACE
+  -- recreate buttons
+  if scene.soundbuttons then
+    for idx, button in ipairs(scene.soundbuttons) do
+      button:removeSelf()
+    end
+  end
+  scene.soundbuttons = {}
+  local offset = 0
+  for idx, name in ipairs(sounds) do
+    -- we force Off to be the leftmost sound
+    if name == 'off' then
+      offset = -1
+    else
+      local selected = (name == using)
+      button = widget.newButton({
+	id = name,
+	left = left + ((idx + offset) * 152),
+	top = top,
+	width = 150,
+	labelColor = {
+	  default = { 0, selected and 128 or 0, 0, 255 },
+	  over = { 0, selected and 0 or 255, 0, 255 }
+	},
+	height = 30,
+	label = descriptions[name],
+	onEvent = scene.pick_sound,
+      })
+      scene.scene_list:insert(button)
+    end
+  end
+  local selected = ('off' == using)
+  button = widget.newButton({
+    id = 'off',
+    left = left,
+    top = top,
+    labelColor = {
+      default = { 0, selected and 128 or 0, 0, 255 },
+      over = { 0, selected and 0 or 255, 0, 255 }
+    },
+    width = 150,
+    height = 30,
+    label = 'Off',
+    onEvent = scene.pick_sound,
+  })
+  scene.scene_list:insert(button)
+end
 
 function scene:touch_magic(state)
   --if state.events > 0 then

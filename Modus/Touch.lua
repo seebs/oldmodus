@@ -95,10 +95,7 @@ function Touch.handle(event)
   local e
 
   if Touch.is_disabled then
-    Util.printf("discarding an event, target %s, phase %s", tostring(event.target), event.phase)
     return false
-  else
-    Util.printf("accepting an event, target %s, phase %s", tostring(event.target), event.phase)
   end
 
   -- Util.printf("Touch event:")

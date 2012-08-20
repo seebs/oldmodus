@@ -21,6 +21,9 @@ function Util.message(fmt, ...)
   local out = Util.sprintf(fmt, ...)
   if message_box then
     message_box.text = out
+    message_box:setReferencePoint(display.centerReferencePoint)
+    message_box.x = Screen.size.x / 2
+    message_box.y = Screen.size.y / 2
   end
   print(out)
 end

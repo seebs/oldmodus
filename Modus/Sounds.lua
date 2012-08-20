@@ -1,8 +1,8 @@
 local Sounds = {}
 
 Sounds.wavs = { }
-Sounds.counts = { bell = 16, breath = 16 }
-
+Sounds.counts = { bell = 16, breath = 16, off = 0 }
+Sounds.names = { bell = "Metal Bell", breath = "Airy Bell", off = "Off" }
 Sounds.offset = 0
 
 for name, count in pairs(Sounds.counts) do
@@ -15,11 +15,46 @@ for name, count in pairs(Sounds.counts) do
 end
 audio.setVolume(1.0, 0)
 
-local tones = Sounds.wavs[Settings.default.tone]
-local tonecount = Sounds.counts[Settings.default.tone]
+local timbre
+local tones
+local tonecount
+
+function Sounds.update()
+  timbre = Settings.default_overrides.timbre or Settings.default.timbre
+  tonecount = Sounds.counts[timbre] or 0
+
+  Sounds.wavs[timbre] = Sounds.wavs[timbre] or {}
+  tones = Sounds.wavs[timbre]
+
+  if tonecount == 0 then
+    Sounds.quiet = true
+  end
+
+  if #tones < tonecount then
+    for i = 1, tonecount do
+      local filename = Util.sprintf("%s%03d.wav", name, i)
+      local sound = audio.loadSound(filename)
+      tones[#tones + 1] = sound
+    end
+  end
+  Util.printf("Sound update: timbre %s, %d tones.", timbre, tonecount)
+end
+
+function Sounds.list()
+  local names = {}
+  for name, count in pairs(Sounds.names) do
+    names[#names + 1] = name
+  end
+  table.sort(names)
+  return names, Sounds.names
+end
 
 function Sounds.suppress(flag)
-  Sounds.quiet = flag
+  if tonecount == 0 then
+    Sounds.quiet = true
+  else
+    Sounds.quiet = flag
+  end
 end
 
 function Sounds.playexact(tone, volume)
@@ -51,14 +86,18 @@ function Sounds.playoctave(hue, octave, volume)
   Sounds.volume(c, volume)
 end
 
+local octave_changer = 6
+
 function Sounds.play(hue, volume)
   if Sounds.quiet then
     return
   end
   local note = ((hue or math.random(#Rainbow.hues)) % #Rainbow.hues) + 1
-  if note == 6 then
+
+  if note == octave_changer then
     offset = offset + 5
-    if offset + note > tonecount then
+    octave_changer = ((octave_changer - 2) % #Rainbow.hues) + 1
+    if offset + 6 > tonecount then
       offset = 0
     end
   end

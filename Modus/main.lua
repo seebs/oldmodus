@@ -76,6 +76,9 @@ end
 -- pick up any local settings
 local have_settings = Settings.load()
 
+-- load sounds now that we know what sounds we like
+Sounds.update()
+
 for i, v in ipairs(displays) do
   make_scene(v)
 end
