@@ -115,6 +115,11 @@ function scene:willEnterScene(event)
   -- self.view.alpha = 0
 end
 
+function scene:enterScene(event)
+  Touch.ignore_prefs(true)
+  Touch.ignore_doubletaps(true)
+end
+
 function scene:createScene(event)
   s = self.screen
   set = self.settings

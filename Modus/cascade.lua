@@ -87,10 +87,10 @@ function scene:enterFrame(event)
     if square.compute == 1 then
       all_false = false
       square.alpha = 1
-      -- math.min(1, square.alpha + (.022 * self.squares.rows))
+      -- math.min(1, square.alpha + (.022 * row_mod))
     else
       all_true = false
-      square.alpha = min(1, square.alpha + (.0065 * self.squares.rows))
+      square.alpha = min(1, square.alpha + (.0065 * row_mod))
     end
     square.hue = self.colors[square.compute % 2 + 1]
     square:colorize()

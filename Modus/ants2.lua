@@ -51,6 +51,7 @@ function scene:enterFrame(event)
   behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
   if behind.ant then
     self.make_sound = behind.ant.hue / set.color_multiplier
+    self.make_octave = 1
   end
   behind:colorize()
 
@@ -59,6 +60,7 @@ function scene:enterFrame(event)
   behind.hue = self.hexes.color_towards(behind.hue, ant.hue)
   if behind.ant then
     self.make_sound = behind.ant.hue / set.color_multiplier
+    self.make_octave = 1
   end
   behind:colorize()
 
@@ -77,6 +79,7 @@ function scene:enterFrame(event)
     splash.cooldown = splash.cooldown - 1
     if splash.cooldown < 1 then
       self.make_sound = ceil(splash.hue / set.color_multiplier)
+      self.make_octave = splash.octave
       proc = coroutine.create(scene.process_hex)
       splash.cooldown = 2
       splash.hex:splash(1, 1, proc, splash.hue)
@@ -86,11 +89,11 @@ function scene:enterFrame(event)
   self.sound_delay = self.sound_delay - 1
   if self.sound_delay < 1 then
     self.sound_delay = set.sound_delay
-    Sounds.playoctave(ant.hue, 0, 0.6)
+    Sounds.playoctave(ant.hue, 0)
   end
   if self.sound_delay % (set.sound_delay / 2) == 0 then
     if self.make_sound then
-      Sounds.play(self.make_sound, 0.7)
+      Sounds.playoctave(self.make_sound, self.make_octave)
       self.make_sound = nil
     end
   end
@@ -158,7 +161,7 @@ function scene:touch_magic(state, ...)
 	touch.last_hex = hex
       end
       for hex, _ in pairs(hit_hexes) do
-	table.insert(self.splashes, { cooldown = 1, hex = hex, hue = touch.hue })
+	table.insert(self.splashes, { cooldown = 1, hex = hex, hue = touch.hue, octave = idx })
       end
       if event.done then
 	recent_touch[idx] = nil
@@ -166,6 +169,7 @@ function scene:touch_magic(state, ...)
     elseif not event.done then
       local hue = touch and touch.hue or 1
       self.make_sound = ceil(hue / set.color_multiplier)
+      self.make_octave = idx
     end
   end
 end

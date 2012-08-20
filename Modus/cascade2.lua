@@ -64,10 +64,10 @@ function scene:enterFrame(event)
       local all_true = true
       local all_false = true
       for i, square in ipairs(row) do
-	-- shift left occasionally
-	if row.colors[1] % set.color_multiplier == 0 then
-	  square = square:find(-1, 0)
-	end
+	-- on second thought, don't shift left occasionally
+	-- if row.colors[1] % set.color_multiplier == 0 then
+	--   square = square:find(-1, 0)
+	-- end
 	local after = prow[i]
 	local before = after:find(-1, 0)
 
@@ -157,7 +157,7 @@ function scene:touch_magic(state)
 	    square.row.flag = 1
 	    square.alpha = 1
 	    square.flag = true
-	    square.compute = square.compute + 1
+	    square.compute = (square.compute + 1) % 2
 	    square.hue = square.hue + set.color_multiplier
 	    square:colorize()
 	  end

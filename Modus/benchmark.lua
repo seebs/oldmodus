@@ -171,6 +171,7 @@ function scene:enterScene(event)
   measuring = 1
   Touch.ignore_prefs(true)
   Touch.ignore_doubletaps(true)
+  Touch.disable(true)
 end
 
 function scene.settings_complete()
@@ -191,6 +192,7 @@ local per_frame = 1
 local samples = {}
 local averages = {}
 local last_average = 0
+local per_frame_inc = 1
 
 function scene:enterFrame(event)
   local now = timer()
@@ -205,9 +207,11 @@ function scene:enterFrame(event)
     if bench and bench.func then
       proc = co.create(bench.func)
       per_frame = bench.base
+      per_frame_inc = bench.inc
       samples[per_frame] = {}
       self:state1("Measuring %s.", bench.name)
       collectgarbage('collect')
+      last_frame = timer()
     else
       self:state1("Done benchmarking.")
       Settings.benchmark = stats
@@ -234,7 +238,8 @@ function scene:enterFrame(event)
 	last_average = avg
       end
       -- Util.printf("Average for %d items: %.1fms", per_frame, avg)
-      per_frame = per_frame + bench.inc
+      per_frame = per_frame + per_frame_inc
+      per_frame_inc = ceil(per_frame_inc * 1.05)
       if avg > 60 or per_frame > bench.max then
 	-- we're done here
 	stats[bench.name] = averages
@@ -256,8 +261,20 @@ function scene:enterFrame(event)
 end
 
 function scene:exitScene(event)
-  -- self.help:removeSelf()
-  -- self.help = nil
+  self.help:removeSelf()
+  self.help = nil
+  if do_lines_stash then
+    do_lines_stash:removeSelf()
+    do_lines_stash = nil
+  end
+  if do_rects_stash then
+    do_rects_stash:removeSelf()
+    do_rects_stash = nil
+  end
+  if do_hexes_stash then
+    do_hexes_stash:removeSelf()
+    do_hexes_stash = nil
+  end
   if self.state1text then
     self.state1text:removeSelf()
     self.state1text = nil

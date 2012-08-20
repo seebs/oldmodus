@@ -1,4 +1,5 @@
 local Sounds = {}
+local floor = math.floor
 
 Sounds.wavs = { }
 Sounds.counts = { bell = 16, breath = 16, off = 0 }
@@ -18,10 +19,12 @@ audio.setVolume(1.0, 0)
 local timbre
 local tones
 local tonecount
+local octavecount = 1
 
 function Sounds.update()
   timbre = Settings.default_overrides.timbre or Settings.default.timbre
   tonecount = Sounds.counts[timbre] or 0
+  octavecount = floor((tonecount - 6) / 5) + 1
 
   Sounds.wavs[timbre] = Sounds.wavs[timbre] or {}
   tones = Sounds.wavs[timbre]
@@ -80,7 +83,7 @@ function Sounds.playoctave(hue, octave, volume)
   end
   hue = hue or math.random(#Rainbow.hues)
   note = (hue - 1) % #Rainbow.hues + 1
-  local off = ((octave or 0) * 5)
+  local off = (((octave or 0) % octavecount) * 5)
   off = off % (tonecount - 1)
   local c = audio.play(tones[note + off])
   Sounds.volume(c, volume)
