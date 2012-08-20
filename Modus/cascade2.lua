@@ -41,7 +41,7 @@ function scene:enterFrame(event)
     prow = self.squares.r[y - 1]
     if self.toggle then
       for i, square in ipairs(row) do
-	square.alpha = max(0.005, square.alpha - .01)
+	square.alpha = max(0.005, square.alpha - .004)
       end
     end
     local process = false
@@ -61,6 +61,8 @@ function scene:enterFrame(event)
     if process then
       local previous_state = 0
       local toggles = 0
+      local all_true = true
+      local all_false = true
       for i, square in ipairs(row) do
 	-- shift left occasionally
 	if row.colors[1] % set.color_multiplier == 0 then
@@ -80,13 +82,22 @@ function scene:enterFrame(event)
 	end
 	if square.compute == 1 then
 	  -- square.alpha = min(1, square.alpha + (.03 * self.squares.rows))
+          all_false = false
 	  square.alpha = 1
 	else
 	  -- only do this for the new bottom row
+          all_true = false
 	  if y == self.squares.rows and self.toggle then
 	    square.alpha = min(1, square.alpha + (.004 * self.squares.rows))
 	  end
 	end
+      end
+      if all_false then
+	local square = row[math.random(#row)]
+	square.compute = 1
+	square.alpha = 1
+	square.hue = self.colors[square.compute % 2 + 1]
+	square:colorize()
       end
       sound_effect = toggles
     end

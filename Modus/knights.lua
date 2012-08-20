@@ -5,7 +5,7 @@ scene.meta = {
   description = "Glowing squares perform random knight's moves, advancing colors as they go."
 }
 
-scene.KNIGHTS = 12
+scene.KNIGHTS = 6
 
 scene.FADED = 0.75
 
@@ -35,20 +35,20 @@ function scene:adjust(knight)
   self:bump(square)
   self:bump(square)
   if knight.light then
-    knight.light.hue = square.hue
+    knight.light.hue = knight.index
     knight.light:colorize()
     if knight.light.hue == square.hue then
       knight.light.alpha = 0.6
       knight.light.blendMode = 'add'
     else
-      knight.light.alpha = 0.8
+      knight.light.alpha = 1.0
       knight.light.blendMode = 'blend'
     end
     knight.light:move(square)
   end
   if knight.index % 3 == 1 then
     Sounds.playexact(knight.index + self.tone_offset, 1)
-    if knight.index == 10 then
+    if knight.index == 4 then
       self.tone_offset = (self.tone_offset + 1) % 3
     end
   end

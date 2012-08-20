@@ -1,5 +1,3 @@
-Sound
-	possibly allow random selection between notes for intermediate colors
 Preferences
 	add speed setting
 Apple store
@@ -8,11 +6,16 @@ Android store
 	Create account (?)
 Cascade
 	Sometimes touching one square alters another (!??)
+Android permissions issues
+	find out how to rebuild app without permissions
+	... and exclude the code that wanted them
 
 POST-RELEASE:
 
 Lite mode?
 	Limited version (fewer features/settings)
+Sound
+	possibly allow random selection between notes for intermediate colors
 
 VERSION 2:
 

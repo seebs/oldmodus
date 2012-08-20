@@ -36,6 +36,7 @@ function scene.pick_sound(event)
   local sound_name = button.id
   Util.printf("picked: %s", sound_name)
   Settings.default_overrides.timbre = sound_name
+  Settings.save()
   scene.make_sound_buttons()
   -- and reload sounds if needed
   Sounds.update()
@@ -142,7 +143,7 @@ function scene:createScene(event)
   end
   local button = widget.newButton({
     left = s.size.x - 450,
-    top = 15 - scene.GLOBAL_SPACE,
+    top = 10 - scene.GLOBAL_SPACE,
     width = 215,
     height = 38,
     label = "Rerun Benchmarks",
@@ -155,7 +156,7 @@ function scene:createScene(event)
   scene.scene_list:insert(button)
   button = widget.newButton({
     left = s.size.x - 225,
-    top = 15 - scene.GLOBAL_SPACE,
+    top = 10 - scene.GLOBAL_SPACE,
     width = 215,
     height = 38,
     label = "Resume",

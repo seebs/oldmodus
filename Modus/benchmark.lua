@@ -68,13 +68,13 @@ function scene.do_hexes(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 40) * 18 + 10
-      local y_loc = floor(spot / 40) * 18 + 275
+      local x_loc = (spot % 40) * 19.1 + 10
+      local y_loc = floor(spot / 40) * 18 + 300
       local l = display.newImage(hexsheet, 1)
       l.x = x_loc
       l.y = y_loc
-      l.xScale = 18 / 256
-      l.yScale = 18 / 256
+      l.xScale = 23 / 256
+      l.yScale = 23 / 256
       l:setFillColor(unpack(Rainbow.color(i)))
       l.blendMode = 'add'
       do_hexes_stash.hexes[#do_hexes_stash.hexes + 1] = l
@@ -100,9 +100,9 @@ function scene.do_rects(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 40) * 18.5
+      local x_loc = (spot % 40) * 19.1
       local y_loc = floor(spot / 40) * 18 + 300
-      local l = rect_new(s, x_loc, y_loc, 18, 18)
+      local l = rect_new(s, x_loc, y_loc, 19, 19)
       l:setFillColor(unpack(Rainbow.color(i)))
       l.alpha = 0.8
       l.blendMode = 'add'
@@ -129,7 +129,7 @@ function scene.do_lines(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 40) * 18.5
+      local x_loc = (spot % 40) * 19.1
       local y_loc = floor(spot / 40) * 18 + 300
       local l = line_new(x_loc, y_loc, x_loc + 25, y_loc + 25, 2, i)
       l:setThickness(3)
@@ -163,7 +163,7 @@ local stats = {
 }
 
 function scene:enterScene(event)
-  self.help = display.newImage('benchmark.png')
+  self.help = display.newImage('benchmark.png', 0, 0, true)
   s:insert(self.help)
   self:state1("Please be patient -- gathering performance data.")
   self:state2("")

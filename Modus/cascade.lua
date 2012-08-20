@@ -111,7 +111,7 @@ function scene:enterFrame(event)
   self.colors[2] = (self.colors[2] % self.total_colors) + 1
   for _, column in ipairs(self.squares) do
     for _, square in ipairs(column) do
-      square.alpha = max(0.005, square.alpha - .01)
+      square.alpha = max(0.005, square.alpha - .004)
     end
   end
   Sounds.play(toggles)
@@ -129,7 +129,7 @@ function scene:willEnterScene(event)
   self.active_row = 1
   self.index = 0
   self.colors = { 1, 1 + set.color_multiplier }
-  self.squares[1][1].hue = 1 + set.color_multiplier
+  self.squares[1][1].hue = self.colors[2]
   self.squares[1][1]:colorize()
   self.squares[1][1].compute = 1
 end
