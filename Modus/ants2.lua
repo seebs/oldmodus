@@ -1,8 +1,8 @@
 local scene = {}
 
 scene.meta = {
-  name = "Wandering Ants 2",
-  description = "Ants wander around the screen, moving towards greatest change."
+  name = "Painting Hexes",
+  description = "Hexes wander the screen, trying to convert things to their own color. Touch events can smear colors around."
 }
 
 scene.FADED = 0.75

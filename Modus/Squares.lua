@@ -29,7 +29,7 @@ function Squares:from_screen(t_or_x, y)
   else
     x = t_or_x
   end
-  return self:find(ceil((x / Squares.square_size) + 0.5), ceil((y / Squares.square_size) + 0.5))
+  return self:find(ceil((x / Squares.square_size) + 0.05), ceil((y / Squares.square_size) + 0.05))
 end
 
 function Squares:shift_squares(x, y)

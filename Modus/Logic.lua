@@ -89,7 +89,6 @@ function Logic.enterFrame(custom, obj, event)
   if obj.frame_cooldown < 0 then
     Logic.frames_missed = Logic.frames_missed - obj.frame_cooldown
     Logic.times_missed = Logic.frames_missed + 1
-    Util.printf("%d frames late.", -obj.frame_cooldown)
   end
   obj.frame_cooldown = obj.settings.frame_delay
   if obj.touch_magic then

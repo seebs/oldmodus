@@ -1,8 +1,8 @@
 local scene = {}
 
 scene.meta = {
-  name = "Cascading Squares",
-  description = "Cellular automaton respects gravity."
+  name = "Cascade",
+  description = "Cellular automaton. Touch squares to activate, tilt device to change direction of cascade."
 }
 
 scene.FADED = 0.75

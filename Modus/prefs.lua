@@ -1,8 +1,8 @@
 local scene = {}
 
-scene.ROW_HEIGHT = 120
-scene.NAME_OFFSET = 275
-scene.GLOBAL_SPACE = 250
+scene.ROW_HEIGHT = 150
+scene.NAME_OFFSET = 290
+scene.GLOBAL_SPACE = 200
 
 local frame = Util.enterFrame
 local touch = Touch.state
@@ -82,15 +82,15 @@ function scene.onRowRender(event)
     sc = { meta = { name = row.id or "unnamed", description = "Does not exist." } }
   end
   local text
-  text = display.newText(sc.meta.name, 5, 5, native.systemFont, 25)
+  text = display.newText(sc.meta.name, 5, 5, native.systemFont, 30)
   row_group:insert(text)
   row_group.title_label = text
   if not enabled then
     text:setTextColor(180)
   end
-  text = display.newText(sc.meta.description, scene.NAME_OFFSET, 10, s.size.x - scene.NAME_OFFSET - 5, scene.ROW_HEIGHT - 10, native.systemFont, 20)
+  text = display.newText(sc.meta.description, scene.NAME_OFFSET, 10, s.size.x - scene.NAME_OFFSET - 5, scene.ROW_HEIGHT - 10, native.systemFont, 26)
   row_group:insert(text)
-  text = display.newText(settings.enabled and "Enabled" or "Disabled", 5, 35, native.systemFont, 25)
+  text = display.newText(settings.enabled and "Enabled" or "Disabled", 5, 37, native.systemFont, 26)
   row_group:insert(text)
   if not enabled then
     text:setTextColor(180)
@@ -99,9 +99,9 @@ function scene.onRowRender(event)
   local button = widget.newButton({
     id = row.id,
     left = 5,
-    top = 85,
+    top = 110,
     width = 100,
-    height = 30,
+    height = 35,
     label = settings.enabled and "Disable" or "Enable",
     onEvent = scene.toggle_scene,
   })
@@ -118,6 +118,7 @@ function scene:createScene(event)
   s = self.screen
   set = self.settings
   self.scene_displays = {}
+  local row_color
 
   scene.scene_list = widget.newTableView({
     hideBackground = true,
@@ -128,22 +129,22 @@ function scene:createScene(event)
   })
   s:insert(scene.scene_list)
   for idx, dname in ipairs(modus.displays) do
-    line_color = Rainbow.color(idx)
-    line_color[4] = 255
+    row_color = { unpack(Rainbow.color(idx)) }
+    row_color[4] = 70
     scene.scene_list:insertRow({
       onEvent = scene.onRowTouch,
       onRender = scene.onRowRender,
       height = scene.ROW_HEIGHT,
       id = dname,
-      lineColor = line_color,
-      rowColor = { 0, 0, 0, 255 }
+      lineColor = { 0, 0, 0, 255 },
+      rowColor = row_color
     })
   end
   local button = widget.newButton({
     left = s.size.x - 450,
-    top = 10 - scene.GLOBAL_SPACE,
+    top = 15 - scene.GLOBAL_SPACE,
     width = 215,
-    height = 35,
+    height = 38,
     label = "Rerun Benchmarks",
     onEvent = function(event)
       if event.phase == "release" then
@@ -154,9 +155,9 @@ function scene:createScene(event)
   scene.scene_list:insert(button)
   button = widget.newButton({
     left = s.size.x - 225,
-    top = 10 - scene.GLOBAL_SPACE,
+    top = 15 - scene.GLOBAL_SPACE,
     width = 215,
-    height = 35,
+    height = 38,
     label = "Resume",
     labelColor = {
       default = { 0, 128, 0, 255 },
@@ -166,9 +167,9 @@ function scene:createScene(event)
   })
   scene.scene_list:insert(button)
   local text
-  text = display.newText("Global Settings:", 5, 0 - scene.GLOBAL_SPACE, native.systemFont, 36)
+  text = display.newText("Global Settings:", 5, 0 - scene.GLOBAL_SPACE, native.systemFont, 40)
   scene.scene_list:insert(text)
-  text = display.newText("Sounds:", 5, 50 - scene.GLOBAL_SPACE, native.systemFont, 28)
+  text = display.newText("Sounds:", 5, 60 - scene.GLOBAL_SPACE, native.systemFont, 30)
   scene.scene_list:insert(text)
   scene.make_sound_buttons()
   text = display.newText("Scene Settings:", 5, -45, native.systemFont, 36)
@@ -179,8 +180,8 @@ function scene.make_sound_buttons()
   local using = Settings.default_overrides.timbre or Settings.default.timbre
   Util.printf("make_sound_buttons: using %s", tostring(using))
   local sounds, descriptions = Sounds.list()
-  local left = 115
-  local top = 55 - scene.GLOBAL_SPACE
+  local left = 125
+  local top = 65 - scene.GLOBAL_SPACE
   -- recreate buttons
   if scene.soundbuttons then
     for idx, button in ipairs(scene.soundbuttons) do
@@ -197,14 +198,14 @@ function scene.make_sound_buttons()
       local selected = (name == using)
       button = widget.newButton({
 	id = name,
-	left = left + ((idx + offset) * 152),
+	left = left + ((idx + offset) * 155),
 	top = top,
 	width = 150,
 	labelColor = {
 	  default = { 0, selected and 128 or 0, 0, 255 },
 	  over = { 0, selected and 0 or 255, 0, 255 }
 	},
-	height = 30,
+	height = 33,
 	label = descriptions[name],
 	onEvent = scene.pick_sound,
       })
@@ -221,7 +222,7 @@ function scene.make_sound_buttons()
       over = { 0, selected and 0 or 255, 0, 255 }
     },
     width = 150,
-    height = 30,
+    height = 33,
     label = 'Off',
     onEvent = scene.pick_sound,
   })

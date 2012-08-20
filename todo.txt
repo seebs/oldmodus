@@ -6,6 +6,8 @@ Apple store
 	Verify conversion
 Android store
 	Create account (?)
+Cascade
+	Sometimes touching one square alters another (!??)
 
 POST-RELEASE:
 

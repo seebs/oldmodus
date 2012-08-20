@@ -17,11 +17,6 @@ local ceil = math.ceil
 function scene:createScene(event)
   s = self.screen
   set = self.settings
-
-  -- so clicks have something to land on
-  self.bg = display.newRect(s, 0, 0, s.size.x, s.size.y)
-  self.bg:setFillColor(0, 0)
-  self.view:insert(self.bg)
 end
 
 function scene:touch_magic(state)
@@ -78,15 +73,15 @@ function scene.do_hexes(self, count)
       local l = display.newImage(hexsheet, 1)
       l.x = x_loc
       l.y = y_loc
-      l.xScale = 15 / 256
-      l.yScale = 15 / 256
-      l:setFillColor(120, 120, 255)
+      l.xScale = 18 / 256
+      l.yScale = 18 / 256
+      l:setFillColor(unpack(Rainbow.color(i)))
       l.blendMode = 'add'
       do_hexes_stash.hexes[#do_hexes_stash.hexes + 1] = l
       do_hexes_stash:insert(l)
     end
     old_count = count
-    for i = ceil(count / 2), count do 
+    for i = count - ceil(count / 4), count do 
       do_hexes_stash.hexes[i].rotation = (i + count)
     end
     self, count = co.yield(count)
@@ -105,16 +100,17 @@ function scene.do_rects(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 40) * 18
-      local y_loc = floor(spot / 40) * 18 + 275
-      local l = rect_new(s, x_loc, y_loc, 15, 15)
-      l:setFillColor(120, 120, 255)
+      local x_loc = (spot % 40) * 18.5
+      local y_loc = floor(spot / 40) * 18 + 300
+      local l = rect_new(s, x_loc, y_loc, 18, 18)
+      l:setFillColor(unpack(Rainbow.color(i)))
+      l.alpha = 0.8
       l.blendMode = 'add'
       do_rects_stash.rects[#do_rects_stash.rects + 1] = l
       do_rects_stash:insert(l)
     end
     old_count = count
-    for i = ceil(count / 2), count do 
+    for i = count - ceil(count / 4), count do 
       do_rects_stash.rects[i].rotation = (i + count)
     end
     self, count = co.yield(count)
@@ -133,12 +129,15 @@ function scene.do_lines(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 40) * 19
-      local y_loc = floor(spot / 40) * 18 + 275
-      local l = line_new(x_loc, y_loc, x_loc + 25, y_loc + 25, 2, 120, 120, 255)
+      local x_loc = (spot % 40) * 18.5
+      local y_loc = floor(spot / 40) * 18 + 300
+      local l = line_new(x_loc, y_loc, x_loc + 25, y_loc + 25, 2, i)
+      l:setThickness(3)
       l.blendMode = 'add'
       do_lines_stash.lines[#do_lines_stash.lines + 1] = l
       do_lines_stash:insert(l)
+      l:setTheta(i + count)
+      l:redraw()
     end
     old_count = count
     for i = count - ceil(count / 4), count do 
@@ -164,8 +163,8 @@ local stats = {
 }
 
 function scene:enterScene(event)
-  -- self.help = display.newImage('benchmark.png')
-  -- s:insert(self.help)
+  self.help = display.newImage('benchmark.png')
+  s:insert(self.help)
   self:state1("Please be patient -- gathering performance data.")
   self:state2("")
   self.view.alpha = 1
@@ -234,7 +233,7 @@ function scene:enterFrame(event)
         averages[per_frame] = avg
 	last_average = avg
       end
-      Util.printf("Average for %d items: %.1fms", per_frame, avg)
+      -- Util.printf("Average for %d items: %.1fms", per_frame, avg)
       per_frame = per_frame + bench.inc
       if avg > 60 or per_frame > bench.max then
 	-- we're done here

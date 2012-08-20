@@ -1,7 +1,7 @@
 local scene = {}
 
 scene.meta = {
-  name = "Cascading Squares 2",
+  name = "Cascade 2",
   description = "Cellular automaton with more interesting change propagation."
 }
 
