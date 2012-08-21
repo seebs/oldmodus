@@ -6,7 +6,6 @@ scene.meta = {
 }
 
 scene.FADED = 0.75
-scene.FADE_DIVISOR = 12
 scene.META_CYCLE = 12
 
 local max = math.max
@@ -21,7 +20,7 @@ local set
 function scene:createScene(event)
   s = self.screen
   set = self.settings
-  self.hexes = Hexes.new(s, set.ants, set.color_multiplier)
+  self.hexes = Hexes.new(s, set, set.ants, set.color_multiplier)
 end
 
 function scene:enterFrame(event)
@@ -80,15 +79,11 @@ function scene:enterFrame(event)
   behind:colorize()
 
   table.insert(self.ants, ant)
-  self.fade_cooldown = self.fade_cooldown - event.actual_frames
-  if self.fade_cooldown < 1 then
-    for _, column in ipairs(self.hexes) do
-      for _, hex in ipairs(column) do
-	hex.alpha = max(0, hex.alpha - .003)
-      end
-    end
-    self.fade_cooldown = self.FADE_DIVISOR
+  local column = self.hexes[self.fade_column]
+  for _, hex in ipairs(column) do
+    hex.alpha = max(0, hex.alpha - .003)
   end
+  self.fade_column = (self.fade_column % #self.hexes) + 1
   local removes = {}
   for k, splash in ipairs(self.splashes) do
     splash.cooldown = splash.cooldown - 1
@@ -207,7 +202,7 @@ function scene:enterScene(event)
     h:colorize()
     self.ants[i] = ant
   end
-  self.fade_cooldown = self.FADE_DIVISOR
+  self.fade_column = 1
 end
 
 function scene:destroyScene(event)

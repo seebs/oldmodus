@@ -142,7 +142,7 @@ function scene:calc(quiet)
     Sounds.play(ceil(self.next_color / set.color_multiplier))
     self.sound_cooldown = set.sound_delay
   else
-    self.sound_cooldown = self.sound_cooldown - 1
+    self.sound_cooldown = self.sound_cooldown - event.actual_frames
   end
   local delta_scale = max(max(abs(self.b), abs(self.a)), 1)
   self.delta = self.delta + set.delta_delta / delta_scale

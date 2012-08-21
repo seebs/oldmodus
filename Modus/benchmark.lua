@@ -68,15 +68,14 @@ function scene.do_hexes(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 40) * 19.1 + 10
-      local y_loc = floor(spot / 40) * 18 + 300
+      local x_loc = (spot % 50) * 14.5 + 10
+      local y_loc = floor(spot / 50) * 14.5 + 300
       local l = display.newImage(hexsheet, 1)
       l.x = x_loc
       l.y = y_loc
-      l.xScale = 23 / 256
-      l.yScale = 23 / 256
+      l.xScale = 40 / 256
+      l.yScale = 40 / 256
       l:setFillColor(unpack(Rainbow.color(i)))
-      l.blendMode = 'add'
       do_hexes_stash.hexes[#do_hexes_stash.hexes + 1] = l
       do_hexes_stash:insert(l)
     end
@@ -100,9 +99,9 @@ function scene.do_rects(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 40) * 19.1
-      local y_loc = floor(spot / 40) * 18 + 300
-      local l = rect_new(s, x_loc, y_loc, 19, 19)
+      local x_loc = (spot % 50) * 14.5
+      local y_loc = floor(spot / 50) * 14.5 + 300
+      local l = rect_new(s, x_loc, y_loc, 39, 39)
       l:setFillColor(unpack(Rainbow.color(i)))
       l.alpha = 0.8
       l.blendMode = 'add'
@@ -129,9 +128,9 @@ function scene.do_lines(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 40) * 19.1
-      local y_loc = floor(spot / 40) * 18 + 300
-      local l = line_new(x_loc, y_loc, x_loc + 25, y_loc + 25, 2, i)
+      local x_loc = (spot % 50) * 14.5
+      local y_loc = floor(spot / 50) * 14.5 + 300
+      local l = line_new(x_loc, y_loc, x_loc + 40, y_loc + 40, 2, i)
       l:setThickness(3)
       l.blendMode = 'add'
       do_lines_stash.lines[#do_lines_stash.lines + 1] = l
@@ -154,9 +153,9 @@ local measuring
 
 local benchmarks = {
   { name = 'baseline', base = 5000, inc = 5000, func = scene.do_nothing, max = 50000 },
-  { name = 'line', base = 20, inc = 10, func = scene.do_lines, max = 1600 },
-  { name = 'square', base = 20, inc = 20, func = scene.do_rects, max = 1600 },
-  { name = 'hex', base = 20, inc = 20, func = scene.do_hexes, max = 1600 },
+  { name = 'line', base = 20, inc = 20, func = scene.do_lines, max = 2500 },
+  { name = 'square', base = 20, inc = 20, func = scene.do_rects, max = 2500 },
+  { name = 'hex', base = 20, inc = 20, func = scene.do_hexes, max = 2500 },
 }
 
 local stats = {
@@ -233,14 +232,15 @@ function scene:enterFrame(event)
       end
       -- we will tolerate one slipped frame per five
       avg = (avg - (60 / 1000)) / #cur
-      if avg >= last_average or per_frame >= bench.max then
+      if avg >= last_average or (per_frame + per_frame_inc) >= bench.max then
         averages[per_frame] = avg
 	last_average = avg
       end
       -- Util.printf("Average for %d items: %.1fms", per_frame, avg)
       per_frame = per_frame + per_frame_inc
       per_frame_inc = ceil(per_frame_inc * 1.05)
-      if avg > 60 or per_frame > bench.max then
+      -- some modes are as slow as 12 frames, ~= 0.2 seconds or 200ms
+      if avg > 220 or per_frame > bench.max then
 	-- we're done here
 	stats[bench.name] = averages
 	samples = {}

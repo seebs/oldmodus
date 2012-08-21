@@ -1,7 +1,7 @@
 Preferences
-	add speed setting
+	add speed setting?
 Apple store
-	Verify conversion
+	Looks good!
 Android store
 	Create account (?)
 Cascade

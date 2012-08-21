@@ -71,7 +71,7 @@ Settings.scene_defaults = {
   lissajous = {
     history = 8,
     color_multiplier = 24,
-    sound_delay = 3,
+    sound_delay = 9,
     delta_delta = 0.1,
     frame_delay = 3,
     type = 'line',
@@ -80,14 +80,14 @@ Settings.scene_defaults = {
     color_multiplier = 4,
     ants = 6,
     frame_delay = 5,
-    sound_delay = 4,
+    sound_delay = 20,
     type = 'hex',
   },
   ants2 = {
     color_multiplier = 4,
     ants = 6,
     frame_delay = 5,
-    sound_delay = 4,
+    sound_delay = 20,
     type = 'hex',
   },
 }
@@ -126,6 +126,32 @@ function Settings.save()
   end
 end
 
+function Settings.items_for(ideal_time, benchmark)
+  local best_count
+  local best_msec = 1000
+
+  Util.printf("items_for: %.1fms.", ideal_time)
+  for count, msec in pairs(benchmark) do
+    count = tonumber(count)
+    msec = tonumber(msec)
+    if best_count then
+      if msec < ideal_time and count > best_count then
+        best_count = count
+	best_msec = msec
+      end
+    else
+      best_count = count
+      best_msec = msec
+    end
+  end
+  if best_msec == 1000 then
+    -- we didn't find anything under ideal_time? geeze.
+    return 100, 1000
+  else
+    return best_count, best_msec
+  end
+end
+
 function Settings.time_for(n, benchmark)
   local best_count
   local best_msec = 1000
@@ -159,7 +185,10 @@ function Settings.time_for(n, benchmark)
 end
 
 function Settings.compute_properties(set, benchmark)
-  local ideal_time = set.frame_delay * Settings.frametime
+  -- trim it a bit because otherwise we tend to run over...
+  local ideal_time = (set.frame_delay * Settings.frametime) * .9
+  Util.printf("compute_properties: %s, %s",
+  	tostring(set.type), tostring(benchmark))
   if set.type == 'line' then
     local orig_color_multiplier = set.color_multiplier
     local orig_history = set.history
@@ -195,7 +224,11 @@ function Settings.compute_properties(set, benchmark)
 	end
       end
     end
-  else
+  elseif set.type == 'square' or set.type == 'hex' then
+    local msec
+    set.max_items, msec = Settings.items_for(ideal_time, benchmark)
+    Util.printf("Looking for time of %.1fms or less, got %d items in %.1fms.",
+    	ideal_time, set.max_items, msec)
   end
 end
 

@@ -1,4 +1,4 @@
-local debugging_display = nil
+local debugging_display = 'ants'
 local display_index = 1
 local previous_display = 1
 local debugging_performance = false
@@ -125,7 +125,7 @@ end
 
 function Modus.next_display(event)
   if debugging_display then
-    table.insert(displays, display_index, debugging_display)
+    table.insert(displays, display_index + 1, debugging_display)
     debugging_display = nil
   end
   if debugging_performance then

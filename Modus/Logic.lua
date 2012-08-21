@@ -38,8 +38,12 @@ function Logic.enterFrame(custom, obj, event)
   local this_frame = timer()
   local this_time = this_frame - Logic.last_frame
   local frames = math.floor((this_time * 60 / 1000) + 0.1)
-  event.actual_frames = frames
   Logic.last_frame = this_frame
+  if Logic.ignore_time then
+    collectgarbage('collect')
+  -- else
+    -- Util.printf("rendering took %d frame(s).", frames)
+  end
   if obj.view.alpha < 1 then
     obj.view.alpha = min(obj.view.alpha + .02, 1)
   end
@@ -90,6 +94,8 @@ function Logic.enterFrame(custom, obj, event)
     Logic.frames_missed = Logic.frames_missed - obj.frame_cooldown
     Logic.times_missed = Logic.frames_missed + 1
   end
+  -- actual number of frames we delayed
+  event.actual_frames = obj.settings.frame_delay - obj.frame_cooldown
   obj.frame_cooldown = obj.settings.frame_delay
   if obj.touch_magic then
     touch(obj.touch_magic, obj)

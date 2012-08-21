@@ -6,7 +6,6 @@ scene.meta = {
 }
 
 scene.FADED = 0.75
-scene.FADE_DIVISOR = 12
 scene.CYCLE = 6
 
 local ceil = math.ceil
@@ -19,7 +18,7 @@ local set
 function scene:createScene(event)
   s = self.screen
   set = self.settings
-  self.hexes = Hexes.new(s, set.ants, set.color_multiplier)
+  self.hexes = Hexes.new(s, set, set.ants, set.color_multiplier)
   self.half_colors = set.total_colors / 2
 end
 
@@ -65,15 +64,11 @@ function scene:enterFrame(event)
   behind:colorize()
 
   table.insert(self.ants, ant)
-  self.fade_cooldown = self.fade_cooldown - 1
-  if self.fade_cooldown < 1 then
-    for _, column in ipairs(self.hexes) do
-      for _, hex in ipairs(column) do
-	hex.alpha = max(0, hex.alpha - .003)
-      end
-    end
-    self.fade_cooldown = self.FADE_DIVISOR
+  local column = self.hexes[self.fade_column]
+  for _, hex in ipairs(column) do
+    hex.alpha = max(0, hex.alpha - .003)
   end
+  self.fade_column = (self.fade_column % #self.hexes) + 1
   local removes = {}
   for k, splash in ipairs(self.splashes) do
     splash.cooldown = splash.cooldown - 1
@@ -86,7 +81,7 @@ function scene:enterFrame(event)
       removes[#removes + 1] = k
     end
   end
-  self.sound_delay = self.sound_delay - 1
+  self.sound_delay = self.sound_delay - event.actual_frames
   if self.sound_delay < 1 then
     self.sound_delay = set.sound_delay
     Sounds.playoctave(ant.hue, 0)
@@ -196,7 +191,7 @@ function scene:enterScene(event)
     h:colorize()
     self.ants[i] = ant
   end
-  self.fade_cooldown = self.FADE_DIVISOR
+  self.fade_column = 1
 end
 
 function scene:destroyScene(event)

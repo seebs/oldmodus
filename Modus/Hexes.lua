@@ -2,38 +2,27 @@ local Hexes = {}
 
 Hexes.x_to_y = 224 / 256
 
-Hexes.hex_size = math.max(32, Util.gcd(Screen.size.x, Screen.size.y))
-while (Screen.size.x / Hexes.hex_size < 13) and Hexes.hex_size % 2 == 0 do
-  Hexes.hex_size = Hexes.hex_size / 2
-end
-Hexes.per_hex_horizontal = Hexes.hex_size * 3 / 4
-Hexes.hex_vertical = Hexes.x_to_y * Hexes.hex_size
-Hexes.horizontal_quarter = Hexes.hex_size / 4
-Hexes.vertical_half = Hexes.hex_vertical / 2
-Hexes.per_hex_vertical = Hexes.vertical_half
-
 local floor = math.floor
 local ceil = math.ceil
 local abs = math.abs
 local fmod = math.fmod
+local sqrt = math.sqrt
 
 -- this gets fussy; if you divide a hex into four equal parts, each additional
 -- hex costs three fourths as much.  So if size were 32, it'd be 32, 32+24,
 -- 32+48, etc.
-function Hexes.horizontal_in(x)
-  local quarters = x * 4 / Hexes.hex_size
+function Hexes.horizontal_in(hexes, x)
+  local quarters = x * 4 / hexes.hex_size
   return math.floor((quarters - 1) / 3)
 end
 
 -- same deal; every two hexes costs you a full hex in height, but there's
 -- an initial extra half
-function Hexes.vertical_in(y)
-  local halves = y * 2 / Hexes.hex_vertical
+function Hexes.vertical_in(hexes, y)
+  local halves = y * 2 / hexes.hex_vertical
   return math.floor((halves - 1) / 2)
 end
 
-Hexes.rows = Hexes.vertical_in(Screen.size.y)
-Hexes.columns = Hexes.horizontal_in(Screen.size.x)
 Hexes.directions = { 'north', 'northeast', 'southeast', 'south', 'southwest', 'northwest' }
 Hexes.sheet = graphics.newImageSheet("hex.png", { width = 256, height = 224, numFrames = 1 })
 
@@ -43,8 +32,8 @@ function Hexes.colorize(hex, color)
 end
 
 function Hexes.find(hexes, x, y)
-  x = ((x - 1) % Hexes.columns) + 1
-  y = ((y - 1) % Hexes.rows) + 1
+  x = ((x - 1) % hexes.columns) + 1
+  y = ((y - 1) % hexes.rows) + 1
   return hexes[x][y]
 end
 
@@ -222,12 +211,12 @@ function Hexes:from_screen(t_or_x, y)
   if not x then
     return nil
   end
-  local x_insquare = fmod(x, Hexes.per_hex_horizontal) / Hexes.per_hex_horizontal
+  local x_insquare = fmod(x, self.per_hex_horizontal) / self.per_hex_horizontal
   -- should run 0-to-1, with 1 for the edges and 0 for the middle
-  local y_insquare = fmod(y, Hexes.hex_vertical) - Hexes.vertical_half
-  local y_away = abs(y_insquare) / Hexes.vertical_half
-  x = floor(x / Hexes.per_hex_horizontal)
-  y = floor(y / Hexes.hex_vertical)
+  local y_insquare = fmod(y, self.hex_vertical) - self.vertical_half
+  local y_away = abs(y_insquare) / self.vertical_half
+  x = floor(x / self.per_hex_horizontal)
+  y = floor(y / self.hex_vertical)
   if x % 2 == 1 then
     if x_insquare < 0.2 and y_away < x_insquare then
       x = x - 1
@@ -262,7 +251,7 @@ function Hexes:shift_hexes(x, y)
 	  local height_change = (ex % 2) == 1
 	  hex.logical_x = hex.logical_x + ex
 	  newrow[hex.logical_x] = hex
-	  hex.x = hex.x + (ex * Hexes.per_hex_horizontal)
+	  hex.x = hex.x + (ex * self.per_hex_horizontal)
 	  if height_change then
 	    if hex.low then
 	      hex.low = false
@@ -271,7 +260,7 @@ function Hexes:shift_hexes(x, y)
 	    else
 	      hex.high = false
 	      hex.low = true
-	      hex.y = Hexes.per_hex_vertical
+	      hex.y = self.per_hex_vertical
 	    end
 	  end
 	  hex.column = self[hex.logical_x]
@@ -297,7 +286,7 @@ function Hexes:shift_hexes(x, y)
 	if idx + y > self.rows then
 	  ey = ey - self.rows
 	end
-	row.y = row.y + (ey * Hexes.hex_vertical)
+	row.y = row.y + (ey * self.hex_vertical)
 	for _, hex in ipairs(row) do
 	  hex.logical_y = hex.logical_y + ey
 	end
@@ -322,17 +311,48 @@ end
 
 function Hexes.move_highlight(light, hex)
   if hex then
-    light.x = hex.x + Hexes.hex_size / 2
+    light.x = hex.x + hex.hexes.hex_size / 2
     light.y = hex.row.y + hex.y
     light.hex = hex
     light.isVisible = true
   end
 end
 
-function Hexes.new(group, highlights, multiplier)
+function Hexes.new(group, set, highlights, multiplier)
   local hexes = {}
-  hexes.rows = Hexes.rows
-  hexes.columns = Hexes.columns
+  hexes.base_size = Util.gcd(group.size.x, group.size.y)
+  -- temporary to do a first-pass calculation
+  hexes.hex_size = hexes.base_size
+  hexes.hex_vertical = Hexes.x_to_y * hexes.hex_size
+  hexes.base_rows = Hexes.vertical_in(hexes, group.size.y)
+  hexes.base_columns = Hexes.horizontal_in(hexes, group.size.x)
+  hexes.grid_base = hexes.base_rows * hexes.base_columns
+
+  -- arbitrary guess
+  if not set.max_items then
+    set.max_items = 1300
+  end
+  hexes.grid_multiplier = set.max_items / hexes.grid_base
+  Util.printf("%dx%d hex grid = %d hexes base, we want at most %.1f times that many.",
+  	hexes.base_columns, hexes.base_rows,
+	hexes.grid_base, hexes.grid_multiplier)
+  hexes.hex_divisor = floor(sqrt(hexes.grid_multiplier))
+  while hexes.base_rows * hexes.hex_divisor > 36 or
+        hexes.base_columns * hexes.hex_divisor > 36 do
+    hexes.hex_divisor = hexes.hex_divisor - 1
+  end
+  hexes.hex_size = hexes.base_size / hexes.hex_divisor
+
+  -- recalculate these with the newly computed size
+  hexes.hex_vertical = Hexes.x_to_y * hexes.hex_size
+  hexes.horizontal_quarter = hexes.hex_size / 4
+  hexes.vertical_half = hexes.hex_vertical / 2
+  hexes.per_hex_vertical = hexes.vertical_half
+  hexes.per_hex_horizontal = hexes.hex_size * 3 / 4
+
+  Util.printf("Trying %d divisor, hex size %.1f.", hexes.hex_divisor, hexes.hex_size)
+  hexes.rows = Hexes.vertical_in(hexes, group.size.y)
+  hexes.columns = Hexes.horizontal_in(hexes, group.size.x)
   hexes.r = {}
   hexes.igroup = display.newGroup()
   group:insert(hexes.igroup)
@@ -349,33 +369,33 @@ function Hexes.new(group, highlights, multiplier)
   hexes.height = Screen.size.y
   hexes.shift = Hexes.shift_hexes
   hexes.from_screen = Hexes.from_screen
-  for y = 1, Hexes.rows do
+  for y = 1, hexes.rows do
     local row
     if not hexes.r[y] then
       -- if imagegroups start working better:
       -- row = display.newImageGroup(Hexes.sheet)
       row = display.newGroup()
       hexes.igroup:insert(row)
-      row.x = Hexes.hex_size / 2
-      row.y = (y - 0.5) * Hexes.hex_vertical
+      row.x = hexes.hex_size / 2
+      row.y = (y - 0.5) * hexes.hex_vertical
       hexes.r[y] = row
     else
       row = hexes.r[y]
     end
-    for x = 1, Hexes.columns do
+    for x = 1, hexes.columns do
       hexes[x] = hexes[x] or {}
       local hex = display.newImage(Hexes.sheet, 1)
       row:insert(hex)
-      hex.x = (x - 1) * Hexes.per_hex_horizontal
+      hex.x = (x - 1) * hexes.per_hex_horizontal
       if x % 2 == 0 then
-        hex.y = Hexes.per_hex_vertical
+        hex.y = hexes.per_hex_vertical
 	hex.low = true
       else
 	hex.high = true
         hex.y = 0
       end
-      hex.xScale = Hexes.hex_size / 256
-      hex.yScale = Hexes.hex_size / 256
+      hex.xScale = hexes.hex_size / 256
+      hex.yScale = hexes.hex_size / 256
       hex.logical_x = x
       hex.logical_y = y
       hex.hue = 0
@@ -397,8 +417,8 @@ function Hexes.new(group, highlights, multiplier)
   if highlights then
     for i = 1, highlights do
       local light = display.newImage(Hexes.sheet, 1)
-      light.xScale = Hexes.hex_size / 512
-      light.yScale = Hexes.hex_size / 512
+      light.xScale = hexes.hex_size / 512
+      light.yScale = hexes.hex_size / 512
       light.isVisible = false
       hexes.igroup:insert(light)
       light.alpha = .8

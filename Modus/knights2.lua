@@ -16,7 +16,7 @@ function scene:createScene(event)
   s = self.screen
   set = self.settings
 
-  self.squares = Squares.new(s, self.KNIGHTS)
+  self.squares = Squares.new(s, set, self.KNIGHTS)
   self.knights = {}
 end
 
