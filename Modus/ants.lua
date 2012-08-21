@@ -151,6 +151,8 @@ function scene:touch_magic(state, ...)
 	local start_hex = self.hexes:from_screen(event.start)
 	if start_hex then
 	  touch.hue = start_hex.hue
+	else
+	  touch.hue = 1
 	end
       end
       for i, e in ipairs(event.previous) do

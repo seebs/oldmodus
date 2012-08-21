@@ -187,8 +187,6 @@ end
 function Settings.compute_properties(set, benchmark)
   -- trim it a bit because otherwise we tend to run over...
   local ideal_time = (set.frame_delay * Settings.frametime) * .9
-  Util.printf("compute_properties: %s, %s",
-  	tostring(set.type), tostring(benchmark))
   if set.type == 'line' then
     local orig_color_multiplier = set.color_multiplier
     local orig_history = set.history
@@ -201,9 +199,11 @@ function Settings.compute_properties(set, benchmark)
       -- color_multiplier * 6 because color_multiplier multiplies colors
       local effective_n = set.points * set.history * set.color_multiplier * 6
       local delay = Settings.time_for(effective_n, benchmark)
-      Util.printf("Considering effective display of %d lines, expecting %.1fms.",
-        effective_n, delay)
+      -- Util.printf("Considering effective display of %d lines, expecting %.1fms.",
+      --   effective_n, delay)
       if delay <= ideal_time then
+        Util.printf("Looking for %.1fms, expecting %.1fms for %d lines.",
+          ideal_time, delay, effective_n)
 	return
       else
 	-- scale back whichever has been scaled back less, starting with

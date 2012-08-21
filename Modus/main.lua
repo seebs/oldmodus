@@ -1,4 +1,4 @@
-local debugging_display = 'ants'
+local debugging_display = nil
 local display_index = 1
 local previous_display = 1
 local debugging_performance = false
