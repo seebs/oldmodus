@@ -138,25 +138,27 @@ function scene:calc(quiet)
     self.vecs[i].x = x
     self.vecs[i].y = y
   end
-  if play_sound and self.sound_cooldown < 1 then
-    Sounds.play(ceil(self.next_color / set.color_multiplier))
-    self.sound_cooldown = set.sound_delay
-  else
-    self.sound_cooldown = self.sound_cooldown - event.actual_frames
-  end
   local delta_scale = max(max(abs(self.b), abs(self.a)), 1)
   self.delta = self.delta + set.delta_delta / delta_scale
   if self.delta > twopi then
     self.delta = self.delta - twopi
   end
+  return play_sound
 end
 
 function scene:enterFrame(event)
   local last = table.remove(self.lines, 1)
+  local play_sound
   for i, l in ipairs(self.lines) do
     l.alpha = sqrt(i / set.history)
   end
-  self:calc()
+  play_sound = self:calc()
+  if play_sound and self.sound_cooldown < 1 then
+    Sounds.play(ceil(self.next_color / set.color_multiplier))
+    self.sound_cooldown = set.sound_delay
+  else
+    self.sound_cooldown = self.sound_cooldown - (event.actual_frames or 1)
+  end
   table.insert(self.lines, self:line(nil, last))
   self.lines[#self.lines].alpha = 1
 end
