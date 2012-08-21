@@ -322,18 +322,21 @@ function Hexes.new(group, set, highlights, multiplier)
   local hexes = {}
   hexes.base_size = Util.gcd(group.size.x, group.size.y)
   -- temporary to do a first-pass calculation
-  hexes.hex_size = hexes.base_size
+  hexes.hex_size = hexes.base_size / 2
   hexes.hex_vertical = Hexes.x_to_y * hexes.hex_size
   hexes.base_rows = Hexes.vertical_in(hexes, group.size.y)
   hexes.base_columns = Hexes.horizontal_in(hexes, group.size.x)
-  hexes.grid_base = hexes.base_rows * hexes.base_columns
+  hexes.grid_base = hexes.base_rows * hexes.base_columns / 4
+  Util.printf("%dx%d, base_size %d, vertical %d, horizontal %d",
+    group.size.x, group.size.y,
+    hexes.base_size, hexes.base_rows, hexes.base_columns)
 
   -- arbitrary guess
   if not set.max_items then
     set.max_items = 1300
   end
   hexes.grid_multiplier = set.max_items / hexes.grid_base
-  Util.printf("%dx%d hex grid = %d hexes base, we want at most %.1f times that many.",
+  Util.printf("%dx%d half-size hex grid = %d hexes base, we want at most %.1f times that many.",
   	hexes.base_columns, hexes.base_rows,
 	hexes.grid_base, hexes.grid_multiplier)
   hexes.hex_divisor = floor(sqrt(hexes.grid_multiplier))
