@@ -117,8 +117,8 @@ function Squares.new(group, set, highlights, multiplier)
   Util.printf("%dx%d screen = %d squares base, we want at most %.1f times that many.",
   	squares.ratio.x, squares.ratio.y, squares.grid_base, squares.grid_multiplier)
   squares.square_divisor = floor(sqrt(squares.grid_multiplier))
-  while squares.ratio.x * squares.square_divisor > 36 or
-        squares.ratio.y * squares.square_divisor > 36 do
+  while squares.ratio.x * squares.square_divisor > 35 or
+        squares.ratio.y * squares.square_divisor > 35 do
     squares.square_divisor = squares.square_divisor - 1
   end
   squares.square_size = squares.base_size / squares.square_divisor

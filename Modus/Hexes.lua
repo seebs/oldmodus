@@ -340,11 +340,11 @@ function Hexes.new(group, set, highlights, multiplier)
   	hexes.base_columns, hexes.base_rows,
 	hexes.grid_base, hexes.grid_multiplier)
   hexes.hex_divisor = floor(sqrt(hexes.grid_multiplier))
-  while hexes.base_rows * hexes.hex_divisor > 36 or
-        hexes.base_columns * hexes.hex_divisor > 36 do
+  while hexes.base_rows * hexes.hex_divisor > 35 or
+        hexes.base_columns * hexes.hex_divisor > 35 do
     hexes.hex_divisor = hexes.hex_divisor - 1
   end
-  hexes.hex_size = hexes.base_size / hexes.hex_divisor
+  hexes.hex_size = hexes.base_size / hexes.hex_divisor / 2
 
   -- recalculate these with the newly computed size
   hexes.hex_vertical = Hexes.x_to_y * hexes.hex_size
@@ -353,9 +353,14 @@ function Hexes.new(group, set, highlights, multiplier)
   hexes.per_hex_vertical = hexes.vertical_half
   hexes.per_hex_horizontal = hexes.hex_size * 3 / 4
 
-  Util.printf("Trying %d divisor, hex size %.1f.", hexes.hex_divisor, hexes.hex_size)
   hexes.rows = Hexes.vertical_in(hexes, group.size.y)
   hexes.columns = Hexes.horizontal_in(hexes, group.size.x)
+
+  Util.printf("Trying %d divisor, hex size %.1f = %dx%d (%d).",
+  	hexes.hex_divisor, hexes.hex_size,
+	hexes.columns, hexes.rows,
+	hexes.columns * hexes.rows)
+
   hexes.r = {}
   hexes.igroup = display.newGroup()
   group:insert(hexes.igroup)

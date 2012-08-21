@@ -5,6 +5,7 @@ scene.meta = {
   description = "Cellular automaton. Touch squares to activate, tilt device to change direction of cascade."
 }
 
+scene.FADE_RATE = 6
 scene.FADED = 0.75
 
 local max = math.max
@@ -67,6 +68,9 @@ function scene:enterFrame(event)
   local toggles = 0
   local all_true = true
   local all_false = true
+  -- if each "row" is a column, we want to adjust by fade rate, otherwise
+  -- by fade rate times the ratio of column size to row size. I think.
+  local fade_ratio = scene.FADE_RATE * #self.squares / row_mod / 2
   for i, square in ipairs(next) do
     local above = prev[i]
     local before = prev[(i + square_adjust) % square_mod + 1]
@@ -87,10 +91,10 @@ function scene:enterFrame(event)
     if square.compute == 1 then
       all_false = false
       square.alpha = 1
-      -- math.min(1, square.alpha + (.022 * row_mod))
+      -- math.min(1, square.alpha + (.022 * fade_ratio))
     else
       all_true = false
-      square.alpha = min(1, square.alpha + (.0065 * row_mod))
+      square.alpha = min(1, square.alpha + (.0065 * fade_ratio))
     end
     square.hue = self.colors[square.compute % 2 + 1]
     square:colorize()
@@ -109,10 +113,12 @@ function scene:enterFrame(event)
     Sounds.playexact(2 * self.colors[1] / set.color_multiplier, 0.8)
   end
   self.colors[2] = (self.colors[2] % self.total_colors) + 1
-  for _, column in ipairs(self.squares) do
+  for i = 1, scene.FADE_RATE do
+    local column = self.squares[self.fade_column]
     for _, square in ipairs(column) do
-      square.alpha = max(0.005, square.alpha - .004)
+      square.alpha = max(0.005, square.alpha - .006)
     end
+    self.fade_column = (self.fade_column % #self.squares) + 1
   end
   Sounds.play(toggles)
 end
@@ -132,6 +138,7 @@ function scene:willEnterScene(event)
   self.squares[1][1].hue = self.colors[2]
   self.squares[1][1]:colorize()
   self.squares[1][1].compute = 1
+  self.fade_column = 1
 end
 
 function scene:touch_magic(state)

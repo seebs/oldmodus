@@ -1,5 +1,9 @@
 local scene = {}
 
+local max = math.max
+local min = math.min
+local random = math.random
+
 scene.meta = {
   name = "Knights",
   description = "Glowing squares perform random knight's moves, advancing colors as they go."
@@ -8,6 +12,7 @@ scene.meta = {
 scene.KNIGHTS = 6
 
 scene.FADED = 0.75
+scene.FADE_RATE = 3
 
 local s
 local set
@@ -17,6 +22,9 @@ function scene:createScene(event)
   set = self.settings
 
   self.squares = Squares.new(s, set, self.KNIGHTS)
+  self.fade_multiplier = (#self.squares / scene.FADE_RATE / 6) * .003
+  Util.printf("fade_multiplier: (%d / %d / 6) * .003 = %f",
+    #self.squares, scene.FADE_RATE, self.fade_multiplier)
   self.knights = {}
 end
 
@@ -62,7 +70,7 @@ end
 
 function scene:move_knight(knight)
   local primary, secondary
-  if math.random(2) == 2 then
+  if random(2) == 2 then
     primary = 'x'
     secondary = 'y'
   else
@@ -87,12 +95,12 @@ function scene:move_knight(knight)
 
   self.squares[knight.x][knight.y].alpha = self.FADED + 0.1
 
-  if math.random() < p_chance then
+  if random() < p_chance then
     knight[primary] = knight[primary] + 2
   else
     knight[primary] = knight[primary] - 2
   end
-  if math.random() < s_chance then
+  if random() < s_chance then
     knight[secondary] = knight[secondary] + 1
   else
     knight[secondary] = knight[secondary] - 1
@@ -110,12 +118,12 @@ function scene:enterFrame(event)
   self:move_knight(knight)
   table.remove(self.knights, 1)
   table.insert(self.knights, knight)
-  if knight.index == 1 then
-    for _, column in ipairs(self.squares) do
-      for _, square in ipairs(column) do
-	square.alpha = math.max(0, square.alpha - .003)
-      end
+  for i = 1, scene.FADE_RATE do
+    local column = self.squares[self.fade_column]
+    for _, square in ipairs(column) do
+      square.alpha = max(0.005, square.alpha - self.fade_multiplier)
     end
+    self.fade_column = (self.fade_column % #self.squares) + 1
   end
 end
 
@@ -131,8 +139,8 @@ function scene:willEnterScene(event)
   self.knights = {}
   for i = 1, self.KNIGHTS do
     local knight = {
-      x = math.random(self.squares.columns),
-      y = math.random(self.squares.rows),
+      x = random(self.squares.columns),
+      y = random(self.squares.rows),
       index = i,
       light = self.squares.highlights[i]
     }
@@ -143,7 +151,7 @@ function scene:willEnterScene(event)
     table.insert(self.knights, knight)
     self:adjust(knight)
   end
-  self.frame_cooldown = self.frame_cooldown + 30
+  self.fade_column = 1
 end
 
 function scene:touch_magic(state, ...)
