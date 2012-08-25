@@ -12,6 +12,102 @@ local modus = Modus
 
 local s
 local set
+local store = require('store')
+
+local store_state = false
+local store_product_state = false
+
+local store_product_keys = {
+  "thanks",
+  "manythanks",
+}
+
+local store_products = {}
+
+local function store_callback(event)
+  local transaction = event.transaction
+  if transaction.state == "purchased" then
+    Util.printf("transaction win: %s", transaction.state)
+    if scene.store_message_text then
+      scene.store_message_text.text = "(Thank you, too!)"
+    end
+  elseif transaction.state == "restored" then
+    Util.printf("transaction replay: %s", transaction.state)
+    if scene.store_message_text then
+      scene.store_message_text.text = "(You've already thanked me.)"
+    end
+  elseif transaction.state == "failed" then
+    Util.printf("transaction lose: %s, %s", transaction.errorType, transaction.errorString)
+    if scene.store_message_text then
+      scene.store_message_text.text = "(Transaction failed.)"
+    end
+  elseif transaction.state == "cancelled" then
+    if scene.store_message_text then
+      scene.store_message_text.text = "(Transaction cancelled.)"
+    end
+  else
+    Util.printf("transaction WTF: %s", transaction.state)
+  end
+  store.finishTransaction(transaction)
+end
+
+local function store_purchase(item)
+  local prod = store_products[item]
+  if not prod then
+    Util.printf("Can't purchase <%s> because I can't find it.", item)
+    return
+  end
+  store.purchase( { prod } )
+end
+
+local function store_product_callback(event)
+  local products = event.products
+  for idx, prod in ipairs(event.products) do
+    if prod.title then
+      store_products[prod.productIdentifier] = prod
+    end
+    Util.printf("%s [%s]: %s", prod.title, prod.productIdentifier, prod.description)
+    store_product_state = true
+  end
+  -- if we were waiting on this before trying to do stuff:
+  if store_pending then
+    store_purchase(store_pending)
+    store_pending = nil
+  end
+end
+
+local function store_setup()
+  if not store_state then
+    store.init(store_callback)
+    store_state = true
+  end
+  if not store_product_state then
+    store.loadProducts(store_product_keys, store_product_callback)
+    return false
+  end
+  return true
+end
+
+function scene.try_to_buy(event, product)
+  if event.phase ~= 'release' and event.phase ~= 'tap' then
+    return true
+  end
+  -- might not be ready...
+  if not store_setup() then
+    store_pending = product
+  else
+    store_purchase(product)
+  end
+  return true
+end
+
+function scene.thanks_some(event)
+  return scene.try_to_buy(event, 'thanks')
+end
+
+function scene.thanks_lots(event)
+  return scene.try_to_buy(event, 'manythanks')
+end
 
 function scene:beganScroll()
 end
@@ -127,6 +223,9 @@ function scene:createScene(event)
   self.scene_displays = {}
   local row_color
 
+  -- turn on the store
+  store_setup()
+
   scene.scene_list = widget.newTableView({
     hideBackground = true,
     width = s.size.x,
@@ -176,9 +275,44 @@ function scene:createScene(event)
   local text
   text = display.newText("Global Settings:", 5, 0 - scene.GLOBAL_SPACE, native.systemFont, 40)
   scene.scene_list:insert(text)
-  text = display.newText("Sounds:", 5, 60 - scene.GLOBAL_SPACE, native.systemFont, 30)
+  text = display.newText("Sounds:", 5, 52 - scene.GLOBAL_SPACE, native.systemFont, 30)
   scene.scene_list:insert(text)
   scene.make_sound_buttons()
+
+  -- allow IAP
+  store_setup()
+  if store.canMakePurchases then
+    text = display.newText("Thank the app author (IAP, costs money):", 5, 102 - scene.GLOBAL_SPACE, native.systemFont, 23)
+    scene.scene_list:insert(text)
+    button = widget.newButton({
+      left = s.size.x - 290,
+      top = 99 - scene.GLOBAL_SPACE,
+      width = 110,
+      height = 33,
+      label = "Thanks!",
+      labelColor = {
+        default = { 0, 128, 0, 255 },
+        over = { 0, 128, 0, 255 }
+      },
+      onEvent = self.thanks_some
+    })
+    scene.scene_list:insert(button)
+    button = widget.newButton({
+      left = s.size.x - 175,
+      top = 99 - scene.GLOBAL_SPACE,
+      width = 165,
+      height = 33,
+      label = "Many Thanks!",
+      labelColor = {
+        default = { 0, 128, 0, 255 },
+        over = { 0, 128, 0, 255 }
+      },
+      onEvent = self.thanks_lots
+    })
+    scene.scene_list:insert(button)
+    scene.store_message_text = display.newText("", 125, 140 - scene.GLOBAL_SPACE, native.systemFont, 23)
+    scene.scene_list:insert(scene.store_message_text)
+  end
   text = display.newText("Scene Settings:", 5, -45, native.systemFont, 36)
   scene.scene_list:insert(text)
   text = display.newText(version, s.size.x - 50, -25, native.systemFont, 18)
@@ -190,7 +324,7 @@ function scene.make_sound_buttons()
   Util.printf("make_sound_buttons: using %s", tostring(using))
   local sounds, descriptions = Sounds.list()
   local left = 125
-  local top = 65 - scene.GLOBAL_SPACE
+  local top = 55 - scene.GLOBAL_SPACE
   -- recreate buttons
   if scene.soundbuttons then
     for idx, button in ipairs(scene.soundbuttons) do
@@ -245,7 +379,10 @@ function scene:touch_magic(state)
 end
 
 function scene:destroyScene(event)
+  Util.printf("prefs: destroying scene.")
   scene.soundbuttons = nil
+  scene.store_message_text = nil
+  scene.scene_list = nil
 end
 
 return scene

@@ -84,6 +84,7 @@ function scene.do_hexes(self, count)
       l.xScale = 40 / 256
       l.yScale = 40 / 256
       l:setFillColor(unpack(Rainbow.color(i)))
+      l.alpha = ((i % 7) + 1) / 7
       do_hexes_stash.hexes[#do_hexes_stash.hexes + 1] = l
       do_hexes_stash:insert(l)
     end
