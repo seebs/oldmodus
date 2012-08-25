@@ -22,12 +22,14 @@ Settings.scene_defaults = {
     points = 3,
     history = 9,
     color_multiplier = 16,
+    frame_delay = 3,
     type = 'line',
   },
   spiral2 = {
     points = 3,
     history = 9,
     color_multiplier = 16,
+    frame_delay = 3,
     type = 'line',
   },
   knights = {
@@ -136,8 +138,13 @@ function Settings.items_for(ideal_time, benchmark)
     msec = tonumber(msec)
     if best_count then
       if msec < ideal_time and count > best_count then
+        -- Util.printf("have %d in %.1fms, prefer %d in %.1fms",
+        --   best_count, best_msec, count, msec)
         best_count = count
 	best_msec = msec
+      -- else
+        -- Util.printf("have %d in %.1fms, don't want %d in %.1fms",
+        --   best_count, best_msec, count, msec)
       end
     else
       best_count = count
@@ -158,10 +165,16 @@ function Settings.time_for(n, benchmark)
   local highest_count = 0
   for count, msec in pairs(benchmark) do
     count = tonumber(count)
+    msec = tonumber(msec)
     if best_count then
-      if count > n and tonumber(msec) < best_msec then
+      if count > n and msec < best_msec then
+        -- Util.printf("have %d in %.1fms, prefer %d in %.1fms",
+        --   best_count, best_msec, count, msec)
         best_count = count
 	best_msec = msec
+      -- else
+        -- Util.printf("have %d in %.1fms, don't want %d in %.1fms",
+        --   best_count, best_msec, count, msec)
       end
     else
       best_count = count
@@ -186,7 +199,7 @@ end
 
 function Settings.compute_properties(set, benchmark)
   -- trim it a bit because otherwise we tend to run over...
-  local ideal_time = (set.frame_delay * Settings.frametime) * .9
+  local ideal_time = (set.frame_delay * Settings.frametime) * .85
   if set.type == 'line' then
     local orig_color_multiplier = set.color_multiplier
     local orig_history = set.history
@@ -199,8 +212,8 @@ function Settings.compute_properties(set, benchmark)
       -- color_multiplier * 6 because color_multiplier multiplies colors
       local effective_n = set.points * set.history * set.color_multiplier * 6
       local delay = Settings.time_for(effective_n, benchmark)
-      -- Util.printf("Considering effective display of %d lines, expecting %.1fms.",
-      --   effective_n, delay)
+      -- Util.printf("Considering %d points, %d history, %d colors (%d lines), expecting %.1fms.",
+      --   set.points, set.history, set.color_multiplier, effective_n, delay)
       if delay <= ideal_time then
         Util.printf("Looking for %.1fms, expecting %.1fms for %d lines.",
           ideal_time, delay, effective_n)
@@ -210,13 +223,13 @@ function Settings.compute_properties(set, benchmark)
 	-- history
         if set.color_multiplier / orig_color_multiplier >
 	   set.history / orig_history then
-	  if set.color_multiplier > orig_color_multiplier / 2 then
+	  if set.color_multiplier >= orig_color_multiplier / 3 then
 	    set.color_multiplier = set.color_multiplier - 1
 	  else
 	    giving_up = true
 	  end
         else
-	  if set.history > orig_history / 2 then
+	  if set.history > orig_history / 3 then
 	    set.history = set.history - 1
 	  else
 	    giving_up = true
@@ -255,7 +268,7 @@ function Settings.scene(scene)
     bench = Settings.benchmark and Settings.benchmark[o.type]
     if bench then
       Settings.compute_properties(o, bench)
-      Util.printf("Computed settings for %s frame delay %d", o.type, o.frame_delay)
+      -- Util.printf("Computed settings for %s frame delay %d", o.type, o.frame_delay)
     end
   end
   -- because everyone wants to know

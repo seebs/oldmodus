@@ -1,5 +1,7 @@
 local scene = {}
 
+scene.AVERAGE_TRIALS = 9
+
 local frame = Util.enterFrame
 local touch = Touch.state
 
@@ -30,7 +32,9 @@ function scene:state1(fmt, ...)
     self.state1text = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 30)
     s:insert(self.state1text)
   end
-  self.state1text.text = sprintf(fmt, ...)
+  local t = sprintf(fmt, ...)
+  print("s1: " .. t)
+  self.state1text.text = t
   self.state1text:setReferencePoint(display.TopLeftReferencePoint)
   self.state1text.x = 10
   self.state1text.y = 220
@@ -41,7 +45,9 @@ function scene:state2(fmt, ...)
     self.state2text = display.newText('', Screen.center.x, Screen.center.y, native.defaultFont, 30)
     s:insert(self.state2text)
   end
-  self.state2text.text = sprintf(fmt, ...)
+  local t = sprintf(fmt, ...)
+  print("s2: " .. t)
+  self.state2text.text = t
   self.state2text:setReferencePoint(display.TopLeftReferencePoint)
   self.state2text.x = 10
   self.state2text.y = 260
@@ -49,10 +55,12 @@ end
 
 function scene.do_nothing(self, count)
   local j
+  local old_count = 0
   while count do
-    for i = 1, count do 
+    for i = old_count + 1, count do 
       j = to_s(i)
     end
+    old_count = count
     self, count = co.yield(count)
   end
 end
@@ -103,7 +111,7 @@ function scene.do_rects(self, count)
       local y_loc = floor(spot / 50) * 14.5 + 300
       local l = rect_new(s, x_loc, y_loc, 39, 39)
       l:setFillColor(unpack(Rainbow.color(i)))
-      l.alpha = 0.8
+      l.alpha = 0.4
       l.blendMode = 'add'
       do_rects_stash.rects[#do_rects_stash.rects + 1] = l
       do_rects_stash:insert(l)
@@ -152,7 +160,7 @@ end
 local measuring
 
 local benchmarks = {
-  { name = 'baseline', base = 5000, inc = 5000, func = scene.do_nothing, max = 50000 },
+  { name = 'baseline', base = 1000, inc = 1000, func = scene.do_nothing, max = 15000 },
   { name = 'line', base = 20, inc = 20, func = scene.do_lines, max = 2500 },
   { name = 'square', base = 20, inc = 20, func = scene.do_rects, max = 2500 },
   { name = 'hex', base = 20, inc = 20, func = scene.do_hexes, max = 2500 },
@@ -191,7 +199,9 @@ local per_frame = 1
 local samples = {}
 local averages = {}
 local last_average = 0
+local last_per_frame = 0
 local per_frame_inc = 1
+local creating = false
 
 function scene:enterFrame(event)
   local now = timer()
@@ -210,6 +220,7 @@ function scene:enterFrame(event)
       samples[per_frame] = {}
       self:state1("Measuring %s.", bench.name)
       collectgarbage('collect')
+      creating = true
       last_frame = timer()
     else
       self:state1("Done benchmarking.")
@@ -220,29 +231,44 @@ function scene:enterFrame(event)
     end
   else
     local cur = samples[per_frame]
-    cur[#cur + 1] = elapsed
-    self:state2("%.1fms for %d repetitions.", elapsed, per_frame)
-    if #cur >= 6 then
+    -- ignore any sample after we created new items
+    if creating then
+      creating = false
+    else
+      cur[#cur + 1] = elapsed
+    end
+    if #cur >= scene.AVERAGE_TRIALS + 1 then
+      Sounds.play(per_frame)
       local avg = 0
       -- disregard the first reported value, which seems to be wonky
       -- because of item creation
-      table.remove(cur, 1)
+      cur[1] = 0
       for idx, time in ipairs(cur) do
         avg = avg + time
       end
-      -- we will tolerate one slipped frame per five
-      avg = (avg - (60 / 1000)) / #cur
+      avg = avg / scene.AVERAGE_TRIALS
+      self:state2("%s: %.1fms average for %d repetitions.", bench.name, avg, per_frame)
+      if (avg / last_average) < 0.8 then
+        -- the previous number was probably a glitch? Toss it.
+	averages[last_per_frame] = nil
+	last_average = 0
+      end
       if avg >= last_average or (per_frame + per_frame_inc) >= bench.max then
         averages[per_frame] = avg
 	last_average = avg
+	last_per_frame = per_frame
       end
-      -- Util.printf("Average for %d items: %.1fms", per_frame, avg)
+      Util.printf("%s average for %d: %.1fms", bench.name, per_frame, avg)
       per_frame = per_frame + per_frame_inc
       per_frame_inc = ceil(per_frame_inc * 1.05)
       -- some modes are as slow as 12 frames, ~= 0.2 seconds or 200ms
       if avg > 220 or per_frame > bench.max then
 	-- we're done here
 	stats[bench.name] = averages
+	Util.printf("  *** %s ***", bench.name)
+	for frames, millis in pairs(averages) do
+	  Util.printf("    %d: %.1f", frames, millis)
+	end
 	samples = {}
 	averages = {}
 	last_average = 0
@@ -254,6 +280,7 @@ function scene:enterFrame(event)
       else
 	samples[per_frame] = {}
         collectgarbage('collect')
+        creating = true
       end
     end
   end

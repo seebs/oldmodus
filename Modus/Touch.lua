@@ -21,12 +21,20 @@ local nuke_these = {}
 local ignore_prefs = false
 local ignore_doubletaps = false
 
-local origin = Screen.origin
+local screen_origin = Screen.origin
+local screen_size = Screen.size
+
+local corners = {
+  { x = 0, y = 0 },
+  { x = screen_size.x, y = 0 },
+  { x = 0, y = screen_size.y },
+  { x = screen_size.x, y = screen_size.y }
+}
 
 local gear = display.newImage('gear.png')
 gear:scale(60 / 533, 60 / 533)
-gear.x = 32 + display.screenOriginX
-gear.y = 32 + display.screenOriginY
+gear.x = 32 + screen_origin.x
+gear.y = 32 + screen_origin.y
 -- gear.blendMode = 'add'
 gear.isVisible = false
 
@@ -118,10 +126,10 @@ function Touch.handle(event)
     state.peak = state.active
   end
 
-  event.xStart = event.xStart - origin.x
-  event.yStart = event.yStart - origin.y
-  event.x = event.x - origin.x
-  event.y = event.y - origin.y
+  event.xStart = event.xStart - screen_origin.x
+  event.yStart = event.yStart - screen_origin.y
+  event.x = event.x - screen_origin.x
+  event.y = event.y - screen_origin.y
 
   e.phase = event.phase
   e.events = e.events + 1
@@ -155,11 +163,13 @@ function Touch.handle(event)
   end
   if tapped then
     local maybe_prefs = false
-    if dist(e.current, { x = 0, y = 0 }) < 80 then
-      maybe_prefs = true 
+    for idx, pt in ipairs(corners) do
+      if dist(e.current, pt) < 80 then
+        maybe_prefs = idx
+      end
     end
     if last_tap and (e.end_stamp - last_tap.end_stamp < 450) and dist(e.current, last_tap.current) < 30 then
-      if maybe_prefs and last_tap.maybe_prefs then
+      if maybe_prefs and (maybe_prefs == last_tap.maybe_prefs) then
         storyboard.gotoScene('prefs')
       else
         Modus.next_display()
@@ -169,10 +179,22 @@ function Touch.handle(event)
     else
       local previous_maybe = last_tap and last_tap.maybe_prefs
       last_tap = e
+      last_tap.maybe_prefs = maybe_prefs
       -- if you tap again, but it's not a double-tap, we clear the gear
-      last_tap.maybe_prefs = maybe_prefs and (not previous_maybe)
-      if last_tap.maybe_prefs then
+      if last_tap.maybe_prefs and (last_tap.maybe_prefs ~= previous_maybe) then
         gear.isVisible = true
+	-- move gear to the tapped corner
+	local pt = corners[last_tap.maybe_prefs] or { x = 0, y = 0 }
+	if pt.x == 0 then
+	  gear.x = 32 + screen_origin.x
+	else
+	  gear.x = screen_origin.x + screen_size.x - 32
+	end
+	if pt.y == 0 then
+	  gear.y = 32 + screen_origin.y
+	else
+	  gear.y = screen_origin.y + screen_size.y - 32
+	end
 	gear:toFront()
       else
         gear.isVisible = false

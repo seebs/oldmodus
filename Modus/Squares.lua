@@ -114,15 +114,15 @@ function Squares.new(group, set, highlights, multiplier)
     set.max_items = 1300
   end
   squares.grid_multiplier = set.max_items / squares.grid_base
-  Util.printf("%dx%d screen = %d squares base, we want at most %.1f times that many.",
-  	squares.ratio.x, squares.ratio.y, squares.grid_base, squares.grid_multiplier)
+  -- Util.printf("%dx%d screen = %d squares base, we want at most %.1f times that many.",
+  --	squares.ratio.x, squares.ratio.y, squares.grid_base, squares.grid_multiplier)
   squares.square_divisor = floor(sqrt(squares.grid_multiplier))
   while squares.ratio.x * squares.square_divisor > 35 or
         squares.ratio.y * squares.square_divisor > 35 do
     squares.square_divisor = squares.square_divisor - 1
   end
   squares.square_size = squares.base_size / squares.square_divisor
-  Util.printf("Trying %d divisor, square size %.1f.", squares.square_divisor, squares.square_size)
+  -- Util.printf("Trying %d divisor, square size %.1f.", squares.square_divisor, squares.square_size)
   squares.rows = squares.ratio.y * squares.square_divisor
   squares.columns = squares.ratio.x * squares.square_divisor
   squares.r = {}

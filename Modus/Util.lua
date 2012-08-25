@@ -6,6 +6,9 @@ local min = math.min
 local max = math.max
 local sqrt = math.sqrt
 
+Util.frame_to_ms = 1000 / (display.fps or 60)
+Util.ms_to_frame = (display.fps or 60) / 1000
+
 function Util.scale(o)
   local level = o.level or 1
   return pow(1.1, level)

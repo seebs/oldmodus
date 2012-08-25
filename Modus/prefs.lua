@@ -6,6 +6,7 @@ scene.GLOBAL_SPACE = 200
 
 local frame = Util.enterFrame
 local touch = Touch.state
+local version = require('version_number')
 
 local modus = Modus
 
@@ -180,6 +181,8 @@ function scene:createScene(event)
   scene.make_sound_buttons()
   text = display.newText("Scene Settings:", 5, -45, native.systemFont, 36)
   scene.scene_list:insert(text)
+  text = display.newText(version, s.size.x - 50, -25, native.systemFont, 18)
+  scene.scene_list:insert(text)
 end
 
 function scene.make_sound_buttons()
@@ -242,7 +245,7 @@ function scene:touch_magic(state)
 end
 
 function scene:destroyScene(event)
-  self.scene_grouping = nil
+  scene.soundbuttons = nil
 end
 
 return scene

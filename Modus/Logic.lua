@@ -4,6 +4,8 @@ local Logic = {}
 local touch = Touch.state
 local min = math.min
 local floor = math.floor
+local frame_to_ms = Util.frame_to_ms
+local ms_to_frame = Util.ms_to_frame
 
 local last_times = {}
 
@@ -37,10 +39,10 @@ function Logic.enterFrame(custom, obj, event)
   end
   local this_frame = timer()
   local this_time = this_frame - Logic.last_frame
-  local frames = math.floor((this_time * 60 / 1000) + 0.1)
+  local frames = math.floor(this_time * ms_to_frame + 0.1)
   Logic.last_frame = this_frame
   if Logic.ignore_time then
-    collectgarbage('collect')
+  -- collectgarbage('collect')
   -- else
     -- Util.printf("rendering took %d frame(s).", frames)
   end
@@ -69,9 +71,9 @@ function Logic.enterFrame(custom, obj, event)
 	  end
 	end
 	local frame_time = total / 60
-	local fps = 1000 / frame_time
-	Util.message("%.1f-%.1f %.1fms %.1ffps %d/%d drop",
-		small, big, frame_time, fps,
+	-- Util.message("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
+	Util.printf("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
+		small, big, frame_time, obj.expected_frame_time,
 		Logic.frames_missed, Logic.times_missed)
 	Logic.frames_missed = 0
 	Logic.times_missed = 0
@@ -86,13 +88,16 @@ function Logic.enterFrame(custom, obj, event)
   end
   obj.frame_cooldown = obj.frame_cooldown - frames
   if obj.frame_cooldown > 0 then
+    if obj.frame_cooldown > 1 then
+      collectgarbage("collect")
+    end
     Logic.ignore_time = true
     return
   end
   Logic.ignore_time = false
   if obj.frame_cooldown < 0 then
     Logic.frames_missed = Logic.frames_missed - obj.frame_cooldown
-    Logic.times_missed = Logic.frames_missed + 1
+    Logic.times_missed = Logic.times_missed + 1
   end
   -- actual number of frames we delayed
   event.actual_frames = obj.settings.frame_delay - obj.frame_cooldown
@@ -136,6 +141,7 @@ function Logic.createScene(custom, obj, event)
 end
 
 function Logic.enterScene(custom, obj, event)
+  obj.expected_frame_time = obj.settings.frame_delay * frame_to_ms
   Util.message('')
   -- wipe existing touches
   touch(nil)

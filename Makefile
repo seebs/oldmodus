@@ -18,7 +18,10 @@ images: $(patsubst %.png,%.wng,$(IMAGES))
 	for img in $(IMAGES); do mv $${img%.png}.wng Modus/$${img%.png}-highlight.png; cp $$img Modus/.; done
 
 run:
-	/Applications/Corona$(SDK)/simulator Modus/main.lua
+	/Applications/Corona$(SDK)/"Corona Terminal" Modus/main.lua
 
 perf:
-	/Applications/Corona$(SDK)/simulator Perftest/main.lua
+	/Applications/Corona$(SDK)/"Corona Terminal" Perftest/main.lua
+
+ipa:
+	(cd ~/Desktop; mkdir Payload; mv Modus.app Payload; zip -r Payload.zip Payload; mv Payload/Modus.app .; rmdir Payload; mv Payload.zip Payload.ipa)
