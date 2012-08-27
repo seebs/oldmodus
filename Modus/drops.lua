@@ -100,7 +100,7 @@ function scene:createScene(event)
     d.hue = ((i - 1) % #Rainbow.hues) + 1
     d.id = i
     d.octave = math.floor((i - 1) / #Rainbow.hues)
-    local r, g, b = unpack(Rainbow.color(i - 1))
+    local r, g, b = unpack(Rainbow.color(i))
 
     img = display.newImage(self.sheetc, 1)
     img:setFillColor(r, g, b)

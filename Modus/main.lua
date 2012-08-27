@@ -154,7 +154,7 @@ end
 Runtime:addEventListener('touch', Touch.handle)
 
 if have_settings and scenes.benchmark.settings_complete() then
-  Modus.next_display()
+  Modus.reload_display()
 else
   storyboard.gotoScene('benchmark')
 end

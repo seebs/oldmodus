@@ -5,7 +5,7 @@ local min = math.min
 local random = math.random
 
 scene.meta = {
-  name = "Knights",
+  name = "Knights 2",
   description = "Glowing squares perform random knight's moves, advancing colors towards their own."
 }
 
