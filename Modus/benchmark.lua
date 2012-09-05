@@ -33,7 +33,7 @@ function scene:state1(fmt, ...)
     s:insert(self.state1text)
   end
   local t = sprintf(fmt, ...)
-  print("s1: " .. t)
+  -- print("s1: " .. t)
   self.state1text.text = t
   self.state1text:setReferencePoint(display.TopLeftReferencePoint)
   self.state1text.x = 10
@@ -46,7 +46,7 @@ function scene:state2(fmt, ...)
     s:insert(self.state2text)
   end
   local t = sprintf(fmt, ...)
-  print("s2: " .. t)
+  -- print("s2: " .. t)
   self.state2text.text = t
   self.state2text:setReferencePoint(display.TopLeftReferencePoint)
   self.state2text.x = 10
@@ -239,7 +239,7 @@ function scene:enterFrame(event)
       cur[#cur + 1] = elapsed
     end
     if #cur >= scene.AVERAGE_TRIALS + 1 then
-      Sounds.play(per_frame)
+      Sounds.play(per_frame, 0.1)
       local avg = 0
       -- disregard the first reported value, which seems to be wonky
       -- because of item creation

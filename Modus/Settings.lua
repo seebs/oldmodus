@@ -20,15 +20,15 @@ Settings.scene_defaults = {
   },
   spiral = {
     points = 3,
-    history = 9,
-    color_multiplier = 16,
+    history = 7,
+    color_multiplier = 14,
     frame_delay = 3,
     type = 'line',
   },
   spiral2 = {
     points = 3,
-    history = 9,
-    color_multiplier = 16,
+    history = 7,
+    color_multiplier = 14,
     frame_delay = 3,
     type = 'line',
   },
@@ -169,12 +169,12 @@ function Settings.time_for(n, benchmark)
     if best_count then
       if count > n and msec < best_msec then
         -- Util.printf("have %d in %.1fms, prefer %d in %.1fms",
-        --   best_count, best_msec, count, msec)
+          -- best_count, best_msec, count, msec)
         best_count = count
 	best_msec = msec
       -- else
         -- Util.printf("have %d in %.1fms, don't want %d in %.1fms",
-        --   best_count, best_msec, count, msec)
+          -- best_count, best_msec, count, msec)
       end
     else
       best_count = count

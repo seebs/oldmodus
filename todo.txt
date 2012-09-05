@@ -1,14 +1,18 @@
 Preferences
 	add speed setting?
+Line modes:
+	* Reduce max line count to avoid touch-event tragedy.
+
 Apple store
-	Looks good!
+	* screenshots
+	* support page
+	* finish converting main seebs page to match
 Android store
-	Create account (?)
+	* Get signing key?
+	* Test rebuilding app.
+	* See if I can find out how to enable/test in-app purchase.
 Cascade
 	Sometimes touching one square alters another (!??)
-Android permissions issues
-	find out how to rebuild app without permissions
-	... and exclude the code that wanted them
 
 POST-RELEASE:
 

@@ -43,8 +43,10 @@ function scene:adjust(knight)
   self:bump(square)
   self:bump(square)
   if knight.light then
-    knight.light.hue = knight.index
+    -- knight.light.hue = knight.index
+    knight.light.hue = square.hue
     knight.light:colorize()
+    -- this test is meaningful if I change the preceeding lines back.
     if knight.light.hue == square.hue then
       knight.light.alpha = 0.6
       knight.light.blendMode = 'add'
