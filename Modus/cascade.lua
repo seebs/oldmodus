@@ -150,14 +150,12 @@ function scene:touch_magic(state)
 	local square
 	for i, e in ipairs(event.previous) do
 	  square = self.squares:from_screen(e)
-	  Util.printf("previous: %d, %d -> %d, %d", e.x, e.y, square.logical_x, square.logical_y)
 	  if square and self.touch_event_states[event] ~= square then
 	    hitboxes[square] = true
 	  end
 	end
 	square = self.squares:from_screen(event.current)
 	if square then
-	  Util.printf("current: %d, %d -> %d, %d", event.current.x, event.current.y, square.logical_x, square.logical_y)
 	  if self.touch_event_states[event] ~= square then
 	    hitboxes[square] = true
 	  end
