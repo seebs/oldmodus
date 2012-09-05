@@ -96,16 +96,21 @@ function scene:enterFrame(event)
       removes[#removes + 1] = k
     end
   end
+  local previous_sound_delay = self.sound_delay
+  local maybe_make_sound = false
   self.sound_delay = self.sound_delay - event.actual_frames
   if self.sound_delay < 1 then
     self.sound_delay = set.sound_delay
     Sounds.playoctave(ant.hue, 0)
+    maybe_make_sound = true
   end
-  if self.sound_delay % (set.sound_delay / 2) == 0 then
-    if self.make_sound then
-      Sounds.playoctave(self.make_sound, self.make_octave)
-      self.make_sound = nil
-    end
+  -- also twice as often maybe play, even if there was a delay
+  if self.sound_delay <= (set.sound_delay / 2) and previous_sound_delay > (set.sound_delay / 2) then
+    maybe_make_sound = true
+  end
+  if self.make_sound and maybe_make_sound then
+    Sounds.playoctave(self.make_sound, self.make_octave)
+    self.make_sound = nil
   end
   while #removes > 0 do
     table.remove(self.splashes, table.remove(removes))

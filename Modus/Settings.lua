@@ -132,19 +132,19 @@ function Settings.items_for(ideal_time, benchmark)
   local best_count
   local best_msec = 1000
 
-  Util.printf("items_for: %.1fms.", ideal_time)
+  -- Util.printf("items_for: %.1fms.", ideal_time)
   for count, msec in pairs(benchmark) do
     count = tonumber(count)
     msec = tonumber(msec)
     if best_count then
       if msec < ideal_time and count > best_count then
         -- Util.printf("have %d in %.1fms, prefer %d in %.1fms",
-        --   best_count, best_msec, count, msec)
+          -- best_count, best_msec, count, msec)
         best_count = count
 	best_msec = msec
       -- else
         -- Util.printf("have %d in %.1fms, don't want %d in %.1fms",
-        --   best_count, best_msec, count, msec)
+          -- best_count, best_msec, count, msec)
       end
     else
       best_count = count
@@ -163,25 +163,29 @@ function Settings.time_for(n, benchmark)
   local best_count
   local best_msec = 1000
   local highest_count = 0
+  local highest_msec = 1000
+  -- Util.printf("Estimating time for %d items:", n)
   for count, msec in pairs(benchmark) do
     count = tonumber(count)
     msec = tonumber(msec)
     if best_count then
-      if count > n and msec < best_msec then
-        -- Util.printf("have %d in %.1fms, prefer %d in %.1fms",
+      if count >= n and count < best_count and msec <= best_msec then
+        -- Util.printf("  have %d in %.1fms, prefer %d in %.1fms",
           -- best_count, best_msec, count, msec)
         best_count = count
 	best_msec = msec
       -- else
-        -- Util.printf("have %d in %.1fms, don't want %d in %.1fms",
+        -- Util.printf("  have %d in %.1fms, don't want %d in %.1fms",
           -- best_count, best_msec, count, msec)
       end
-    else
+    elseif count >= n then
       best_count = count
       best_msec = msec
     end
-    if best_count > highest_count then
-      highest_count = best_count
+    -- highest we saw at all
+    if count > highest_count then
+      highest_count = count
+      highest_msec = msec
     end
   end
   if best_msec == 1000 then
@@ -190,7 +194,7 @@ function Settings.time_for(n, benchmark)
   else
     if n > highest_count then
       -- scale to actual N, if N is larger than anything the benchmark tried
-      return best_msec * n / highest_count
+      return highest_msec * n / highest_count
     else
       return best_msec
     end
@@ -215,8 +219,8 @@ function Settings.compute_properties(set, benchmark)
       -- Util.printf("Considering %d points, %d history, %d colors (%d lines), expecting %.1fms.",
       --   set.points, set.history, set.color_multiplier, effective_n, delay)
       if delay <= ideal_time then
-        Util.printf("Looking for %.1fms, expecting %.1fms for %d lines.",
-          ideal_time, delay, effective_n)
+        -- Util.printf("Looking for %.1fms, expecting %.1fms for %d lines.",
+          -- ideal_time, delay, effective_n)
 	return
       else
 	-- scale back whichever has been scaled back less, starting with
@@ -240,8 +244,8 @@ function Settings.compute_properties(set, benchmark)
   elseif set.type == 'square' or set.type == 'hex' then
     local msec
     set.max_items, msec = Settings.items_for(ideal_time, benchmark)
-    Util.printf("Looking for time of %.1fms or less, got %d items in %.1fms.",
-    	ideal_time, set.max_items, msec)
+    -- Util.printf("Looking for time of %.1fms or less, got %d items in %.1fms.",
+    	-- ideal_time, set.max_items, msec)
   end
 end
 
