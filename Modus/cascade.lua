@@ -142,6 +142,7 @@ function scene:willEnterScene(event)
 end
 
 function scene:touch_magic(state)
+  self.touch_event_states = self.touch_event_states or {}
   if state.events > 0 then
     for i, event in pairs(state.points) do
       if event.events > 0 then
@@ -149,15 +150,18 @@ function scene:touch_magic(state)
 	local square
 	for i, e in ipairs(event.previous) do
 	  square = self.squares:from_screen(e)
-	  -- Util.printf("previous: %d, %d", square.logical_x, square.logical_y)
-	  if square then
+	  Util.printf("previous: %d, %d -> %d, %d", e.x, e.y, square.logical_x, square.logical_y)
+	  if square and self.touch_event_states[event] ~= square then
 	    hitboxes[square] = true
 	  end
 	end
 	square = self.squares:from_screen(event.current)
 	if square then
-	  -- Util.printf("current: %d, %d", square.logical_x, square.logical_y)
-	  hitboxes[square] = true
+	  Util.printf("current: %d, %d -> %d, %d", event.current.x, event.current.y, square.logical_x, square.logical_y)
+	  if self.touch_event_states[event] ~= square then
+	    hitboxes[square] = true
+	  end
+	  self.touch_event_states[event] = square
 	end
 	for square, _ in pairs(hitboxes) do
 	  square.flag = true
@@ -165,6 +169,9 @@ function scene:touch_magic(state)
 	  square.hue = square.hue + set.color_multiplier
 	  square:colorize()
 	end
+      end
+      if event.done then
+        self.touch_event_states[event] = nil
       end
     end
   end

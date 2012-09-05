@@ -1,7 +1,7 @@
 local debugging_display = nil
 local display_index = 1
 local previous_display = 1
-local debugging_performance = false
+local debugging_performance = true
 
 display.setStatusBar(display.HiddenStatusBar)
 
@@ -151,7 +151,8 @@ function Modus.next_display(event)
   end
 end
 
-Runtime:addEventListener('touch', Touch.handle)
+local touch = Touch
+Runtime:addEventListener('touch', function(e) touch:onObjectTouch(e) end)
 
 if have_settings and scenes.benchmark.settings_complete() then
   Modus.reload_display()

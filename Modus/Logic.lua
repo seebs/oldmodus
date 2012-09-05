@@ -1,7 +1,8 @@
 -- basic logic for loops
 local Logic = {}
+local touch = Touch
+local disp = display
 
-local touch = Touch.state
 local min = math.min
 local floor = math.floor
 local frame_to_ms = Util.frame_to_ms
@@ -39,13 +40,7 @@ function Logic.enterFrame(custom, obj, event)
   end
   local this_frame = timer()
   local this_time = this_frame - Logic.last_frame
-  local frames = math.floor(this_time * ms_to_frame + 0.1)
   Logic.last_frame = this_frame
-  if Logic.ignore_time then
-  -- collectgarbage('collect')
-  -- else
-    -- Util.printf("rendering took %d frame(s).", frames)
-  end
   if obj.view.alpha < 1 then
     obj.view.alpha = min(obj.view.alpha + .02, 1)
   end
@@ -86,24 +81,31 @@ function Logic.enterFrame(custom, obj, event)
       end
     end
   end
-  obj.frame_cooldown = obj.frame_cooldown - frames
-  if obj.frame_cooldown > 0 then
-    if obj.frame_cooldown > 1 then
+  obj.ms_cooldown = obj.ms_cooldown - this_time
+  -- if we are over a half-frame out, assume we are a frame out
+  if obj.ms_cooldown > (frame_to_ms * 0.6) then
+    if obj.ms_cooldown > frame_to_ms then
       collectgarbage("collect")
     end
     Logic.ignore_time = true
-    return
+    return true
   end
   Logic.ignore_time = false
+  -- approximate frame count: subtract remaining cooldown from delay, this tells
+  -- you how long we actually delayed. convert to frames, add 0.6, take floor;
+  -- this gives about the number of frames we actually delayed.
+  event.actual_frames = floor((obj.ms_delay - obj.ms_cooldown) * ms_to_frame + 0.6)
+  -- Util.printf("total time %.1fms, frames ~= %d",
+    -- obj.ms_delay - obj.ms_cooldown, event.actual_frames)
+  obj.frame_cooldown = obj.frame_delay - event.actual_frames
   if obj.frame_cooldown < 0 then
+    -- we seem to have overrun...
     Logic.frames_missed = Logic.frames_missed - obj.frame_cooldown
     Logic.times_missed = Logic.times_missed + 1
   end
-  -- actual number of frames we delayed
-  event.actual_frames = obj.settings.frame_delay - obj.frame_cooldown
-  obj.frame_cooldown = obj.settings.frame_delay
+  obj.ms_cooldown = obj.ms_delay
   if obj.touch_magic then
-    touch(obj.touch_magic, obj)
+    touch.state(obj.touch_magic, obj)
   end
   if custom and not obj.NEVER_DO_FRAME then
     status, error = pcall(custom, obj, event)
@@ -141,10 +143,16 @@ function Logic.createScene(custom, obj, event)
 end
 
 function Logic.enterScene(custom, obj, event)
-  obj.expected_frame_time = obj.settings.frame_delay * frame_to_ms
+  -- intended behavior
+  obj.frame_delay = obj.settings.frame_delay
+  -- more precise for actual behavior
+  obj.ms_delay = obj.frame_delay * frame_to_ms
+  obj.ms_cooldown = 0
+  -- try to force focus to 'touch'
+  disp.getCurrentStage():setFocus(touch.dummy)
   Util.message('')
   -- wipe existing touches
-  touch(nil)
+  touch.state(nil)
   -- give a few ticks to think about frame rate
   time_counter = 65
   if custom then
@@ -156,13 +164,13 @@ function Logic.enterScene(custom, obj, event)
 end
 
 function Logic.willEnterScene(custom, obj, event)
-  obj.frame_cooldown = 0
+  obj.ms_cooldown = 0
   obj.view.alpha = 1
   Sounds.suppress(true)
   if custom then
     custom(obj, event)
   end
-  Touch.enable()
+  touch.enable()
 end
 
 function Logic.exitScene(custom, obj, event)
@@ -179,8 +187,8 @@ function Logic.didExitScene(custom, obj, event)
     custom(obj, event)
   end
   -- so I can't forget to re-enable touches
-  Touch.ignore_prefs(false)
-  Touch.ignore_doubletaps(false)
+  touch.ignore_prefs(false)
+  touch.ignore_doubletaps(false)
 end
 
 function Logic.destroyScene(custom, obj, event)

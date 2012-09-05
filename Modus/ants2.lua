@@ -88,9 +88,7 @@ function scene:enterFrame(event)
     self.sound_delay = set.sound_delay
     Sounds.playoctave(ant.hue, 0)
     maybe_make_sound = true
-  end
-  -- also twice as often maybe play, even if there was a delay
-  if self.sound_delay <= (set.sound_delay / 2) and previous_sound_delay > (set.sound_delay / 2) then
+  elseif self.sound_delay <= (set.sound_delay / 2) and previous_sound_delay > (set.sound_delay / 2) then
     maybe_make_sound = true
   end
   if self.make_sound and maybe_make_sound then

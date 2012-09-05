@@ -98,6 +98,10 @@ function Touch.enable()
   Touch.is_disabled = false
 end
 
+function Touch.ignore(event)
+  return not Touch.is_disabled
+end
+
 function Touch.handle(event)
   local id = event.id or 'unknown'
   local e
@@ -135,13 +139,18 @@ function Touch.handle(event)
   e.events = e.events + 1
   e.stamp = event.time
   e.start_stamp = e.start_stamp or event.time
-  if event.phase == 'began' then
+  if not e.start then
     e.start = { x = event.xStart, y = event.yStart }
+  end
+  if event.phase == 'began' then
+    e.alive = true
     e.current = { x = event.xStart, y = event.yStart }
     e.previous = {}
   elseif event.phase == 'moved' then
     e.previous[#e.previous + 1] = e.current
     e.current = { x = event.x, y = event.y }
+  elseif event.phase == 'stationary' then
+    -- do nothing for now
   elseif event.phase == 'ended' or event.phase == 'cancelled' then
     -- if an event ended, leave it in for one last process...
     e.current = { x = event.x, y = event.y }
@@ -206,5 +215,10 @@ function Touch.handle(event)
 
   return true
 end
+
+-- dummy object:
+Touch.dummy = display.newGroup()
+Touch.dummy:addEventListener("touch", Touch.handle)
+Touch.dummy:addEventListener("tap", Touch.ignore)
 
 return Touch

@@ -215,6 +215,7 @@ end
 function scene:enterScene(event)
   Touch.ignore_prefs(true)
   Touch.ignore_doubletaps(true)
+  display.getCurrentStage():setFocus(nil)
 end
 
 function scene:createScene(event)
