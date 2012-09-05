@@ -77,7 +77,7 @@ function scene.do_hexes(self, count)
     for i = old_count + 1, count do
       local spot = i - 1
       local x_loc = (spot % 50) * 14.5 + 10
-      local y_loc = floor(spot / 50) * 14.5 + 300
+      local y_loc = floor(spot / 50) * 14.5 + 320
       local l = display.newImage(hexsheet, 1)
       l.x = x_loc
       l.y = y_loc
@@ -227,7 +227,7 @@ function scene:enterFrame(event)
       self:state1("Done benchmarking.")
       Settings.benchmark = stats
       Settings:save()
-      Modus.next_display()
+      Modus.reload_display()
       return
     end
   else
