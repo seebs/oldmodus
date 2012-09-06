@@ -104,6 +104,9 @@ function Squares.new(group, set, highlights, multiplier)
   local squares = {}
   -- group must be a 'screen', complete with its size and origin values.
   squares.base_size = Util.gcd(group.size.x, group.size.y)
+  if squares.base_size < 32 then
+    squares.base_size = 32
+  end
   squares.ratio = {
     x = group.size.x / squares.base_size,
     y = group.size.y / squares.base_size
@@ -114,17 +117,34 @@ function Squares.new(group, set, highlights, multiplier)
     set.max_items = 1300
   end
   squares.grid_multiplier = set.max_items / squares.grid_base
-  -- Util.printf("%dx%d screen = %d squares base, we want at most %.1f times that many.",
-  --	squares.ratio.x, squares.ratio.y, squares.grid_base, squares.grid_multiplier)
-  squares.square_divisor = floor(sqrt(squares.grid_multiplier))
-  while squares.ratio.x * squares.square_divisor > 35 or
-        squares.ratio.y * squares.square_divisor > 35 do
-    squares.square_divisor = squares.square_divisor - 1
+  local divisor
+  if squares.grid_multiplier > 1 then
+    -- Util.printf("%dx%d screen = %d squares base, we want at most %.1f times that many.",
+	 -- squares.ratio.x, squares.ratio.y, squares.grid_base, squares.grid_multiplier)
+    divisor = floor(sqrt(squares.grid_multiplier))
+    while divisor > 1 and
+         (squares.ratio.x * divisor > 35 or squares.ratio.y * divisor > 35) do
+      divisor = divisor - 1
+    end
+  else
+    -- Util.printf("%dx%d screen = %d squares base, which is already too many.",
+	 -- squares.ratio.x, squares.ratio.y, squares.grid_base, squares.grid_multiplier)
+    divisor = 1
   end
+  squares.square_divisor = divisor
   squares.square_size = squares.base_size / squares.square_divisor
   -- Util.printf("Trying %d divisor, square size %.1f.", squares.square_divisor, squares.square_size)
-  squares.rows = squares.ratio.y * squares.square_divisor
-  squares.columns = squares.ratio.x * squares.square_divisor
+  squares.rows = floor(squares.ratio.y * squares.square_divisor)
+  squares.columns = floor(squares.ratio.x * squares.square_divisor)
+  -- center display
+  if squares.rows * squares.square_size < group.size.y then
+    local diff = group.size.y - (squares.rows * squares.square_size)
+    group.y = group.y + (diff / 2)
+  end
+  if squares.columns * squares.square_size < group.size.x then
+    local diff = group.size.x - (squares.columns * squares.square_size)
+    group.x = group.x + (diff / 2)
+  end
   squares.r = {}
   squares.igroup = display.newGroup()
   group:insert(squares.igroup)
