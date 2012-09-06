@@ -68,7 +68,7 @@ function Logic.enterFrame(custom, obj, event)
 	local frame_time = total / 60
 	-- Util.message("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
 	Util.printf("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
-		small, big, frame_time, obj.expected_frame_time,
+		small, big, frame_time, obj.ms_delay,
 		Logic.frames_missed, Logic.times_missed)
 	Logic.frames_missed = 0
 	Logic.times_missed = 0
