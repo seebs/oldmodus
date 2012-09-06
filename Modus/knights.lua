@@ -57,12 +57,13 @@ function scene:adjust(knight)
     knight.light:move(square)
   end
   if knight.index % 3 == 1 then
-    Sounds.playexact(knight.index + self.tone_offset, 1)
-    if knight.index == 4 then
-      self.tone_offset = (self.tone_offset + 1) % 3
+    Sounds.playexact(self.tone_base_offset + self.tone_offset, 1)
+    self.tone_offset = (self.tone_offset % 3) + 1
+    if self.tone_offset == 1 then
+      self.tone_base_offset = (self.tone_base_offset + 1) % 4
     end
   end
-  Sounds.playexact(square.hue + 5, 0.8)
+  Sounds.playexact(square.hue + 5, 0.7)
   square.alpha = 1
   self:bump(square:find(1, 0))
   self:bump(square:find(-1, 0))
@@ -137,7 +138,8 @@ function scene:willEnterScene(event)
       square:colorize()
     end
   end
-  self.tone_offset = 0
+  self.tone_offset = 1
+  self.tone_base_offset = 0
   self.knights = {}
   for i = 1, self.KNIGHTS do
     local knight = {
@@ -167,7 +169,8 @@ end
 
 function scene:enterScene(event)
   self.toward = {}
-  self.tone_offset = 0
+  self.tone_offset = 1
+  self.tone_base_offset = 0
 end
 
 function scene:destroyScene(event)

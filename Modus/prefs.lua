@@ -215,6 +215,8 @@ end
 function scene:enterScene(event)
   Touch.ignore_prefs(true)
   Touch.ignore_doubletaps(true)
+  -- in fact, turn off Touch entirely
+  Touch.disable()
   display.getCurrentStage():setFocus(nil)
 end
 

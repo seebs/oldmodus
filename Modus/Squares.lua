@@ -27,6 +27,8 @@ function Squares:from_screen(t_or_x, y)
   else
     x = t_or_x
   end
+  x = x - self.x_offset
+  y = y - self.y_offset
   return self:find(ceil((x / self.square_size) + 0.05), ceil((y / self.square_size) + 0.05))
 end
 
@@ -139,11 +141,17 @@ function Squares.new(group, set, highlights, multiplier)
   -- center display
   if squares.rows * squares.square_size < group.size.y then
     local diff = group.size.y - (squares.rows * squares.square_size)
-    group.y = group.y + (diff / 2)
+    squares.y_offset = diff / 2
+    group.y = group.y + squares.y_offset
+  else
+    squares.y_offset = 0
   end
   if squares.columns * squares.square_size < group.size.x then
     local diff = group.size.x - (squares.columns * squares.square_size)
-    group.x = group.x + (diff / 2)
+    squares.x_offset = diff / 2
+    group.x = group.x + squares.x_offset
+  else
+    squares.x_offset = 0
   end
   squares.r = {}
   squares.igroup = display.newGroup()

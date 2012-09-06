@@ -64,6 +64,7 @@ function scene:enterFrame(event)
   behind:colorize()
 
   table.insert(self.ants, ant)
+
   local column = self.hexes[self.fade_column]
   for _, hex in ipairs(column) do
     hex.alpha = max(0, hex.alpha - .003)
@@ -86,7 +87,7 @@ function scene:enterFrame(event)
   self.sound_delay = self.sound_delay - event.actual_frames
   if self.sound_delay < 1 then
     self.sound_delay = set.sound_delay
-    Sounds.playoctave(ant.hue, 0)
+    Sounds.playoctave(3 - ant.index, 0)
     maybe_make_sound = true
   elseif self.sound_delay <= (set.sound_delay / 2) and previous_sound_delay > (set.sound_delay / 2) then
     maybe_make_sound = true

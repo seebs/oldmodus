@@ -215,6 +215,8 @@ function Hexes:from_screen(t_or_x, y)
   if not x then
     return nil
   end
+  x = x - self.x_offset
+  y = y - self.y_offset
   local x_insquare = fmod(x, self.per_hex_horizontal) / self.per_hex_horizontal
   -- should run 0-to-1, with 1 for the edges and 0 for the middle
   local y_insquare = fmod(y, self.hex_vertical) - self.vertical_half
@@ -222,7 +224,7 @@ function Hexes:from_screen(t_or_x, y)
   x = floor(x / self.per_hex_horizontal)
   y = floor(y / self.hex_vertical)
   if x % 2 == 1 then
-    if x_insquare < 0.2 and y_away < x_insquare then
+    if x_insquare < 0.2 and y_away < x_insquare * 5 then
       x = x - 1
     else
       if y_insquare < 0 then
@@ -230,7 +232,7 @@ function Hexes:from_screen(t_or_x, y)
       end
     end
   else
-    if y_away > x_insquare * 3 then
+    if y_away > x_insquare * 5 then
       x = x - 1
       if y_insquare < 0 then
 	y = y - 1
@@ -374,11 +376,17 @@ function Hexes.new(group, set, highlights, multiplier)
   hexes.columns, columnsize = Hexes.horizontal_in(hexes, group.size.x)
   if columnsize < group.size.x then
     local diff = group.size.x - columnsize
-    group.x = group.x + (diff / 2)
+    hexes.x_offset = diff / 2
+    group.x = group.x + hexes.x_offset
+  else
+    hexes.x_offset = 0
   end
   if rowsize < group.size.y then
     local diff = group.size.y - rowsize
-    group.y = group.y + (diff / 2)
+    hexes.y_offset = diff / 2
+    group.y = group.y + hexes.y_offset
+  else
+    hexes.y_offset = 0
   end
 
   -- Util.printf("Trying %d divisor, hex size %.1f = %dx%d (%d).",

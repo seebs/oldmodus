@@ -6,6 +6,8 @@ scene.meta = {
 }
 
 local dist = Util.dist
+local random = math.random
+local floor = math.floor
 
 local s
 local set
@@ -99,7 +101,7 @@ function scene:createScene(event)
     local img
     d.hue = ((i - 1) % #Rainbow.hues) + 1
     d.id = i
-    d.octave = math.floor((i - 1) / #Rainbow.hues)
+    d.octave = floor((i - 1) / #Rainbow.hues)
     local r, g, b = unpack(Rainbow.color(i))
 
     img = display.newImage(self.sheetc, 1)
@@ -155,8 +157,7 @@ function scene:do_drops()
     table.insert(self.spare_drops, table.remove(self.drops, idx))
   end
   self.drop_cooldown = self.drop_cooldown - 1
-  if #self.spare_drops > 0 and math.random(#self.spare_drops) > set.drop_threshold and self.drop_cooldown < 1 then
-    self.drop_cooldown = math.random(set.max_cooldown - set.min_cooldown) + set.min_cooldown
+  if #self.spare_drops > 0 and random(#self.spare_drops) > set.drop_threshold and self.drop_cooldown < 1 then
     local d = table.remove(self.spare_drops, 1)
     if #self.spare_drops > 1 then
       local counter = #self.spare_drops
@@ -172,15 +173,19 @@ function scene:do_drops()
     if #self.future_drops > 0 then
       new_point = table.remove(self.future_drops, 1)
     else
-      new_point = { x = math.random((s.size.x - 150) + 75),
-                    y = math.random((s.size.y - 200) + 100) }
+      new_point = { x = random((s.size.x - 150) + 75),
+                    y = random((s.size.y - 200) + 100) }
     end
-    if self.toward then
-      local between = Util.midpoint(new_point, self.toward)
+    self.drop_cooldown = random(set.max_cooldown - set.min_cooldown) + set.min_cooldown
+    -- faster when there's pending action...
+    if #self.future_drops > 0 then
+      local scale = 1
+      local weighted_min = set.min_cooldown * scale
+      self.drop_cooldown = floor((self.drop_cooldown + weighted_min) / (scale + 1))
     end
     d:setXY(new_point.x, new_point.y)
     local range = set.max_growth - set.min_growth
-    local scale = math.random(range)
+    local scale = random(range)
     d.max_growth = scale + set.min_growth
     d.factor = (scale / range) * 0.2
     d:setVisible(true)
@@ -217,7 +222,6 @@ function scene:touch_magic(state, ...)
 end
 
 function scene:willEnterScene(event)
-  self.toward = nil
 end
 
 function scene:enterScene(event)

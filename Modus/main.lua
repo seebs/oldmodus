@@ -152,7 +152,7 @@ function Modus.next_display(event)
 end
 
 local touch = Touch
-Runtime:addEventListener('touch', function(e) touch:touch(e) end)
+Runtime:addEventListener('touch', function(e) touch:handle(e) end)
 
 if have_settings and scenes.benchmark.settings_complete() then
   Modus.reload_display()
