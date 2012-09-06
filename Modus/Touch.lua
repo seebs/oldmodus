@@ -32,7 +32,7 @@ local corners = {
 }
 
 local gear = display.newImage('gear.png')
-gear:scale(60 / 533, 60 / 533)
+gear:scale(60 / 199, 60 / 199)
 gear.x = 32 + screen_origin.x
 gear.y = 32 + screen_origin.y
 -- gear.blendMode = 'add'
