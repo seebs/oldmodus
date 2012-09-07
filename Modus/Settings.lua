@@ -79,14 +79,14 @@ Settings.scene_defaults = {
     type = 'line',
   },
   ants = {
-    color_multiplier = 6,
+    color_multiplier = 7,
     ants = 6,
     frame_delay = 5,
     sound_delay = 20,
     type = 'hex',
   },
   ants2 = {
-    color_multiplier = 6,
+    color_multiplier = 7,
     ants = 6,
     frame_delay = 5,
     sound_delay = 20,

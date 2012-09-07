@@ -9,6 +9,7 @@ scene.FADED = 0.75
 scene.CYCLE = 6
 
 local ceil = math.ceil
+local floor = math.floor
 local max = math.max
 local min = math.min
 
@@ -74,7 +75,7 @@ function scene:enterFrame(event)
   for k, splash in ipairs(self.splashes) do
     splash.cooldown = splash.cooldown - 1
     if splash.cooldown < 1 then
-      self.make_sound = ceil(splash.hue / set.color_multiplier)
+      self.make_sound = floor(splash.hue / set.color_multiplier + 0.5)
       self.make_octave = splash.octave
       proc = coroutine.create(scene.process_hex)
       splash.cooldown = 2
@@ -169,7 +170,7 @@ function scene:touch_magic(state, ...)
       end
     elseif not event.done then
       local hue = touch and touch.hue or 1
-      self.make_sound = ceil(hue / set.color_multiplier)
+      self.make_sound = floor(hue / set.color_multiplier + 0.5)
       self.make_octave = idx
     end
   end

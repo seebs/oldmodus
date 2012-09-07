@@ -54,17 +54,21 @@ function Touch.state(func, caller)
     end
     state.events = 0
     -- cleanup intermediate states we've already processed
-    for _, e in ipairs(state.points) do
-      if e.done then
-	nuke_these[#nuke_these + 1] = e
-      else
-        if now - e.stamp > 1000 then
-	  -- flag for cleanup on next pass
-          e.done = true
+    for idx = 1, state.peak do
+      local e = state.points[idx]
+      -- it's possible to have a discontinuous set.
+      if e then
+	if e.done then
+	  nuke_these[#nuke_these + 1] = e
+        else
+          if now - e.stamp > 1000 then
+	    -- flag for cleanup on next pass
+            e.done = true
+          end
+	  e.events = 0
+	  e.previous = {}
+	  e.new_event = false
         end
-	e.events = 0
-	e.previous = {}
-	e.new_event = false
       end
     end
     -- and dispose of extras
@@ -102,6 +106,7 @@ function Touch.ignore(event)
   return not Touch.is_disabled
 end
 
+local occasionally = 0
 function Touch.handle(event)
   local id = event.id or 'unknown'
   local e
@@ -150,6 +155,7 @@ function Touch.handle(event)
     e.previous[#e.previous + 1] = e.current
     e.current = { x = event.x, y = event.y }
   elseif event.phase == 'stationary' then
+    -- Util.printf("got stationary event")
     -- do nothing for now
   elseif event.phase == 'ended' or event.phase == 'cancelled' then
     -- if an event ended, leave it in for one last process...
@@ -158,15 +164,25 @@ function Touch.handle(event)
     e.end_stamp = event.time
   end
 
-  -- Util.printf("e:")
-  -- Util.dump(e)
   -- Util.printf("state.active: %d", state.active)
+  -- if state.active > 1 then
+    -- occasionally = occasionally + 1
+    -- if occasionally >= 100 then
+      -- Util.printf("state.active > 1 for a longish time:")
+      -- Util.dump(state)
+      -- occasionally = 0
+    -- end
+  -- else
+    -- occasionally = 0
+  -- end
 
   local tapped = false
   if e.done then
     if e.end_stamp and e.start_stamp and (e.end_stamp - e.start_stamp < 200) then
       if e.start and e.current and dist(e.start, e.current) < 30 then
-        tapped = true
+	if state.active == 1 then
+          tapped = true
+	end
       end
     end
   end
