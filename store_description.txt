@@ -1,6 +1,6 @@
 "It goes ding and you feel better." -- Jesse H., noted fantasy author
 
-The Miracle Modus is a source of soothing visual and audio effects. It has a number of modes which create hypnotic displays in vivid colors. I'm autistic, and I have spent ages combing the app store looking for a thing like this, because I find mathematically-patterned rainbow lights very soothing. For me, it erases sensory overload fairly quickly. After I showed it to a couple of friends and they had similar experiences, I decided to publish it.
+The Miracle Modus is a source of hypnotic rainbows and soft bells. I'm autistic, and I wrote this because I wanted something to mitigate sensory overload. I find mathematically-patterned rainbow lights very soothing. After I showed it to a couple of friends and they had similar experiences, I decided to publish it.
 
 The first time you open the app, it will make a bit of noise and draw a bunch of lines, squares, and hexes. Once it's done this it should have a guess as to how fast your device is, and be able to perform decently. This is a little unreliable still; improvements are planned.
 
@@ -10,13 +10,14 @@ More testimonials from users:
 "I was so overloaded my face went numb and I couldn't get up off the couch, so he showed me the app and said to give it a try, and I felt relaxed for the first time in days. If you are stuck on the couch whimpering, try to slide this app under your prostrate face as soon as possible." -- Luka D., webcomic artist
 "It's so cool I can't even look at it." - Lerg, app developer
 
-SETTINGS:
-Double-tap in any corner to bring up the settings page. This allows you to change (or disable) the sounds, enable or disable modes you like, re-run the benchmark phase if you think it got bogus results. Feel free to report performance issues; tell me what device you've got, and what it's doing.
+USAGE:
+Watch the pretty lights. Want different pretty lights? Double-tap (with only one finger). Most modes are at least a little interactive, but sometimes it is pretty subtle. After you've explored a bit, you may find you prefer some modes, or don't like some of them. We've thought of that!
 
-You can disable modes you don't like; to see settings, double-tap in a corner of the display. Most modes are at least a little interactive, but sometimes it is pretty subtle.
+SETTINGS:
+Double-tap in any corner to bring up the settings page. This allows you to change (or disable) the sounds, enable or disable modes so you only see your favorites, or re-run the benchmark phase if you think it got bogus results.
 
 SUPPORT:
-See the support page. Feel free to email suggestions for display modes you'd like to see, I enjoy writing new display modes.
+See the support page. Feel free to email suggestions for display modes you'd like to see, as I enjoy writing new display modes. If you wish to report the app being slow or erratic, be sure to tell me what device you've got, and what it's doing.
 
 KNOWN ISSUES:
 Performance is not as reliable as I'd like.
