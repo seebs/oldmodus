@@ -98,7 +98,7 @@ function scene:line(color, g)
 	colorize(seg, color)
       else
 	local l = Line.new(point, next, 2, colorfor(color))
-	l:setThickness(2)
+	l:setThickness(3)
 	seg = l
 	g.segments[i] = l
 	g:insert(l)
@@ -119,7 +119,7 @@ function scene:one_line(color, vec1, vec2, existing)
   end
   if not existing then
     local l = Line.new(vec1, vec2, 2, colorfor(color))
-    l:setThickness(2)
+    l:setThickness(3)
     return l
   else
     existing:setPoints(vec1, vec2)
