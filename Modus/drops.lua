@@ -8,6 +8,7 @@ scene.meta = {
 local dist = Util.dist
 local random = math.random
 local floor = math.floor
+local ceil = math.ceil
 
 local s
 local set
@@ -179,9 +180,9 @@ function scene:do_drops()
     self.drop_cooldown = random(set.max_cooldown - set.min_cooldown) + set.min_cooldown
     -- faster when there's pending action...
     if #self.future_drops > 0 then
-      local scale = 1
+      local scale = 0.5
       local weighted_min = set.min_cooldown * scale
-      self.drop_cooldown = floor((self.drop_cooldown + weighted_min) / (scale + 1))
+      self.drop_cooldown = ceil((self.drop_cooldown + weighted_min) / (scale + 1))
     end
     d:setXY(new_point.x, new_point.y)
     local range = set.max_growth - set.min_growth

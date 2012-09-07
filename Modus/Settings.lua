@@ -59,7 +59,7 @@ Settings.scene_defaults = {
     total_drops = #Rainbow.hues * 3,
     drop_threshold = #Rainbow.hues * 3 - 5,
     min_cooldown = 10,
-    max_cooldown = 30,
+    max_cooldown = 40,
     max_growth = 125,
     min_growth = 45,
   },
