@@ -65,7 +65,7 @@ function Sounds.playexact(tone, volume)
     return
   end
   local c = audio.play(tones[(tone - 1) % #tones + 1])
-  Sounds.volume(c, volume)
+  Sounds.volume(c, volume or 1.0)
 end
 
 local offset = 0
@@ -86,7 +86,7 @@ function Sounds.playoctave(hue, octave, volume)
   local off = (((octave or 0) % octavecount) * 5)
   off = off % (tonecount - 1)
   local c = audio.play(tones[note + off])
-  Sounds.volume(c, volume)
+  Sounds.volume(c, volume or 1.0)
 end
 
 local octave_changer = 6
@@ -106,7 +106,7 @@ function Sounds.play(hue, volume)
   end
   -- Util.printf("hue %d, note %d, total %d", hue, note, note + offset)
   local c = audio.play(tones[note + offset])
-  Sounds.volume(c, volume)
+  Sounds.volume(c, volume or 1.0)
 end
 
 return Sounds
