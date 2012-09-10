@@ -272,7 +272,7 @@ function scene:createScene(event)
       default = { 0, 128, 0, 255 },
       over = { 0, 128, 0, 255 }
     },
-    onEvent = Modus.reload_display
+    onEvent = Logic.reload_display
   })
   scene.scene_list:insert(button)
   local text
@@ -377,7 +377,7 @@ end
 
 function scene:touch_magic(state)
   --if state.events > 0 then
-  --  Modus.reload_display()
+  --  Logic.reload_display()
   --end
 end
 

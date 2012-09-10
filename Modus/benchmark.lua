@@ -23,7 +23,7 @@ end
 
 function scene:touch_magic(state)
   if state.events > 0 then
-    Modus.next_display()
+    Logic.next_display()
   end
 end
 
@@ -227,7 +227,7 @@ function scene:enterFrame(event)
       self:state1("Done benchmarking.")
       Settings.benchmark = stats
       Settings:save()
-      Modus.reload_display()
+      Logic.reload_display()
       return
     end
   else

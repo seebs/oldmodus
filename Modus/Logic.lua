@@ -2,6 +2,12 @@
 local Logic = {}
 local touch = Touch
 local disp = display
+local debugging_display = nil
+local display_index = 1
+local previous_display = 1
+local debugging_performance = false
+local changing_displays = false
+local modus = Modus
 
 local min = math.min
 local floor = math.floor
@@ -34,8 +40,15 @@ Logic.times_missed = 0
 
 function Logic.enterFrame(custom, obj, event)
   if Logic.skip_to_new_scene then
-    storyboard.gotoScene(Logic.skip_to_new_scene)
+    Logic.goto(Logic.skip_to_new_scene)
     Logic.skip_to_new_scene = nil
+    return
+  end
+  if changing_displays then
+    return
+  end
+  if not obj or not obj.view then
+    Util.printf("got object without view: %s", tostring(obj))
     return
   end
   local this_frame = timer()
@@ -133,7 +146,7 @@ end
 function Logic.createScene(custom, obj, event)
   -- regenerate settings in case of changes
   local settings = Settings.scene(obj.name)
-  Modus.scenes[obj.name].settings = settings
+  modus.scenes[obj.name].settings = settings
   obj.settings = settings
   obj.screen = Screen.new(obj.view)
   obj.view.alpha = 0
@@ -161,6 +174,7 @@ function Logic.enterScene(custom, obj, event)
   Sounds.suppress(false)
   Runtime:addEventListener('enterFrame', obj)
   Logic.last_frame = timer()
+  changing_displays = false
 end
 
 function Logic.willEnterScene(custom, obj, event)
@@ -214,6 +228,65 @@ function Logic:logicize(scene)
     -- note: Logic.wrap stashes a copy of the original function
     scene[e] = Logic.wrap(scene, e)
     scene:addEventListener(e, scene)
+  end
+end
+
+function Logic.reload_display(event)
+  if debugging_performance then
+    storyboard.printMemUsage()
+  end
+  if not event or event.phase == 'ended' or event.phase == 'release' then
+    if not modus.scenes[modus.displays[display_index]].settings.enabled then
+      Logic.next_display(event)
+    else
+      Logic.goto(modus.displays[display_index])
+    end
+  end
+end
+
+function Logic.last_display(event)
+  if debugging_performance then
+    storyboard.printMemUsage()
+  end
+  if not event or event.phase == 'ended' or event.phase == 'release' then
+    local prev = ((display_index - 2) % #modus.displays) + 1
+    Logic.goto(modus.displays[prev])
+    display_index = prev
+  end
+end
+
+function Logic.goto(d)
+  if not changing_displays then
+    changing_displays = true
+    storyboard.gotoScene(d, 'fade', 100)
+  end
+end
+
+function Logic.next_display(event)
+  if debugging_display then
+    table.insert(modus.displays, display_index + 1, debugging_display)
+    debugging_display = nil
+  end
+  if debugging_performance then
+    storyboard.printMemUsage()
+  end
+  local next_place = nil
+  if not event or event.phase == 'ended' or event.phase == 'release' then
+    local started_at = display_index
+    while not next_place do
+      display_index = (display_index % #modus.displays) + 1
+      if display_index == started_at then
+	next_place = 'prefs'
+	Util.message("You do not appear to have any other scenes enabled.  Enable some scenes.")
+	break
+      end
+      next_place = modus.displays[display_index]
+      local enabled = modus.scenes[modus.displays[display_index]].settings.enabled
+      if not enabled then
+	next_place = nil
+      end
+    end
+    Logic.goto(next_place)
   end
 end
 
