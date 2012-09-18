@@ -1,3 +1,5 @@
+-- @!#*!#ing android
+io.output():setvbuf('no')
 
 display.setStatusBar(display.HiddenStatusBar)
 

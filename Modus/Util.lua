@@ -28,7 +28,8 @@ function Util.message(fmt, ...)
     message_box.x = Screen.size.x / 2
     message_box.y = Screen.size.y / 2
   end
-  print(out)
+  io.stderr:write(out)
+  io.stderr:write("\n")
 end
 
 function Util.gcd(x, y)

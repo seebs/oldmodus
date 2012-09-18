@@ -18,6 +18,10 @@ local store_state = false
 local store_product_state = false
 
 local all_store_product_keys = {
+  ["Mac OS X"] = {
+    "thanks",
+    "manythanks",
+  },
   ["iPhone OS"] = {
     "thanks",
     "manythanks",
@@ -37,26 +41,18 @@ local store_products = {}
 local function store_callback(event)
   local transaction = event.transaction
   if transaction.state == "purchased" then
-    Util.printf("transaction win: %s", transaction.state)
-    if scene.store_message_text then
-      scene.store_message_text.text = "(Thank you, too!)"
-    end
+    -- Util.printf("transaction win: %s", transaction.state)
+    store_message("Thank you, too!")
   elseif transaction.state == "restored" then
-    Util.printf("transaction replay: %s", transaction.state)
-    if scene.store_message_text then
-      scene.store_message_text.text = "(You've already thanked me.)"
-    end
+    -- Util.printf("transaction replay: %s", transaction.state)
+    store_message("You've already thanked me.")
   elseif transaction.state == "failed" then
-    Util.printf("transaction lose: %s, %s", transaction.errorType, transaction.errorString)
-    if scene.store_message_text then
-      scene.store_message_text.text = "(Transaction failed.)"
-    end
+    -- Util.printf("transaction lose: %s, %s", transaction.errorType, transaction.errorString)
+    store_message("Transaction failed.")
   elseif transaction.state == "cancelled" then
-    if scene.store_message_text then
-      scene.store_message_text.text = "(Transaction cancelled.)"
-    end
+    store_message("Transaction cancelled.")
   else
-    Util.printf("transaction WTF: %s", transaction.state)
+    -- Util.printf("transaction WTF: %s", transaction.state)
   end
   store.finishTransaction(transaction)
 end
@@ -64,7 +60,7 @@ end
 local function store_purchase(item)
   local prod = store_products[item]
   if not prod then
-    Util.printf("Can't purchase <%s> because I can't find it.", item)
+    -- Util.printf("Can't purchase <%s> because I can't find it.", item)
     return
   end
   store.purchase( { prod } )
@@ -76,7 +72,7 @@ local function store_product_callback(event)
     if prod.title then
       store_products[prod.productIdentifier] = prod
     end
-    Util.printf("%s [%s]: %s", prod.title, prod.productIdentifier, prod.description)
+    -- Util.printf("%s [%s]: %s", prod.title, prod.productIdentifier, prod.description)
     store_product_state = true
   end
   -- if we were waiting on this before trying to do stuff:
@@ -88,14 +84,12 @@ end
 
 local function store_setup()
   if not store_state then
-    if host == "Android" then
-      store.init("google", store_callback)
-    else
-      store.init(store_callback)
-    end
+    -- Util.printf("store setup for host %s", store_host)
+    store.init(store_callback)
     store_state = true
   end
   if not store_product_state then
+    -- Util.printf("trying to get products configured for %s:", store_host)
     store.loadProducts(store_product_keys, store_product_callback)
     return false
   end
@@ -103,6 +97,7 @@ local function store_setup()
 end
 
 function scene.try_to_buy(event, product)
+  -- Util.printf("try_to_buy: phase %s, product %s", event.phase, tostring(product))
   if event.phase ~= 'release' and event.phase ~= 'tap' then
     return true
   end
@@ -111,7 +106,7 @@ function scene.try_to_buy(event, product)
   end
   -- might not be ready...
   if not store_setup() then
-    store_pending = product
+    scene.store_message("Store offline? Retry later.")
   else
     store_purchase(product)
   end
@@ -183,7 +178,7 @@ function scene.toggle_scene(event)
       button.parent.enabled_label.x = 5
     end
   else
-    Util.printf("Got toggle for a scene I can't handle: %s.", tostring(scene_name))
+    -- Util.printf("Got toggle for a scene I can't handle: %s.", tostring(scene_name))
   end
 end
 
@@ -235,6 +230,16 @@ function scene:enterScene(event)
   -- in fact, turn off Touch entirely
   Touch.disable()
   display.getCurrentStage():setFocus(nil)
+end
+
+function scene.store_message(fmt, ...)
+  local txt = Util.sprintf(fmt, ...)
+  if scene.store_message_text then
+    scene.store_message_text.text = "(" .. txt .. ")"
+    scene.store_message_text:setReferencePoint(display.TopLeftReferencePoint)
+    scene.store_message_text.x = 5
+    scene.store_message_text.y = 170 - scene.GLOBAL_SPACE
+  end
 end
 
 function scene:createScene(event)
@@ -330,7 +335,7 @@ function scene:createScene(event)
       onEvent = self.thanks_lots
     })
     scene.scene_list:insert(button)
-    scene.store_message_text = display.newText("", 125, 175 - scene.GLOBAL_SPACE, native.systemFont, 23)
+    scene.store_message_text = display.newText("", 125, 170 - scene.GLOBAL_SPACE, native.systemFont, 23)
     scene.scene_list:insert(scene.store_message_text)
   end
   text = display.newText("Scene Settings:", 5, -45, native.systemFont, 36)
@@ -341,7 +346,7 @@ end
 
 function scene.make_sound_buttons()
   local using = Settings.default_overrides.timbre or Settings.default.timbre
-  Util.printf("make_sound_buttons: using %s", tostring(using))
+  -- Util.printf("make_sound_buttons: using %s", tostring(using))
   local sounds, descriptions = Sounds.list()
   local left = 125
   local top = 70 - scene.GLOBAL_SPACE
