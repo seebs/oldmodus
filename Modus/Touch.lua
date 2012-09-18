@@ -193,7 +193,7 @@ function Touch.handle(event)
         maybe_prefs = idx
       end
     end
-    if last_tap and (e.end_stamp - last_tap.end_stamp < 450) and dist(e.current, last_tap.current) < 30 then
+    if last_tap and (e.end_stamp - last_tap.end_stamp < 550) and dist(e.current, last_tap.current) < 30 then
       if maybe_prefs and (maybe_prefs == last_tap.maybe_prefs) then
         Logic.goto('prefs')
       else

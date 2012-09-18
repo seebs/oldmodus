@@ -2,7 +2,7 @@ local scene = {}
 
 scene.ROW_HEIGHT = 150
 scene.NAME_OFFSET = 290
-scene.GLOBAL_SPACE = 200
+scene.GLOBAL_SPACE = 250
 
 local frame = Util.enterFrame
 local touch = Touch.state
@@ -17,10 +17,20 @@ local store = require('store')
 local store_state = false
 local store_product_state = false
 
-local store_product_keys = {
-  "thanks",
-  "manythanks",
+local all_store_product_keys = {
+  ["iPhone OS"] = {
+    "thanks",
+    "manythanks",
+  },
+  ["Android"] = {
+    "thanks__",
+    "manythanks",
+  },
 }
+
+local store_host = system.getInfo("platformName")
+
+local store_product_keys = all_store_product_keys[store_host] or {}
 
 local store_products = {}
 
@@ -78,7 +88,11 @@ end
 
 local function store_setup()
   if not store_state then
-    store.init(store_callback)
+    if host == "Android" then
+      store.init("google", store_callback)
+    else
+      store.init(store_callback)
+    end
     store_state = true
   end
   if not store_product_state then
@@ -92,6 +106,9 @@ function scene.try_to_buy(event, product)
   if event.phase ~= 'release' and event.phase ~= 'tap' then
     return true
   end
+  if not product then
+    return true
+  end
   -- might not be ready...
   if not store_setup() then
     store_pending = product
@@ -102,11 +119,11 @@ function scene.try_to_buy(event, product)
 end
 
 function scene.thanks_some(event)
-  return scene.try_to_buy(event, 'thanks')
+  return scene.try_to_buy(event, store_product_keys[1])
 end
 
 function scene.thanks_lots(event)
-  return scene.try_to_buy(event, 'manythanks')
+  return scene.try_to_buy(event, store_product_keys[2])
 end
 
 function scene:beganScroll()
@@ -131,7 +148,7 @@ function scene.pick_sound(event)
   end
   local button = event.target
   local sound_name = button.id
-  Util.printf("picked: %s", sound_name)
+  -- Util.printf("picked: %s", sound_name)
   Settings.default_overrides.timbre = sound_name
   Settings.save()
   scene.make_sound_buttons()
@@ -251,9 +268,9 @@ function scene:createScene(event)
   end
   local button = widget.newButton({
     left = s.size.x - 450,
-    top = 10 - scene.GLOBAL_SPACE,
+    top = 5 - scene.GLOBAL_SPACE,
     width = 215,
-    height = 38,
+    height = 42,
     label = "Rerun Benchmarks",
     onEvent = function(event)
       if event.phase == "release" then
@@ -264,9 +281,9 @@ function scene:createScene(event)
   scene.scene_list:insert(button)
   button = widget.newButton({
     left = s.size.x - 225,
-    top = 10 - scene.GLOBAL_SPACE,
+    top = 5 - scene.GLOBAL_SPACE,
     width = 215,
-    height = 38,
+    height = 42,
     label = "Resume",
     labelColor = {
       default = { 0, 128, 0, 255 },
@@ -278,20 +295,20 @@ function scene:createScene(event)
   local text
   text = display.newText("Global Settings:", 5, 0 - scene.GLOBAL_SPACE, native.systemFont, 40)
   scene.scene_list:insert(text)
-  text = display.newText("Sounds:", 5, 52 - scene.GLOBAL_SPACE, native.systemFont, 30)
+  text = display.newText("Sounds:", 5, 70 - scene.GLOBAL_SPACE, native.systemFont, 30)
   scene.scene_list:insert(text)
   scene.make_sound_buttons()
 
   -- allow IAP
   store_setup()
-  if store.canMakePurchases then
-    text = display.newText("Thank the app author (IAP, costs money):", 5, 102 - scene.GLOBAL_SPACE, native.systemFont, 23)
+  if store.canMakePurchases or true then
+    text = display.newText("Thank the app author (costs money):", 5, 140 - scene.GLOBAL_SPACE, native.systemFont, 23)
     scene.scene_list:insert(text)
     button = widget.newButton({
-      left = s.size.x - 290,
-      top = 99 - scene.GLOBAL_SPACE,
-      width = 110,
-      height = 33,
+      left = s.size.x - 330,
+      top = 134 - scene.GLOBAL_SPACE,
+      width = 130,
+      height = 40,
       label = "Thanks!",
       labelColor = {
         default = { 0, 128, 0, 255 },
@@ -301,10 +318,10 @@ function scene:createScene(event)
     })
     scene.scene_list:insert(button)
     button = widget.newButton({
-      left = s.size.x - 175,
-      top = 99 - scene.GLOBAL_SPACE,
-      width = 165,
-      height = 33,
+      left = s.size.x - 185,
+      top = 134 - scene.GLOBAL_SPACE,
+      width = 175,
+      height = 40,
       label = "Many Thanks!",
       labelColor = {
         default = { 0, 128, 0, 255 },
@@ -313,7 +330,7 @@ function scene:createScene(event)
       onEvent = self.thanks_lots
     })
     scene.scene_list:insert(button)
-    scene.store_message_text = display.newText("", 125, 140 - scene.GLOBAL_SPACE, native.systemFont, 23)
+    scene.store_message_text = display.newText("", 125, 175 - scene.GLOBAL_SPACE, native.systemFont, 23)
     scene.scene_list:insert(scene.store_message_text)
   end
   text = display.newText("Scene Settings:", 5, -45, native.systemFont, 36)
@@ -327,7 +344,7 @@ function scene.make_sound_buttons()
   Util.printf("make_sound_buttons: using %s", tostring(using))
   local sounds, descriptions = Sounds.list()
   local left = 125
-  local top = 55 - scene.GLOBAL_SPACE
+  local top = 70 - scene.GLOBAL_SPACE
   -- recreate buttons
   if scene.soundbuttons then
     for idx, button in ipairs(scene.soundbuttons) do
@@ -344,14 +361,14 @@ function scene.make_sound_buttons()
       local selected = (name == using)
       button = widget.newButton({
 	id = name,
-	left = left + ((idx + offset) * 155),
+	left = left + ((idx + offset) * 165),
 	top = top,
 	width = 150,
 	labelColor = {
 	  default = { 0, selected and 128 or 0, 0, 255 },
 	  over = { 0, selected and 0 or 255, 0, 255 }
 	},
-	height = 33,
+	height = 38,
 	label = descriptions[name],
 	onEvent = scene.pick_sound,
       })
@@ -368,7 +385,7 @@ function scene.make_sound_buttons()
       over = { 0, selected and 0 or 255, 0, 255 }
     },
     width = 150,
-    height = 33,
+    height = 38,
     label = 'Off',
     onEvent = scene.pick_sound,
   })
@@ -382,7 +399,7 @@ function scene:touch_magic(state)
 end
 
 function scene:destroyScene(event)
-  Util.printf("prefs: destroying scene.")
+  -- Util.printf("prefs: destroying scene.")
   scene.soundbuttons = nil
   scene.store_message_text = nil
   scene.scene_list = nil
