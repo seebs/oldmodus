@@ -1,5 +1,11 @@
 local scene = {}
 
+-- make this a global so we shouldn't reinitialize it
+store_global_state = store_global_state or {
+  state = false,
+  product_state = false
+}
+
 scene.ROW_HEIGHT = 150
 scene.NAME_OFFSET = 290
 scene.GLOBAL_SPACE = 250
@@ -13,9 +19,6 @@ local modus = Modus
 local s
 local set
 local store = require('store')
-
-local store_state = false
-local store_product_state = false
 
 local all_store_product_keys = {
   ["Mac OS X"] = {
@@ -38,21 +41,25 @@ local store_product_keys = all_store_product_keys[store_host] or {}
 
 local store_products = {}
 
+local already_bought = {}
+
 local function store_callback(event)
   local transaction = event.transaction
+  -- Util.message("store_callback (%s)", transaction and transaction.state or "nil")
   if transaction.state == "purchased" then
-    -- Util.printf("transaction win: %s", transaction.state)
-    store_message("Thank you, too!")
+    -- Util.message("transaction win: %s", transaction.state)
+    already_bought[transaction.productIdentifier] = true
+    scene.store_message("Thank you, too!")
   elseif transaction.state == "restored" then
-    -- Util.printf("transaction replay: %s", transaction.state)
-    store_message("You've already thanked me.")
+    -- Util.message("transaction replay: %s", transaction.state)
+    scene.store_message("You've already thanked me.")
   elseif transaction.state == "failed" then
-    -- Util.printf("transaction lose: %s, %s", transaction.errorType, transaction.errorString)
-    store_message("Transaction failed.")
+    -- Util.message("transaction lose: %s, %s", transaction.errorType, transaction.errorString)
+    scene.store_message("Transaction failed.")
   elseif transaction.state == "cancelled" then
-    store_message("Transaction cancelled.")
+    scene.store_message("Transaction cancelled.")
   else
-    -- Util.printf("transaction WTF: %s", transaction.state)
+    -- Util.message("transaction WTF: %s", transaction.state)
   end
   store.finishTransaction(transaction)
 end
@@ -60,7 +67,7 @@ end
 local function store_purchase(item)
   local prod = store_products[item]
   if not prod then
-    -- Util.printf("Can't purchase <%s> because I can't find it.", item)
+    -- Util.message("Can't purchase <%s> because I can't find it.", item)
     return
   end
   store.purchase( { prod } )
@@ -68,40 +75,62 @@ end
 
 local function store_product_callback(event)
   local products = event.products
+  -- Util.message("store_product_callback.")
   for idx, prod in ipairs(event.products) do
     if prod.title then
       store_products[prod.productIdentifier] = prod
     end
-    -- Util.printf("%s [%s]: %s", prod.title, prod.productIdentifier, prod.description)
-    store_product_state = true
+    -- Util.message("%s [%s]: %s", prod.title, prod.productIdentifier, prod.description)
+    store_global_state.product_state = true
+    if store_pending then
+      store_purchase(store_pending)
+      store_pending = nil
+    end
+  end
+  for idx, prod in ipairs(event.invalidProducts) do
+    -- Util.message("  invalid: %s", prod)
   end
   -- if we were waiting on this before trying to do stuff:
-  if store_pending then
-    store_purchase(store_pending)
-    store_pending = nil
-  end
 end
 
 local function store_setup()
-  if not store_state then
-    -- Util.printf("store setup for host %s", store_host)
+  -- Util.message("store.availableStores: %s", table.concat(store.availableStores, ", "))
+  if not store_global_state.state then
+    -- Util.message("store setup for host %s", store_host)
     store.init(store_callback)
-    store_state = true
+    store_global_state.state = true
   end
-  if not store_product_state then
-    -- Util.printf("trying to get products configured for %s:", store_host)
-    store.loadProducts(store_product_keys, store_product_callback)
-    return false
+  if not store_global_state.product_state then
+    if store.canLoadPurchases then
+      -- Util.message("trying to get products configured for %s:", store_host)
+      for i = 1, #store_product_keys do
+        -- Util.message("  %d: %s", i, store_product_keys[i])
+      end
+      store.loadProducts(store_product_keys, store_product_callback)
+      return false
+    else
+      -- Android doesn't let you query the server like that.
+      for i = 1, #store_product_keys do
+	local prod = store_product_keys[i]
+        store_products[prod] = prod
+      end
+      store_global_state.product_state = true
+      return true
+    end
   end
   return true
 end
 
 function scene.try_to_buy(event, product)
-  -- Util.printf("try_to_buy: phase %s, product %s", event.phase, tostring(product))
+  -- Util.message("try_to_buy: phase %s, product %s", event.phase, tostring(product))
   if event.phase ~= 'release' and event.phase ~= 'tap' then
     return true
   end
   if not product then
+    return true
+  end
+  if already_bought[product] then
+    scene.store_message("You have already thanked me.")
     return true
   end
   -- might not be ready...
@@ -143,7 +172,7 @@ function scene.pick_sound(event)
   end
   local button = event.target
   local sound_name = button.id
-  -- Util.printf("picked: %s", sound_name)
+  -- Util.message("picked: %s", sound_name)
   Settings.default_overrides.timbre = sound_name
   Settings.save()
   scene.make_sound_buttons()
@@ -178,7 +207,7 @@ function scene.toggle_scene(event)
       button.parent.enabled_label.x = 5
     end
   else
-    -- Util.printf("Got toggle for a scene I can't handle: %s.", tostring(scene_name))
+    -- Util.message("Got toggle for a scene I can't handle: %s.", tostring(scene_name))
   end
 end
 
@@ -248,9 +277,6 @@ function scene:createScene(event)
   self.scene_displays = {}
   local row_color
 
-  -- turn on the store
-  store_setup()
-
   scene.scene_list = widget.newTableView({
     hideBackground = true,
     width = s.size.x,
@@ -305,8 +331,10 @@ function scene:createScene(event)
   scene.make_sound_buttons()
 
   -- allow IAP
+  scene.store_message_text = display.newText("", 125, 170 - scene.GLOBAL_SPACE, native.systemFont, 23)
+  scene.scene_list:insert(scene.store_message_text)
   store_setup()
-  if store.canMakePurchases or true then
+  if store.canMakePurchases then
     text = display.newText("Thank the app author (costs money):", 5, 140 - scene.GLOBAL_SPACE, native.systemFont, 23)
     scene.scene_list:insert(text)
     button = widget.newButton({
@@ -335,8 +363,8 @@ function scene:createScene(event)
       onEvent = self.thanks_lots
     })
     scene.scene_list:insert(button)
-    scene.store_message_text = display.newText("", 125, 170 - scene.GLOBAL_SPACE, native.systemFont, 23)
-    scene.scene_list:insert(scene.store_message_text)
+  else
+    scene.store_message("store.canMakePurchases: %s", tostring(store.canMakePurchases))
   end
   text = display.newText("Scene Settings:", 5, -45, native.systemFont, 36)
   scene.scene_list:insert(text)
@@ -346,7 +374,7 @@ end
 
 function scene.make_sound_buttons()
   local using = Settings.default_overrides.timbre or Settings.default.timbre
-  -- Util.printf("make_sound_buttons: using %s", tostring(using))
+  -- Util.message("make_sound_buttons: using %s", tostring(using))
   local sounds, descriptions = Sounds.list()
   local left = 125
   local top = 70 - scene.GLOBAL_SPACE
@@ -404,7 +432,7 @@ function scene:touch_magic(state)
 end
 
 function scene:destroyScene(event)
-  -- Util.printf("prefs: destroying scene.")
+  -- Util.message("prefs: destroying scene.")
   scene.soundbuttons = nil
   scene.store_message_text = nil
   scene.scene_list = nil

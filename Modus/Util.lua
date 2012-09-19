@@ -16,17 +16,23 @@ end
 
 local message_box
 
+local message_table = {}
+
 function Util.messages_to(frame)
   message_box = frame
 end
 
 function Util.message(fmt, ...)
   local out = Util.sprintf(fmt, ...)
+  message_table[#message_table + 1] = out
   if message_box then
-    message_box.text = out
+    message_box.text = table.concat(message_table, "\n")
     message_box:setReferencePoint(display.centerReferencePoint)
     message_box.x = Screen.size.x / 2
     message_box.y = Screen.size.y / 2
+  end
+  if #message_table > 10 then
+    table.remove(message_table, 1)
   end
   io.stderr:write(out)
   io.stderr:write("\n")

@@ -1,6 +1,3 @@
--- @!#*!#ing android
-io.output():setvbuf('no')
-
 display.setStatusBar(display.HiddenStatusBar)
 
 --profiler = require "Profiler"
@@ -87,6 +84,8 @@ Modus.scenes = scenes
 
 -- we always want the option of displaying stuff:
 local message_box = display.newText('', Screen.center.x, Screen.center.y, Screen.size.x - 10, 0, native.defaultFont, 35)
+-- invisible messages in case any leak out
+message_box:setTextColor(0, 0, 0, 0)
 Util.messages_to(message_box)
 
 if debugging_display or debugging_performance then
