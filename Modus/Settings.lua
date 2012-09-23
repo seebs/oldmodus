@@ -18,6 +18,15 @@ Settings.scene_defaults = {
   benchmark = {
     frame_delay = 1,
   },
+  stringart = {
+    points = 3,
+    color_multiplier = 9,
+    history = 1,
+    v_min = 10,
+    v_max = 20,
+    frame_delay = 3,
+    type = 'line',
+  },
   spiral = {
     points = 3,
     history = 8,
@@ -42,7 +51,7 @@ Settings.scene_defaults = {
   },
   spline = {
     history = 16,
-    color_multiplier = 6,
+    color_multiplier = 20,
     type = 'line',
   },
   cascade = {

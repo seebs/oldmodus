@@ -37,7 +37,9 @@ function scene:line(color, g)
     color = self.next_color or 1
     self.next_color = (color % self.line_total) + 1
   end
-  g = g or display.newGroup()
+  if not g then
+    g = display.newGroup(s)
+  end
   g.segments = g.segments or {}
   for i = 1, #self.vecs - 1 do
     if g.segments[i] then
@@ -106,7 +108,7 @@ function scene:enterScene(event)
   self.vecs = {}
   s = Screen.new(self.view)
   for i = 1, 2 do
-    self.vecs[i] = Vector.new(s, set)
+    self.vecs[i] = Vector.random(s, set)
   end
   for i = 1, self.line_total do
     local l = self:line(i, nil)
@@ -128,7 +130,7 @@ function scene:touch_magic(state, ...)
     end
   end
   while highest > #self.vecs do
-    local v = Vector.new(s, set)
+    local v = Vector.random(s, set)
     local t = self.toward[#self.vecs + 1]
     -- start it at the new finger
     if t then

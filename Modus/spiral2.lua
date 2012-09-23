@@ -44,7 +44,7 @@ function scene:createScene(event)
   self.sorted_ids = self.sorted_ids or {}
   self.toward = self.toward or {}
 
-  self.center = Vector.new(s, set, 5)
+  self.center = Vector.random(s, set, 5)
   self.center.ripples = {}
   self.center.x = s.center.x
   self.center.y = s.center.y
@@ -182,7 +182,7 @@ function scene:enterScene(event)
   self.next_color = nil
   self.vecs = {}
   for i = 1, set.points do
-    self.vecs[i] = Vector.new(s, set)
+    self.vecs[i] = Vector.random(s, set)
     self.vecs[i].ripples = {}
     self.vecs[i].theta = 5 * pi
   end

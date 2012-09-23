@@ -61,7 +61,7 @@ function Touch.state(func, caller)
 	if e.done then
 	  nuke_these[#nuke_these + 1] = e
         else
-          if now - e.stamp > 1000 then
+          if now - e.stamp > 30000 then
 	    -- flag for cleanup on next pass
             e.done = true
           end

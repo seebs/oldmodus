@@ -81,10 +81,12 @@ function Sounds.playoctave(hue, octave, volume)
   if Sounds.quiet then
     return
   end
+  -- Util.printf("hue %d, octave %d", hue, octave)
   hue = hue or math.random(#Rainbow.hues)
   note = (hue - 1) % #Rainbow.hues + 1
   local off = (((octave or 0) % octavecount) * 5)
   off = off % (tonecount - 1)
+  -- Util.printf("=> tone %d", note + off)
   local c = audio.play(tones[note + off])
   Sounds.volume(c, volume or 1.0)
 end

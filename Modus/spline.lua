@@ -14,6 +14,8 @@ local colorize
 local midpoint = Util.midpoint
 local partway = Util.partway
 local ceil = math.ceil
+local floor = math.floor
+local sqrt = math.sqrt
 
 local s
 local set
@@ -23,6 +25,7 @@ function scene:createScene(event)
   set = self.settings
 
   self.total_colors = #Rainbow.hues * set.color_multiplier
+  self.color_skip = floor(self.total_colors / (set.history + 2))
   rfuncs = Rainbow.funcs_for(set.color_multiplier)
   colorfor = rfuncs.smooth
   colorize = rfuncs.smoothobj
@@ -73,7 +76,7 @@ end
 function scene:line(color, g)
   if not color then
     color = self.next_color or 1
-    self.next_color = (color % self.total_colors) + 1
+    self.next_color = ((color + self.color_skip) % self.total_colors) + 1
   end
   g = g or display.newGroup()
   g.points = g.points or {}
@@ -136,7 +139,7 @@ function scene:move()
     end
   end
   -- not used during startup
-  if bounce and self.next_color then
+  if bounce and self.next_color and not self.quiet then
     Sounds.play(ceil(self.next_color / set.color_multiplier))
   end
 end
@@ -144,28 +147,29 @@ end
 function scene:enterFrame(event)
   local last = table.remove(self.lines, 1)
   for i, l in ipairs(self.lines) do
-    l.alpha = math.sqrt(i / set.history)
+    l.alpha = sqrt(i / set.history)
   end
-  table.insert(self.lines, self:line(nil, last))
+  self.lines[#self.lines + 1] = self:line(nil, last)
   self.lines[#self.lines].alpha = 1
   self:move()
 end
 
 function scene:enterScene(event)
   self.lines = {}
-  self.next_color = nil
+  self.next_color = 1
   self.vecs = {}
+  self.quiet = true
   for i = 1, self.points do
-    self.vecs[i] = Vector.new(s, set)
+    self.vecs[i] = Vector.random(s, set)
   end
   self:move()
   for i = 1, set.history do
-    local l = self:line(i, nil)
-    l.alpha = math.sqrt(i / set.history)
-    table.insert(self.lines, l)
+    local l = self:line(nil, nil)
+    l.alpha = sqrt(i / set.history)
+    self.lines[#self.lines + 1] = l
     self:move()
   end
-  self.next_color = 1
+  self.quiet = false
 end
 
 function scene:touch_magic(state, ...)

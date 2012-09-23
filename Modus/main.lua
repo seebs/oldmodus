@@ -1,4 +1,5 @@
 display.setStatusBar(display.HiddenStatusBar)
+system.setIdleTimer(false)
 
 --profiler = require "Profiler"
 --profiler.startProfiler({time = 30000, delay = 1000, verbose = true, callback = function() Line.redraws() end })
@@ -32,6 +33,7 @@ widget.setTheme("theme_ios")
 storyboard.purgeOnSceneChange = true
 
 local displays = {
+  'stringart',
   'spiral',
   'ants2',
   'knights',
