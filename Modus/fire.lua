@@ -10,7 +10,7 @@ scene.meta = {
 }
 
 scene.FADED = 0.1
-scene.IDLE_TIME = 12
+scene.IDLE_TIME = 6
 scene.IDLE_ENERGY = 1
 scene.TOUCH_ENERGY = 6.5
 scene.IDLE_FLOOR = 0.2
@@ -48,7 +48,7 @@ function scene:createScene(event)
     end
   end
   self.total_squares = self.squares.rows * self.squares.columns
-  self.fade_multiplier = .01
+  self.fade_multiplier = .005
   self.events = {}
 end
 
@@ -181,10 +181,16 @@ function scene:enterFrame(event)
     self:energize(square, energy, energy * cm, 1)
     square.spreading = true
     square.energy = square.energy + 3
+    if energy > 3 then
+      energy = energy - 2
+      for i = 1, #diag do
+        local sq = square:find(unpack(diag[i]))
+        self:energize(sq, energy, energy * cm, 1)
+        sq.spreading = true
+      end
+    end
     -- reset sounds again
     self.sound_history = {}
-    -- limit chirps
-    self.recent_ding = self.IDLE_TIME / 2
   end
   local removes = {}
   for i = 1, #self.events do
@@ -264,7 +270,7 @@ function scene:energize(square, amount, hue, newalpha, source)
       hue = self.CM_CAP
     end
   end
-  if square.energy and (amount / square.energy) < 10 then
+  if square.energy and ((source and amount > square.energy) or (amount / square.energy) < 10) then
     local old_energy = square.energy or 0
     square.energy = scale_add(square.energy, amount, 16)
     square.alpha = max(square.alpha, min(newalpha or 1, square.alpha + amount))

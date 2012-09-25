@@ -144,6 +144,8 @@ function Rainbow.change_palette(palette)
     for idx, tab in pairs(Rainbow.smoothed) do
       Rainbow.smoothify(idx)
     end
+  else
+    Util.printf("unknown palette choice: %s", tostring(palette))
   end
 end
 
