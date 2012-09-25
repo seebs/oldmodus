@@ -212,7 +212,7 @@ function Squares.new(group, set, args)
   squares.removeSelf = Squares.removeSelf
   if highlights and highlights > 0 then
     for i = 1, highlights do
-      local light = display.newImage(Squares.sheet, 1)
+      local light = display.newImage(Squares.sheet, squares.square_type)
       light:scale(squares.square_size / 256, squares.square_size / 256)
       -- local light = display.newRect(0, 0, squares.square_size * 0.5, squares.square_size * 0.5)
       -- light.strokeWidth = squares.square_size * 0.1

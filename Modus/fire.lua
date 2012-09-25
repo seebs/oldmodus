@@ -59,6 +59,13 @@ local plus = {
   { 0, 1 },
 }
 
+local diag = {
+  { -1, -1 },
+  { -1, 1 },
+  { 1, -1 },
+  { 1, 1 },
+}
+
 local function scale(s, x, y)
   return (x * s), (y * s)
 end
@@ -101,16 +108,27 @@ function scene:spread_plus(square, range)
   for j = 1, #plus do
     local sq = square:find(scale(i, unpack(plus[j])))
     if sq then
-      if not square.blocked[sq] then
+      if not sq.blocked[square] then
+	spread_any = self:energize(sq, mod, hue, alpha, square) or spread_any
+      end
+    end
+  end
+  if mod > 3 then
+    mod = mod - 2
+    alpha = alpha / 2
+    hue = hue - cm / 2
+    for j = 1, #diag do
+      local sq = square:find(scale(i, unpack(diag[j])))
+      if sq then
 	if not sq.blocked[square] then
-          spread_any = spread_any or self:energize(sq, mod, hue, alpha, square)
+	  spread_any = self:energize(sq, mod, hue, alpha, square) or spread_any
 	end
       end
     end
   end
   if spread_any and square.touch_sound then
-    square.touch_sound = nil
     Sounds.playoctave(square.touch_sound, 1)
+    square.touch_sound = nil
   end
 end
 
@@ -127,17 +145,19 @@ function scene:enterFrame(event)
         square.fade_floor = min(square.fade_floor + 0.001, self.IDLE_FLOOR)
       end
       if random(self.total_squares) == 1 then
+	square.blocked = {}
 	if square.alpha < 1 and square.hue < cm * 4 then
-	  self:energize(square, (2 / cm) + random() + random(), square.hue + cm / 2, .1)
+	  self:energize(square, (2 / cm) + random() + 1, square.hue + cm / 2, .1)
+	  -- and make this one a little stickier
+	  square.energy = square.energy + 3
 	  if self.recent_ding <= 1 and square.energy > cm * 1.5 then 
-	    Sounds.playoctave(floor(square.hue / cm), 2)
-	    self.recent_ding = self.IDLE_TIME
+	    -- Sounds.playoctave(floor(square.hue / cm), 2)
+	    self.recent_ding = self.IDLE_TIME * 3
 	  end
-	  square.spreading = 1
 	end
       elseif (not square.energy or square.energy < 1) then
 	if square.hue > cm then
-	  square.hue = max(square.hue - (square.hue / cm) - 2, cm)
+	  square.hue = max(square.hue * 0.95 - 1, cm)
 	  square:colorize()
 	  if square.alpha ~= square.fade_floor then
 	    square.alpha = max(square.fade_floor, square.alpha - (this_frame_fade / 2))
@@ -156,10 +176,11 @@ function scene:enterFrame(event)
   if self.cooldown < 0 then
     self.cooldown = self.IDLE_TIME
     local square = self.squares[random(self.squares.columns)][random(self.squares.rows)]
-    local energy = self.IDLE_ENERGY + random(2) + random()
+    local energy = self.IDLE_ENERGY + random(4) + random(2) - 2
+    Sounds.playoctave(floor(energy), 0)
     self:energize(square, energy, energy * cm, 1)
-    Sounds.play(floor(square.energy / cm))
     square.spreading = true
+    square.energy = square.energy + 3
     -- reset sounds again
     self.sound_history = {}
     -- limit chirps
@@ -169,8 +190,13 @@ function scene:enterFrame(event)
   for i = 1, #self.events do
     square = self.events[i]
     if square.energy and square.energy > 0.05 then
-      if square.hue < square.energy_hue then
-        square.hue = min(square.energy_hue, square.hue + (square.energy_hue / 4))
+      if square.hue ~= square.energy_hue then
+	local diff = square.energy_hue - square.hue
+	if square.hue < square.energy_hue then
+          square.hue = min(square.energy_hue, square.hue + diff / 2)
+	else
+          square.hue = max(cm, square.hue + diff / 4)
+	end
 	square:colorize()
       end
       if square.vested_energy < square.energy then
@@ -186,14 +212,14 @@ function scene:enterFrame(event)
 	square.blocked = {}
         square.spreading = false
       end
-      square.energy = max(square.energy * 0.95 - 0.2, 0)
+      square.energy = max(square.energy * 0.95 - 0.05, 0)
       if square.energy_hue > cm then
         square.energy_hue = max(cm, square.energy_hue - (0.5 * (square.energy_hue
 	/ cm)))
       end
     else
-      square.energy = nil
       square.blocked = {}
+      square.energy = nil
       removes[#removes + 1] = i
     end
   end
@@ -225,12 +251,11 @@ function scene:energize(square, amount, hue, newalpha, source)
     -- it won't be scaled, so let's cut it back a bit
     amount = amount / 2
   end
-  if amount < 1 then
+  if amount < 0.1 then
     return false
   end
   local old_hue = hue or amount or cm
   hue = scale_add(hue or amount or cm, square.energy_hue or 0, 16)
-  -- Util.printf("hue: %.1f scale_add %.1f => %.1f", old_hue, square.energy_hue or 0, hue)
   if hue < cm then
     -- allow hue to go slightly purpler than red.
     hue = cm - 1
@@ -239,17 +264,15 @@ function scene:energize(square, amount, hue, newalpha, source)
       hue = self.CM_CAP
     end
   end
-  if square.energy then
+  if square.energy and (amount / square.energy) < 10 then
     local old_energy = square.energy or 0
-    square.energy = scale_add(square.energy, amount, 8)
+    square.energy = scale_add(square.energy, amount, 16)
     square.alpha = max(square.alpha, min(newalpha or 1, square.alpha + amount))
     square.energy_hue = hue
     if square.energy > self.IDLE_THRESHOLD and old_energy < self.IDLE_THRESHOLD then
       square.spreading = true
     end
-    -- Util.printf("energized %d, %d from %.1f to %.1f, hue %.1f, new hue %.1f, alpha %.2f, spreading %s",
-      -- square.logical_x, square.logical_y, old_energy, square.energy, hue, square.energy_hue,
-      -- square.alpha, tostring(square.spreading))
+    -- Util.printf("energized %d, %d from %.1f to %.1f, hue %.1f, new hue %.1f, alpha %.2f, spreading %s", square.logical_x, square.logical_y, old_energy, square.energy, hue, square.energy_hue, square.alpha, tostring(square.spreading))
   else
     square.energy = amount
     square.energy_hue = hue
