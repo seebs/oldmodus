@@ -21,7 +21,7 @@ function scene:createScene(event)
   s = self.screen
   set = self.settings
 
-  self.squares = Squares.new(s, set, self.KNIGHTS)
+  self.squares = Squares.new(s, set, { highlights = self.KNIGHTS })
   self.fade_multiplier = (#self.squares / scene.FADE_RATE / 6) * .003
   -- Util.printf("fade_multiplier: (%d / %d / 6) * .003 = %f",
   --   #self.squares, scene.FADE_RATE, self.fade_multiplier)

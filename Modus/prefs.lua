@@ -8,7 +8,7 @@ store_global_state = store_global_state or {
 
 scene.ROW_HEIGHT = 150
 scene.NAME_OFFSET = 290
-scene.GLOBAL_SPACE = 250
+scene.GLOBAL_SPACE = 400
 
 local frame = Util.enterFrame
 local touch = Touch.state
@@ -166,18 +166,72 @@ function scene.onRowTouch(event)
   -- row.reRender = true
 end
 
-function scene.pick_sound(event)
+function scene.make_buttons(top, tabname, source, include_off, where, what, do_this)
+  local using = where[what] or Settings.default[what]
+  local items, descriptions = source()
+  local left = 125
+  local redo_me = function(...)
+    do_this(...)
+    scene.make_buttons(top, tabname, source, include_off, where, what, do_this)
+  end
+  local pick_this_setting = function(event)
+    scene.pick_setting(event, where, what, redo_me)
+  end
+  if scene[tabname] then
+    for idx = 1, #scene[tabname] do
+      scene[tabname][idx]:removeSelf()
+    end
+  end
+  scene[tabname] = {}
+  local offset = include_off and 0 or -1
+  for idx = 1, #items do
+    name = items[idx]
+    local selected = (name == using)
+    button = widget.newButton({
+	id = name,
+	left = left + ((idx + offset) * 160),
+	top = top,
+	width = 145,
+	labelColor = {
+	  default = { 0, selected and 128 or 0, 0, 255 },
+	  over = { 0, selected and 0 or 255, 0, 255 }
+	},
+	height = 38,
+	label = descriptions[name],
+	onEvent = pick_this_setting,
+      })
+    scene.globals:insert(button)
+    scene[tabname][#scene[tabname] + 1] = button
+  end
+  if include_off then
+    button = widget.newButton({
+	id = 'off',
+	left = left,
+	top = top,
+	width = 145,
+	labelColor = {
+	  default = { 0, selected and 128 or 0, 0, 255 },
+	  over = { 0, selected and 0 or 255, 0, 255 }
+	},
+	height = 38,
+	label = 'Off',
+	onEvent = pick_this_setting,
+      })
+    scene.globals:insert(button)
+    scene[tabname][#scene[tabname] + 1] = button
+  end
+end
+
+function scene.pick_setting(event, where, what, do_this)
   if event.phase ~= 'release' and event.phase ~= 'tap' then
     return true
   end
   local button = event.target
-  local sound_name = button.id
-  -- Util.message("picked: %s", sound_name)
-  Settings.default_overrides.timbre = sound_name
+  local picked = button.id
+  where[what] = picked
   Settings.save()
-  scene.make_sound_buttons()
-  -- and reload sounds if needed
-  Sounds.update()
+  do_this(picked)
+  return true
 end
 
 function scene.toggle_scene(event)
@@ -267,7 +321,7 @@ function scene.store_message(fmt, ...)
     scene.store_message_text.text = "(" .. txt .. ")"
     scene.store_message_text:setReferencePoint(display.TopLeftReferencePoint)
     scene.store_message_text.x = 5
-    scene.store_message_text.y = 170 - scene.GLOBAL_SPACE
+    scene.store_message_text.y = 280
   end
 end
 
@@ -285,6 +339,8 @@ function scene:createScene(event)
     listener = self
   })
   s:insert(scene.scene_list)
+  scene.globals = display.newGroup()
+
   for idx, dname in ipairs(modus.displays) do
     row_color = { unpack(Rainbow.color(idx)) }
     row_color[4] = 70
@@ -299,7 +355,7 @@ function scene:createScene(event)
   end
   local button = widget.newButton({
     left = s.size.x - 450,
-    top = 5 - scene.GLOBAL_SPACE,
+    top = 5,
     width = 215,
     height = 42,
     label = "Rerun Benchmarks",
@@ -309,10 +365,10 @@ function scene:createScene(event)
       end
     end
   })
-  scene.scene_list:insert(button)
+  scene.globals:insert(button)
   button = widget.newButton({
     left = s.size.x - 225,
-    top = 5 - scene.GLOBAL_SPACE,
+    top = 5,
     width = 215,
     height = 42,
     label = "Resume",
@@ -322,24 +378,37 @@ function scene:createScene(event)
     },
     onEvent = Logic.reload_display
   })
-  scene.scene_list:insert(button)
+  scene.globals:insert(button)
   local text
-  text = display.newText("Global Settings:", 5, 0 - scene.GLOBAL_SPACE, native.systemFont, 40)
-  scene.scene_list:insert(text)
-  text = display.newText("Sounds:", 5, 70 - scene.GLOBAL_SPACE, native.systemFont, 30)
-  scene.scene_list:insert(text)
-  scene.make_sound_buttons()
+  text = display.newText("Global Settings:", 5, 0, native.systemFont, 40)
+  scene.globals:insert(text)
+  text = display.newText("Sounds:", 5, 70, native.systemFont, 30)
+  scene.globals:insert(text)
+  scene.make_buttons(70, 'soundbuttons', Sounds.list, true, Settings.default_overrides, 'timbre', Sounds.update)
+  text = display.newText("Palette:", 5, 120, native.systemFont, 30)
+  scene.globals:insert(text)
+  scene.make_buttons(125, 'palettebuttons', Rainbow.list, false, Settings.default_overrides, 'palette', function(picked) Rainbow.change_palette(picked) end)
+  text = display.newText("Lines:", 5, 170, native.systemFont, 30)
+  scene.globals:insert(text)
+  local thicknesses = function()
+    return { 2, 3, 4 }, { [2] = "Thin", [3] = "Medium", [4] = "Thick" }
+  end
+  local depths = function()
+    return { 1, 2, 4 }, { [1] = "Fast", [2] = "Medium", [4] = "Smooth" }
+  end
+  scene.make_buttons(175, 'thickbuttons', thicknesses, false, Settings.default_overrides, 'line_thickness', function(picked) end)
+  scene.make_buttons(225, 'depthbuttons', depths, false, Settings.default_overrides, 'line_depth', function(picked) end)
 
   -- allow IAP
-  scene.store_message_text = display.newText("", 125, 170 - scene.GLOBAL_SPACE, native.systemFont, 23)
-  scene.scene_list:insert(scene.store_message_text)
+  scene.store_message_text = display.newText("", 125, scene.GLOBAL_SPACE - 70, native.systemFont, 23)
+  scene.globals:insert(scene.store_message_text)
   store_setup()
   if store.canMakePurchases then
-    text = display.newText("Thank the app author (costs money):", 5, 140 - scene.GLOBAL_SPACE, native.systemFont, 23)
-    scene.scene_list:insert(text)
+    text = display.newText("Thank the app author (costs money):", 5, scene.GLOBAL_SPACE - 110 , native.systemFont, 23)
+    scene.globals:insert(text)
     button = widget.newButton({
       left = s.size.x - 330,
-      top = 134 - scene.GLOBAL_SPACE,
+      top = scene.GLOBAL_SPACE - 116,
       width = 130,
       height = 40,
       label = "Thanks!",
@@ -349,10 +418,10 @@ function scene:createScene(event)
       },
       onEvent = self.thanks_some
     })
-    scene.scene_list:insert(button)
+    scene.globals:insert(button)
     button = widget.newButton({
       left = s.size.x - 185,
-      top = 134 - scene.GLOBAL_SPACE,
+      top = scene.GLOBAL_SPACE - 116,
       width = 175,
       height = 40,
       label = "Many Thanks!",
@@ -362,68 +431,51 @@ function scene:createScene(event)
       },
       onEvent = self.thanks_lots
     })
-    scene.scene_list:insert(button)
+    scene.globals:insert(button)
   else
     scene.store_message("store.canMakePurchases: %s", tostring(store.canMakePurchases))
   end
-  text = display.newText("Scene Settings:", 5, -45, native.systemFont, 36)
-  scene.scene_list:insert(text)
-  text = display.newText(version, s.size.x - 50, -25, native.systemFont, 18)
-  scene.scene_list:insert(text)
+  text = display.newText("Scene Settings:", 5, scene.GLOBAL_SPACE - 45, native.systemFont, 36)
+  scene.globals:insert(text)
+  text = display.newText(version, s.size.x - 50, scene.GLOBAL_SPACE - 25, native.systemFont, 18)
+  scene.globals:insert(text)
+
+  scene.scene_list:insert(scene.globals)
+  scene.globals.y = -scene.GLOBAL_SPACE
 end
 
-function scene.make_sound_buttons()
-  local using = Settings.default_overrides.timbre or Settings.default.timbre
-  -- Util.message("make_sound_buttons: using %s", tostring(using))
-  local sounds, descriptions = Sounds.list()
+function scene.make_palette_buttons()
+  local using = Settings.default_overrides.palette or Settings.default.palette
+  local palettes, descriptions = Rainbow.list()
   local left = 125
-  local top = 70 - scene.GLOBAL_SPACE
+  local top = 120
   -- recreate buttons
-  if scene.soundbuttons then
-    for idx, button in ipairs(scene.soundbuttons) do
+  if scene.palettebuttons then
+    for idx, button in ipairs(scene.palettebuttons) do
       button:removeSelf()
     end
   end
-  scene.soundbuttons = {}
+  scene.palettebuttons = {}
   local offset = 0
-  for idx, name in ipairs(sounds) do
-    -- we force Off to be the leftmost sound
-    if name == 'off' then
-      offset = -1
-    else
-      local selected = (name == using)
-      button = widget.newButton({
-	id = name,
-	left = left + ((idx + offset) * 165),
-	top = top,
-	width = 150,
-	labelColor = {
-	  default = { 0, selected and 128 or 0, 0, 255 },
-	  over = { 0, selected and 0 or 255, 0, 255 }
-	},
-	height = 38,
-	label = descriptions[name],
-	onEvent = scene.pick_sound,
-      })
-      scene.scene_list:insert(button)
-    end
+  for idx, name in ipairs(palettes) do
+    local selected = (name == using)
+    button = widget.newButton({
+      id = name,
+      left = left + ((idx + offset - 1) * 160),
+      top = top,
+      width = 145,
+      labelColor = {
+	default = { 0, selected and 128 or 0, 0, 255 },
+	over = { 0, selected and 0 or 255, 0, 255 }
+      },
+      height = 38,
+      label = descriptions[name],
+      onEvent = scene.pick_palette,
+    })
+    scene.globals:insert(button)
   end
-  local selected = ('off' == using)
-  button = widget.newButton({
-    id = 'off',
-    left = left,
-    top = top,
-    labelColor = {
-      default = { 0, selected and 128 or 0, 0, 255 },
-      over = { 0, selected and 0 or 255, 0, 255 }
-    },
-    width = 150,
-    height = 38,
-    label = 'Off',
-    onEvent = scene.pick_sound,
-  })
-  scene.scene_list:insert(button)
 end
+
 
 function scene:touch_magic(state)
   --if state.events > 0 then
@@ -434,6 +486,8 @@ end
 function scene:destroyScene(event)
   -- Util.message("prefs: destroying scene.")
   scene.soundbuttons = nil
+  scene.palettebuttons = nil
+  scene.thickbuttons = nil
   scene.store_message_text = nil
   scene.scene_list = nil
 end

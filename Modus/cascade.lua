@@ -17,7 +17,7 @@ local set
 function scene:createScene(event)
   s = self.screen
   set = self.settings
-  self.squares = Squares.new(s, set, 0, set.color_multiplier)
+  self.squares = Squares.new(s, set)
   self.total_colors = set.color_multiplier * #Rainbow.hues
 end
 

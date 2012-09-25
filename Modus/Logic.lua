@@ -14,6 +14,10 @@ local floor = math.floor
 local frame_to_ms = Util.frame_to_ms
 local ms_to_frame = Util.ms_to_frame
 
+if debugging_display or debugging_performance then
+  storyboard.isDebug = true
+end
+
 local last_times = {}
 
 function Logic.wrap(object, method)
@@ -57,7 +61,7 @@ function Logic.enterFrame(custom, obj, event)
   if obj.view.alpha < 1 then
     obj.view.alpha = min(obj.view.alpha + .02, 1)
   end
-  if not Logic.ignore_time and (Logic.debugging_performance or (Logic.debugging_display and obj.name == Logic.debugging_display)) then
+  if not Logic.ignore_time and (debugging_performance or (debugging_display and obj.name == debugging_display)) then
     last_times[#last_times + 1] = this_time
     if #last_times > 60 then
       local small, big
@@ -79,8 +83,8 @@ function Logic.enterFrame(custom, obj, event)
 	  end
 	end
 	local frame_time = total / 60
-	-- Util.message("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
-	Util.printf("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
+	Util.message("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
+	-- Util.printf("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
 		small, big, frame_time, obj.ms_delay,
 		Logic.frames_missed, Logic.times_missed)
 	Logic.frames_missed = 0
@@ -148,6 +152,7 @@ function Logic.createScene(custom, obj, event)
   local settings = Settings.scene(obj.name)
   modus.scenes[obj.name].settings = settings
   obj.settings = settings
+  Rainbow.change_palette(settings.palette or 'rainbow')
   obj.screen = Screen.new(obj.view)
   obj.view.alpha = 0
   if custom then

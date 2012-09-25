@@ -132,8 +132,8 @@ function scene:line(color, g, index)
 	seg:setPoints(point, next)
 	colorize(seg, color)
       else
-	local l = Line.new(point, next, 2, colorfor(color))
-	l:setThickness(3)
+	local l = Line.new(point, next, set.line_depth, colorfor(color))
+	l:setThickness(set.line_thickness)
 	seg = l
 	g.segments[i] = l
 	g:insert(l)

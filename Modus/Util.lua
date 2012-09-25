@@ -31,7 +31,7 @@ function Util.message(fmt, ...)
     message_box.x = Screen.size.x / 2
     message_box.y = Screen.size.y / 2
   end
-  if #message_table > 10 then
+  if #message_table > 5 then
     table.remove(message_table, 1)
   end
   io.stderr:write(out)

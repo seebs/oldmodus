@@ -41,8 +41,9 @@ function scene:line(point, color, l)
   local vec1 = point.vecs[1]
   local vec2 = point.vecs[2]
   if not l then
-    l = Line.new(vec1, vec2, 3, colorfor(color))
-    l:setThickness(3)
+    l = Line.new(vec1, vec2, set.line_depth, colorfor(color))
+    s:insert(l)
+    l:setThickness(set.line_thickness - 0.5)
     l:redraw()
   else
     l:setPoints(vec1, vec2)
@@ -53,12 +54,12 @@ function scene:line(point, color, l)
 end
 
 -- either is_boring(array of pairs, nil, v3) or is_boring(v1, v2, v3)
-function scene:is_boring(v1, v2, v3)
+local function is_boring(v1, v2, v3)
   if not v2 then
     for i = 1, #v1 do
       -- Util.printf("  %d/%d: %s, %s",
         -- i, #v1, tostring(v1[i][1]), tostring(v1[i][2]))
-      if self:is_boring(v1[i][1], v1[i][2], v3) then
+      if is_boring(v1[i][1], v1[i][2], v3) then
         return true
       end
     end
@@ -80,15 +81,20 @@ function scene:is_boring(v1, v2, v3)
   return false
 end
 
+local function is_corner(vec)
+  return (vec.x == 0 or vec.x == s.size.x) and (vec.y == 0 or vec.y == s.size.y)
+end
+
 function scene:find_interest(pairs, out, index)
   index = ((index - 1) % #self.interesting_points) + 1
   local ip = self.interesting_points[index]
   local r
+  local magnet = self.toward[index] or self.toward[1]
   -- pick the closest point, if it works
-  if self.toward[index] then
+  if magnet then
     local best
     for i = 1, #ip do
-      local d2 = dist(ip[i], self.toward[index])
+      local d2 = dist(ip[i], magnet)
       if not best or d2 < best then
         r = i
 	best = d2
@@ -96,12 +102,16 @@ function scene:find_interest(pairs, out, index)
     end
   end
   if not r then
-    r = random(#ip)
+    if out.index then
+      r = (out.index % #ip) + 1
+    else
+      r = random(#ip)
+    end
   end
   local r_orig = r
   local v3 = ip[r]
   -- we got an array of pairs, probably
-  while self:is_boring(pairs, nil, v3) do
+  while is_boring(pairs, nil, v3) do
     r = (r % #ip) + 1
     -- we give up
     if r == r_orig then
@@ -113,6 +123,7 @@ function scene:find_interest(pairs, out, index)
     end
     v3 = ip[r]
   end
+  out.index = r
   out.x = v3.x
   out.y = v3.y
 end
@@ -144,7 +155,12 @@ function scene:move(point)
       point.vecs[2].y = point.orig[1].y
       point.vecs[1].x = point.orig[3].x
       point.vecs[1].y = point.orig[3].y
-      -- and mark the new locations as the origin
+      -- 50-50 chance of which end we consider the new "moving" end
+      if random(2) == 2 then
+        local t = point.vecs[1]
+	point.vecs[1] = point.vecs[2]
+	point.vecs[2] = t
+      end
       -- and mark the new locations as the origin
       point.orig[1].x = point.vecs[1].x
       point.orig[1].y = point.vecs[1].y
@@ -156,6 +172,7 @@ function scene:move(point)
       point.orig[3] = out
       out = table_remove(point.vecs, 1)
       point.vecs[3] = out
+      point.vecs[3].index = point.vecs[2].index
     end
 
     clash = true
@@ -163,24 +180,48 @@ function scene:move(point)
     local clashes = {
 	point.vecs,
       }
-    if random(5) == 5 and not self.toward[point.index] then
-      self:find_interest(clashes, point.vecs[3], random(#self.interesting_points))
+    local repeated = { x = point.vecs[3].x, y = point.vecs[3].y }
+    local last_move_both = point.move_both
+    if random(3) == 1 and not self.toward[point.index] then
+      -- never do this twice in a row
+      if point.corners then
+        self:find_interest(clashes, point.vecs[3], point.index)
+        point.corners = false
+      else
+        self:find_interest(clashes, point.vecs[3], 1)
+        point.corners = true
+      end
     else
       self:find_interest(clashes, point.vecs[3], point.index)
     end
     point.vecs[1]:set_target(point.vecs[3], point.steps)
     point.orig[3].x = point.vecs[3].x
     point.orig[3].y = point.vecs[3].y
+    point.move_both = true
+    -- if we picked the same three points somehow, change the behavior
+    if (point.vecs[3].x == repeated.x and point.vecs[3].y == repeated.y) or
+       (point.vecs[2].x == repeated.x and point.vecs[2].y == repeated.y) then
+      point.move_both = not last_move_both
+    elseif is_corner(point.vecs[1]) and is_corner(point.vecs[3]) then
+      -- we only want to draw straight instead of curved if:
+      -- the new point is a corner
+      -- the point we'd be drawing from is a corner on one of the same two edges
+      if point.vecs[1].x == point.vecs[3].x or point.vecs[1].y == point.vecs[3].y then
+	if random(2) == 2 then
+          point.move_both = false
+	end
+      end
+    end
     if point.move_both then
-      point.move_both = false
-    else
-      point.move_both = true
       point.vecs[2]:set_target(point.vecs[1], point.steps)
     end
     if point.next_color and not self.quiet then
       Sounds.playoctave(math.ceil(point.next_color / set.color_multiplier), point.index - 1)
     end
     point.next_color = (point.next_color % self.line_total) + 1
+    if point.index > 2 and random(6) == 1 then
+      point.index = point.index + 1
+    end
   end
 end
 
@@ -224,9 +265,9 @@ function scene:addpoint(i, p1, p2)
     index = i,
     prev = p2,
     pprev = p1,
-    steps = ceil(self.line_total / 2) + i * 2,
+    steps = self.lines_per + i * 2,
   } 
-  local ip = self.interesting_points[(i % #self.interesting_points) + 1]
+  local ip = self.interesting_points[((i - 1) % #self.interesting_points) + 1]
   local r = random(#ip)
   point.vecs[1] = Vector.coords(s, set, ip[r])
   r = (r % #ip) + 1
@@ -239,11 +280,11 @@ function scene:addpoint(i, p1, p2)
   point.orig[3] = point.vecs[3]:copy()
   point.vecs[1]:set_target(point.vecs[3], point.steps)
   self.points[i] = point
---  Util.printf("points[%d] = { %s, %s, %s }",
---    i,
---    tostring(point.vecs[1]),
---    tostring(point.vecs[2]),
---    tostring(point.vecs[3]))
+  Util.printf("points[%d] = { %s, %s, %s }",
+    i,
+    tostring(point.vecs[1]),
+    tostring(point.vecs[2]),
+    tostring(point.vecs[3]))
 end
 
 function scene:enterScene(event)
@@ -251,19 +292,25 @@ function scene:enterScene(event)
   self.points = {}
   self.next_point = 1
   s = Screen.new(self.view)
-  self.lines_per = self.line_total / 2
+  self.lines_per = floor(self.line_total * 3 / 4)
   self.interesting_points = {
     {
       Vector.coords(s, set, 0,              0),
       Vector.coords(s, set, s.size.x,       0),
-      Vector.coords(s, set, 0,              s.size.y),
       Vector.coords(s, set, s.size.x,       s.size.y),
+      Vector.coords(s, set, 0,              s.size.y),
     },
     {
       Vector.coords(s, set, s.center.x,     0),
       Vector.coords(s, set, 0,              s.center.y),
       Vector.coords(s, set, s.center.x,     s.size.y),
       Vector.coords(s, set, s.size.x,       s.center.y),
+    },
+    {
+      Vector.coords(s, set, s.size.x / 3,     0),
+      Vector.coords(s, set, s.size.x,         s.size.y / 3),
+      Vector.coords(s, set, s.size.x * 2 / 3,     s.size.y),
+      Vector.coords(s, set, 0,                s.size.y * 2 / 3),
     },
     {
       Vector.coords(s, set, 0,              0),
@@ -274,12 +321,6 @@ function scene:enterScene(event)
       Vector.coords(s, set, 0,              s.center.y),
       Vector.coords(s, set, s.center.x,     s.size.y),
       Vector.coords(s, set, s.size.x,       s.center.y),
-    },
-    {
-      Vector.coords(s, set, s.size.x / 4,     0),
-      Vector.coords(s, set, s.size.x,         s.size.y / 4),
-      Vector.coords(s, set, s.size.x * 3 / 4,     s.size.y),
-      Vector.coords(s, set, 0,                s.size.y * 3 / 4),
     },
     {
       Vector.coords(s, set, s.size.x * 3 / 4,     0),
@@ -351,7 +392,7 @@ function scene:touch_magic(state, ...)
     self.points[1].prev = self.points[#self.points - 1]
   end
   -- fade away old points
-  if highest == 0 and state.peak < #self.points and #self.points > 3 then
+  if highest == 0 and state.peak < #self.points and #self.points > set.points then
     local point = self.points[#self.points]
     point.done = true
   end

@@ -139,7 +139,7 @@ function scene.do_lines(self, count)
       local spot = i - 1
       local x_loc = (spot % 50) * 14.5
       local y_loc = floor(spot / 50) * 14.5 + 300
-      local l = line_new(x_loc, y_loc, x_loc + 40, y_loc + 40, 2, i)
+      local l = line_new(x_loc, y_loc, x_loc + 40, y_loc + 40, set.line_depth, i)
       l:setThickness(3)
       l.blendMode = 'add'
       do_lines_stash.lines[#do_lines_stash.lines + 1] = l

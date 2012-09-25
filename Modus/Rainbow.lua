@@ -1,13 +1,54 @@
 local Rainbow = {}
 
-Rainbow.hues = {
-  { 255, 0, 0 },
-  { 240, 90, 0 },
-  { 220, 220, 0 },
-  { 0, 200, 0 },
-  { 0, 0, 255 },
-  { 180, 0, 200 },
+Rainbow.manyhues = {
+  rainbow = {
+    { 255, 0, 0 },
+    { 240, 90, 0 },
+    { 220, 220, 0 },
+    { 0, 200, 0 },
+    { 0, 0, 255 },
+    { 180, 0, 200 },
+  },
+  pastel = {
+    { 255, 128, 128 },
+    { 255, 150, 128 },
+    { 240, 240, 108 },
+    { 128, 200, 128 },
+    { 128, 128, 255 },
+    { 200, 128, 220 },
+  },
+  ocean = {
+    { 0, 200, 0 },
+    { 0, 0, 255 },
+    { 0, 180, 255 },
+    { 140, 0, 240 },
+    { 0, 200, 200 },
+    { 40, 80, 255 },
+  },
+  earth = {
+    { 150, 60, 30 },
+    { 210, 110, 0 },
+    { 220, 160, 45 },
+    { 70, 80, 40 },
+    { 130, 90, 40 },
+    { 100, 50, 30 },
+  },
 }
+
+Rainbow.names = {
+  rainbow = "Rainbow", ocean = "Ocean", pastel = "Pastel", earth = "Earth",
+}
+
+function Rainbow.list()
+  local names = {}
+  for name, count in pairs(Rainbow.names) do
+    names[#names + 1] = name
+  end
+  table.sort(names)
+  return names, Rainbow.names
+end
+
+Rainbow.hues = Rainbow.manyhues.rainbow
 
 Rainbow.smoothed = {}
 Rainbow.funcs = {}
@@ -28,15 +69,15 @@ function Rainbow.funcs_for(denominator)
     local t = Rainbow.smoothed[denominator]
     local n = 6 * denominator
     Rainbow.funcs[denominator].smoothobj = function(o, hue)
-      local v = t[((hue - 1) % n) + 1]
+      local v = t[((floor(hue) - 1) % n) + 1]
       o.r, o.g, o.b = v[1], v[2], v[3]
     end
     Rainbow.funcs[denominator].setsmoothobj = function(o, hue)
-      local v = t[((hue - 1) % n) + 1]
+      local v = t[((floor(hue) - 1) % n) + 1]
       o:setFillColor(v[1], v[2], v[3])
     end
     Rainbow.funcs[denominator].smooth = function(hue)
-      local v = t[((hue - 1) % n) + 1]
+      local v = t[((floor(hue) - 1) % n) + 1]
       return v[1], v[2], v[3]
     end
     Rainbow.funcs[denominator].dist = function(hue1, hue2)
@@ -71,9 +112,9 @@ function Rainbow.funcs_for(denominator)
 end
 
 function Rainbow.smoothify(denominator)
-  local tab = {}
-  if denominator == 1 then
-    Rainbow.smoothed[denominator] = Rainbow.hues
+  local tab = Rainbow.smoothed[denominator] or {}
+  if denominator == 1 and not Rainbow.smoothed[denominator] then
+    Rainbow.smoothed[denominator] = { unpack(Rainbow.hues) }
     return
   end
   for hue = 1, #Rainbow.hues * denominator do
@@ -86,9 +127,24 @@ function Rainbow.smoothify(denominator)
     local r = color1[1] * inverse + color2[1] * increment
     local g = color1[2] * inverse + color2[2] * increment
     local b = color1[3] * inverse + color2[3] * increment
-    tab[hue] = { ceil(r / denominator), ceil(g / denominator), ceil(b / denominator) }
+    if tab[hue] then
+      tab[hue][1] = ceil(r / denominator)
+      tab[hue][2] = ceil(g / denominator)
+      tab[hue][3] = ceil(b / denominator)
+    else
+      tab[hue] = { ceil(r / denominator), ceil(g / denominator), ceil(b / denominator) }
+    end
   end
   Rainbow.smoothed[denominator] = tab
+end
+
+function Rainbow.change_palette(palette)
+  if Rainbow.manyhues[palette] then
+    Rainbow.hues = Rainbow.manyhues[palette]
+    for idx, tab in pairs(Rainbow.smoothed) do
+      Rainbow.smoothify(idx)
+    end
+  end
 end
 
 function Rainbow.setsmoothobj(o, hue, denominator)

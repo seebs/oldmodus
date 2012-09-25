@@ -12,11 +12,20 @@ Settings.default = {
   history = 6,
   enabled = true,
   timbre = 'breath',
+  palette = 'rainbow',
+  line_thickness = 3,
+  line_depth = 2,
+  square_type = 2,
 }
 
 Settings.scene_defaults = {
   benchmark = {
     frame_delay = 1,
+  },
+  fire = {
+    color_multiplier = 16,
+    frame_delay = 4,
+    square_type = 1,
   },
   stringart = {
     points = 3,

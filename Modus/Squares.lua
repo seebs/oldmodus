@@ -6,11 +6,12 @@ local sqrt = math.sqrt
 local tinsert = table.insert
 local tremove = table.remove
 
-Squares.sheet = graphics.newImageSheet("square.png", { width = 128, height = 128, numFrames = 1 })
+Squares.sheet = graphics.newImageSheet("square.png", { width = 128, height = 128, numFrames = 3 })
 
 function Squares.colorize(square, color)
   square.hue = color or square.hue
   square:setFillColor(square.squares.color(square.hue))
+  -- square:setStrokeColor(square.squares.color(square.hue))
 end
 
 function Squares.find(squares, x, y)
@@ -102,7 +103,11 @@ function Squares.move_highlight(light, square)
   end
 end
 
-function Squares.new(group, set, highlights, multiplier)
+function Squares.new(group, set, args)
+  args = args or {}
+  highlights = args.highlights or 0
+  multiplier = args.multiplier or set.color_multiplier or 1
+  square_type = args.square_type or set.square_type or 2
   local squares = {}
   -- group must be a 'screen', complete with its size and origin values.
   squares.base_size = Util.gcd(group.size.x, group.size.y)
@@ -159,9 +164,10 @@ function Squares.new(group, set, highlights, multiplier)
   squares.igroup.x = 0
   squares.igroup.y = 0
   squares.igroup:setReferencePoint(display.TopLeftReferencePoint)
-  local funcs = Rainbow.funcs_for(multiplier or 1)
+  local funcs = Rainbow.funcs_for(multiplier or set.color_multiplier or 1)
   squares.color = funcs.smooth
   squares.multiplier = multiplier
+  squares.square_type = square_type
   squares.highlights = {}
   squares.shift = Squares.shift_squares
   squares.from_screen = Squares.from_screen
@@ -180,8 +186,10 @@ function Squares.new(group, set, highlights, multiplier)
     end
     for x = 1, squares.columns do
       squares[x] = squares[x] or {}
-      local square = display.newImage(Squares.sheet, 1)
-      -- local square = display.newRect(0, 0, 256, 256)
+      local square = display.newImage(Squares.sheet, squares.square_type)
+      square.blendMode = 'add'
+      -- local square = display.newRect(0, 0, squares.square_size * .8, squares.square_size * .8)
+      -- square.strokeWidth = squares.square_size * .2
       row:insert(square)
       square.x = (x - 1) * squares.square_size
       square.y = 0
@@ -202,10 +210,12 @@ function Squares.new(group, set, highlights, multiplier)
   end
   squares.find = Squares.find
   squares.removeSelf = Squares.removeSelf
-  if highlights then
+  if highlights and highlights > 0 then
     for i = 1, highlights do
       local light = display.newImage(Squares.sheet, 1)
       light:scale(squares.square_size / 256, squares.square_size / 256)
+      -- local light = display.newRect(0, 0, squares.square_size * 0.5, squares.square_size * 0.5)
+      -- light.strokeWidth = squares.square_size * 0.1
       light.isVisible = false
       squares.igroup:insert(light)
       light.alpha = .8

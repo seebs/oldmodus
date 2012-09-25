@@ -73,8 +73,8 @@ function scene:one_line(color, vec1, vec2, existing)
     return nil
   end
   if not existing then
-    local l = Line.new(vec1, vec2, 5, colorfor(color))
-    l:setThickness(3)
+    local l = Line.new(vec1, vec2, set.line_depth + 1, colorfor(color))
+    l:setThickness(set.line_thickness)
     return l
   else
     existing:setPoints(vec1, vec2)

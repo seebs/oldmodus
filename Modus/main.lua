@@ -1,8 +1,12 @@
+storyboard = require "storyboard"
+widget = require "widget"
+widget.setTheme("theme_ios")
+
 display.setStatusBar(display.HiddenStatusBar)
 system.setIdleTimer(false)
 
---profiler = require "Profiler"
---profiler.startProfiler({time = 30000, delay = 1000, verbose = true, callback = function() Line.redraws() end })
+-- profiler = require "Profiler"
+-- profiler.startProfiler({time = 30000, delay = 1000, verbose = true })
 
 -- Overall stuff I want to use:
 Modus = {}
@@ -25,15 +29,11 @@ Squares = require "Squares"
 Hexes = require "Hexes"
 Vector = require "Vector"
 
-storyboard = require "storyboard"
-widget = require "widget"
-widget.setTheme("theme_ios")
-
 -- debugging and saving memory and things
 storyboard.purgeOnSceneChange = true
 
 local displays = {
-  'stringart',
+  'fire',
   'spiral',
   'ants2',
   'knights',
@@ -46,6 +46,7 @@ local displays = {
   'cascade2',
   'lines',
   'knights2',
+  'stringart',
 }
 
 local display_code = {}
@@ -87,14 +88,8 @@ Modus.scenes = scenes
 -- we always want the option of displaying stuff:
 local message_box = display.newText('', Screen.center.x, Screen.center.y, Screen.size.x - 10, 0, native.defaultFont, 35)
 -- invisible messages in case any leak out
-message_box:setTextColor(0, 0, 0, 0)
+-- message_box:setTextColor(0, 0, 0, 0)
 Util.messages_to(message_box)
-
-if debugging_display or debugging_performance then
-  Logic.debugging_display = debugging_display
-  Logic.debugging_performance = debugging_performance
-  storyboard.isDebug = true
-end
 
 system.activate("multitouch")
 
