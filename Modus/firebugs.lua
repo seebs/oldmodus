@@ -1,8 +1,8 @@
 local scene = {}
 
 scene.meta = {
-  name = "Fire",
-  description = "Embers ignite and travel."
+  name = "Firebugs",
+  description = "Flaming things wander around igniting the world."
 }
 
 scene.FADED = 0.1
@@ -22,6 +22,8 @@ local table_remove = table.remove
 local max = math.max
 local min = math.min
 
+local nrg_count
+
 local s
 local set
 
@@ -35,7 +37,7 @@ function scene:createScene(event)
   -- 6.8 ~= 0.8 => nearly-red
   self.CM_CAP = cm * 6.8
 
-  self.squares = Squares.new(s, set)
+  self.squares = Squares.new(s, set, { highlights = 6 })
   for i = 1, #self.squares do
     local c = self.squares[i]
     for j = 1, #c do
@@ -49,8 +51,16 @@ function scene:createScene(event)
       sq.energy_hue = cm
     end
   end
+  for i = 1, #self.squares.highlights do
+    local light = self.squares.highlights[i]
+    light.hue = i * cm
+    light:move(self.squares[random(self.squares.columns)][random(self.squares.rows)])
+    light:scale(2.2, 2.2)
+    light:colorize()
+  end
   self.total_squares = self.squares.rows * self.squares.columns
   self.fade_multiplier = .005
+  self.next_light = 1
   self.events = {}
 end
 
@@ -111,6 +121,7 @@ function scene:spread_plus(square, range)
     local sq = square:find(scale(i, unpack(plus[j])))
     if sq then
       if not sq.blocked[square] then
+	local nrg = sq.energy or -1
 	spread_any = self:energize(sq, mod, hue, alpha, square) or spread_any
       end
     end
@@ -123,6 +134,7 @@ function scene:spread_plus(square, range)
       local sq = square:find(scale(i, unpack(diag[j])))
       if sq then
 	if not sq.blocked[square] then
+	  local nrg = sq.energy or -1
 	  spread_any = self:energize(sq, mod, hue, alpha, square) or spread_any
 	end
       end
@@ -131,6 +143,7 @@ function scene:spread_plus(square, range)
 end
 
 function scene:enterFrame(event)
+  nrg_count = 0
   local this_frame_fade = self.fade_multiplier + (sqrt(#self.events) * .002)
   local removes = {}
   for i = 1, #self.squares do
@@ -142,11 +155,11 @@ function scene:enterFrame(event)
       if random(self.total_squares) == 1 then
 	square.blocked = {}
 	if square.alpha < 1 and square.hue < cm * 4 then
-	  self:energize(square, (2 / cm) + random() + 1, square.hue + cm / 2, .1, { force = true })
+	  self:energize(square, (2 / cm) + random() + 1, square.hue + cm / 2, .1)
 	  -- and make this one a little stickier
 	  square.energy = square.energy + 3
 	end
-      elseif (not square.energy or square.energy < 1) then
+      elseif not square.energy then
         if square.fade_floor < self.IDLE_FLOOR then
           square.fade_floor = min(square.fade_floor + 0.001, self.IDLE_FLOOR)
         end
@@ -170,10 +183,25 @@ function scene:enterFrame(event)
   self.cooldown = self.cooldown - 1
   if self.cooldown < 0 then
     self.cooldown = self.IDLE_TIME
-    local square = self.squares[random(self.squares.columns)][random(self.squares.rows)]
-    local energy = self.IDLE_ENERGY + random(4) + random(3) - 2
-    Sounds.playoctave(floor(energy), 0)
+    local light = self.squares.highlights[self.next_light]
+    self.next_light = (self.next_light % #self.squares.highlights) + 1
+    local energy = self.IDLE_ENERGY + (light.hue / cm) + random(3) - 2
+    local square = light.square
+    local best_choice = nil
+    for i = 1, #plus do
+      local sq = light.square:find(unpack(plus[i]))
+      if not best_choice then
+        best_choice = sq
+      else
+        if sq.energy_hue < best_choice.energy_hue then
+	  best_choice = sq
+	end
+      end
+    end
+    square = best_choice or square
+    light:move(square)
     self:energize(square, energy / 2, energy * cm / 2, 1)
+    Sounds.playoctave(floor(square.energy_hue / cm), 0)
     square.spreading = true
     square.spread_so_far = 0
     square.energy = square.energy + 2
@@ -206,10 +234,9 @@ function scene:enterFrame(event)
 	  square.spread_so_far = square.vested_energy
 	end
       else
-	square.force = false
 	square.blocked = {}
         square.spreading = false
-	square.energy = max(square.energy * 0.90 - 0.1, 0)
+	square.energy = max(square.energy * 0.90 - 0.2, 0)
 	square.vested_energy = square.energy
 	if square.energy_hue > cm then
 	  square.energy_hue = max(cm, square.energy_hue - (0.5 * (square.energy_hue / cm)))
@@ -231,7 +258,8 @@ function scene:enterFrame(event)
       removes[#removes + 1] = i
     end
   end
-  -- Util.printf("%d events, %d to remove (fade %.1f%%)", #self.events, #removes, this_frame_fade * 100)
+  Util.printf("%d events, %d to remove, %d energized",
+  	#self.events, #removes, nrg_count)
   for i = #removes, 1, -1 do
     table_remove(self.events, removes[i])
   end
@@ -251,20 +279,16 @@ function scene:willEnterScene(event)
 end
 
 function scene:energize(square, amount, hue, newalpha, source)
+  nrg_count = nrg_count + 1
   amount = amount * cm
   newalpha = max(newalpha or 1, self.IDLE_FLOOR)
   if amount < 0.1 then
     return false
   end
-  -- limit amounts added
-  if amount > self.CM_CAP then
-    amount = self.CM_CAP
-  end
   local old_hue = hue or amount or cm
   hue = scale_add(hue or amount or cm, square.energy_hue or 0, 8)
   if hue < cm then
-    -- allow hue to go slightly purpler than red.
-    hue = cm - 1
+    hue = cm
   else
     if hue > self.CM_CAP then
       hue = self.CM_CAP
@@ -273,10 +297,8 @@ function scene:energize(square, amount, hue, newalpha, source)
   -- so, do we forcibly update?
   local force_value = true
   if source then
-    if not source.force then
-      if square.energy and square.energy > amount then
-        force_value = false
-      end
+    if square.energy and square.energy > amount then
+      force_value = false
     else
       -- don't downgrade energy
       hue = max(square.energy or cm, max(hue, square.energy_hue or cm))
@@ -288,6 +310,9 @@ function scene:energize(square, amount, hue, newalpha, source)
     end
   end
   if force_value then
+    if not square.energy then
+      self.events[#self.events + 1] = square
+    end
     square.energy = amount
     square.vested_energy = square.vested_energy or 0
     square.spread_so_far = 0
@@ -296,7 +321,6 @@ function scene:energize(square, amount, hue, newalpha, source)
     if square.energy > self.IDLE_THRESHOLD + (cm * 2) and hue > (cm * 4) then
       square.spreading = true
     end
-    self.events[#self.events + 1] = square
     -- Util.printf("new event at %d, %d: energy %.1f, alpha %.2f, hue %.1f",
       -- square.logical_x, square.logical_y, square.energy, square.alpha, square.energy_hue)
   else
@@ -316,6 +340,10 @@ function scene:energize(square, amount, hue, newalpha, source)
   -- rarely-hit spots energize a little further
   square.energy = square.energy + square.fade_floor * cm
   square.fade_floor = max(0.001, square.fade_floor - amount / cm / 2)
+  -- limit amounts added
+  if square.energy > self.CM_CAP then
+    square.energy = self.CM_CAP
+  end
   return square.spreading
 end
 
@@ -347,7 +375,6 @@ function scene:touch_magic(state, ...)
         self:energize(square, energy)
         square.alpha = 1
         square.spreading = true
-	square.force = true
       end
       if v.done then
 	if self.touch_history[i] then

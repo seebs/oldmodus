@@ -217,6 +217,7 @@ function Squares.new(group, set, args)
       -- local light = display.newRect(0, 0, squares.square_size * 0.5, squares.square_size * 0.5)
       -- light.strokeWidth = squares.square_size * 0.1
       light.isVisible = false
+      light.blendMode = 'add'
       squares.igroup:insert(light)
       light.alpha = .8
       light.move = Squares.move_highlight

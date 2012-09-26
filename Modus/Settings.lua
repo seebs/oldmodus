@@ -22,6 +22,11 @@ Settings.scene_defaults = {
   benchmark = {
     frame_delay = 1,
   },
+  firebugs = {
+    color_multiplier = 16,
+    frame_delay = 4,
+    square_type = 1,
+  },
   fire = {
     color_multiplier = 16,
     frame_delay = 4,

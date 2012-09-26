@@ -5,8 +5,8 @@ widget.setTheme("theme_ios")
 display.setStatusBar(display.HiddenStatusBar)
 system.setIdleTimer(false)
 
--- profiler = require "Profiler"
--- profiler.startProfiler({time = 30000, delay = 1000, verbose = true })
+profiler = require "Profiler"
+profiler.startProfiler({time = 30000, delay = 2000, verbose = true })
 
 -- Overall stuff I want to use:
 Modus = {}
@@ -33,6 +33,7 @@ Vector = require "Vector"
 storyboard.purgeOnSceneChange = true
 
 local displays = {
+  'firebugs',
   'fire',
   'spiral',
   'ants2',
