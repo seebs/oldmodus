@@ -14,10 +14,14 @@ for name, count in pairs(Sounds.counts) do
     table.insert(Sounds.wavs[name], sound)
   end
 end
-audio.setVolume(1.0, 0)
+-- set master to full volume
+audio.setVolume(1.0)
+-- set all channels individually also to full volume
+audio.setVolume(1.0, { channel = 0 })
 
 local timbre
 local tones
+local backtones = {}
 local tonecount
 local octavecount = 1
 
@@ -28,6 +32,10 @@ function Sounds.update()
 
   Sounds.wavs[timbre] = Sounds.wavs[timbre] or {}
   tones = Sounds.wavs[timbre]
+  backtones = {}
+  for i = 1, #tones do
+    backtones[tones[i]] = i
+  end
 
   if tonecount == 0 then
     Sounds.quiet = true
@@ -40,7 +48,7 @@ function Sounds.update()
       tones[#tones + 1] = sound
     end
   end
-  Util.printf("Sound update: timbre %s, %d tones.", timbre, tonecount)
+  -- Util.printf("Sound update: timbre %s, %d tones.", timbre, tonecount)
 end
 
 function Sounds.list()
@@ -64,16 +72,32 @@ function Sounds.playexact(tone, volume)
   if Sounds.quiet then
     return
   end
-  local c = audio.play(tones[(tone - 1) % #tones + 1])
-  Sounds.volume(c, volume or 1.0)
+  Sounds.do_play(tones[(tone - 1) % #tones + 1], volume)
+end
+
+function Sounds.did_play(event)
+  -- Util.printf("channel %d, tone %s, completed: %s vol %.1f",
+    -- event.channel,
+    -- tostring(backtones[event.handle]), tostring(event.completed),
+    -- audio.getVolume({ channel = event.channel }))
+  Sounds.volume(event.channel, 1)
+end
+
+function Sounds.do_play(tone, volume)
+  -- local c = audio.play(tone, { onComplete = Sounds.did_play })
+  local c = audio.play(tone)
+  -- Util.printf("Starting playback of %s on channel %d, volume %.1f",
+  	-- tostring(backtones[tone]), c, volume or 1)
+  Sounds.volume(c, volume)
 end
 
 local offset = 0
 
 function Sounds.volume(c, volume)
   volume = (volume or 1)
+  -- Util.printf("volume[%d] %.1f => %.1f", c, audio.getVolume({ channel = c }), volume)
   if c and c ~= 0 then
-    audio.setVolume(volume, c)
+    audio.setVolume(volume, { channel = c })
   end
 end
 
@@ -87,8 +111,7 @@ function Sounds.playoctave(hue, octave, volume)
   local off = (((octave or 0) % octavecount) * 5)
   off = off % (tonecount - 1)
   -- Util.printf("=> tone %d", note + off)
-  local c = audio.play(tones[note + off])
-  Sounds.volume(c, volume or 1.0)
+  Sounds.do_play(tones[note + off], volume)
 end
 
 local octave_changer = 6
@@ -107,8 +130,7 @@ function Sounds.play(hue, volume)
     end
   end
   -- Util.printf("hue %d, note %d, total %d", hue, note, note + offset)
-  local c = audio.play(tones[note + offset])
-  Sounds.volume(c, volume or 1.0)
+  Sounds.do_play(tones[note + offset], volume)
 end
 
 return Sounds
