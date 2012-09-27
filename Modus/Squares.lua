@@ -2,6 +2,8 @@ local Squares = {}
 
 local ceil = math.ceil
 local floor = math.floor
+local max = math.max
+local min = math.min
 local sqrt = math.sqrt
 local tinsert = table.insert
 local tremove = table.remove
@@ -109,40 +111,33 @@ function Squares.new(group, set, args)
   multiplier = args.multiplier or set.color_multiplier or 1
   square_type = args.square_type or set.square_type or 2
   local squares = {}
-  -- group must be a 'screen', complete with its size and origin values.
-  squares.base_size = Util.gcd(group.size.x, group.size.y)
-  if squares.base_size < 32 then
-    squares.base_size = 32
-  end
-  squares.ratio = {
-    x = group.size.x / squares.base_size,
-    y = group.size.y / squares.base_size
-  }
-  squares.grid_base = squares.ratio.x * squares.ratio.y
+
   -- purely arbitrary guess
   if not set.max_items then
     set.max_items = 1300
   end
-  squares.grid_multiplier = set.max_items / squares.grid_base
-  local divisor
-  if squares.grid_multiplier > 1 then
-    -- Util.printf("%dx%d screen = %d squares base, we want at most %.1f times that many.",
-	 -- squares.ratio.x, squares.ratio.y, squares.grid_base, squares.grid_multiplier)
-    divisor = floor(sqrt(squares.grid_multiplier))
-    while divisor > 1 and
-         (squares.ratio.x * divisor > 35 or squares.ratio.y * divisor > 35) do
-      divisor = divisor - 1
+  -- temporary to do a first-pass calculation
+  local divisor = 1
+  local try = 24
+  while true do
+    squares.square_size = try
+    squares.rows = floor(group.size.y / squares.square_size)
+    squares.columns = floor(group.size.x / squares.square_size)
+    squares.total_squares = squares.rows * squares.columns
+    local too_tall = squares.rows / 35
+    local too_wide = squares.columns / 35
+    local too_many = squares.total_squares / set.max_items
+    local too_big = max(too_tall, max(too_wide, too_many))
+    if too_big > 1 then
+      try = max(floor(try * sqrt(too_big)) - 1, try + 1)
+      Util.printf("%.1f, %.1f, %.1f: too big, now try %d",
+        too_tall, too_wide, too_many, try)
+    else
+      break
     end
-  else
-    -- Util.printf("%dx%d screen = %d squares base, which is already too many.",
-	 -- squares.ratio.x, squares.ratio.y, squares.grid_base, squares.grid_multiplier)
-    divisor = 1
   end
-  squares.square_divisor = divisor
-  squares.square_size = squares.base_size / squares.square_divisor
+
   -- Util.printf("Trying %d divisor, square size %.1f.", squares.square_divisor, squares.square_size)
-  squares.rows = floor(squares.ratio.y * squares.square_divisor)
-  squares.columns = floor(squares.ratio.x * squares.square_divisor)
   -- center display
   if squares.rows * squares.square_size < group.size.y then
     local diff = group.size.y - (squares.rows * squares.square_size)

@@ -34,8 +34,7 @@ function Util.message(fmt, ...)
   if #message_table > 5 then
     table.remove(message_table, 1)
   end
-  io.stderr:write(out)
-  io.stderr:write("\n")
+  print(out)
 end
 
 function Util.gcd(x, y)
@@ -180,7 +179,7 @@ function Util.sprintf(fmt, ...)
 end
 
 function Util.printf(fmt, ...)
-  io.stderr:write(Util.sprintf(fmt, ...) .. "\n")
+  print(Util.sprintf(fmt, ...))
 end
 
 function Util.to_s(v)

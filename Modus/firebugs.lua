@@ -58,10 +58,10 @@ function scene:createScene(event)
     light:scale(2.2, 2.2)
     light:colorize()
   end
-  self.total_squares = self.squares.rows * self.squares.columns
+  Util.printf("total_squares: %d", self.squares.total_squares)
   self.fade_multiplier = .005
   self.next_light = 1
-  self.events = {}
+  self.events = 0
 end
 
 local plus = {
@@ -144,22 +144,51 @@ end
 
 function scene:enterFrame(event)
   nrg_count = 0
-  local this_frame_fade = self.fade_multiplier + (sqrt(#self.events) * .002)
+  local this_frame_fade = self.fade_multiplier + (sqrt(self.events) * .002)
   local removes = {}
+  self.events = 0
   for i = 1, #self.squares do
     local column = self.squares[i]
     for idx = 1, #column do
       local square = column[idx]
       local bcount = 0
       local rcount = 0
-      if random(self.total_squares) == 1 then
-	square.blocked = {}
-	if square.alpha < 1 and square.hue < cm * 4 then
-	  self:energize(square, (2 / cm) + random() + 1, square.hue + cm / 2, .1)
-	  -- and make this one a little stickier
-	  square.energy = square.energy + 3
+      if square.energy and square.energy > 0.05 then
+	self.events = self.events + 1
+	if square.vested_energy < square.energy then
+	  local old_range = floor((square.spread_so_far or 0) * self.RANGE_SCALE / cm)
+	  local diff = square.energy - square.vested_energy
+	  local scale = min(diff / cm, square.vested_energy)
+	  square.vested_energy = min(square.energy, square.vested_energy + scale + 1)
+	  if square.spreading then
+	    local new_range = floor(square.vested_energy * self.RANGE_SCALE / cm)
+	    for j = old_range + 1, new_range do
+	      self:spread_plus(square, j)
+	    end
+	    square.spread_so_far = square.vested_energy
+	  end
+	else
+	  square.blocked = {}
+	  square.spreading = false
+	  square.energy = max(square.energy * 0.90 - 0.2, 0)
+	  square.vested_energy = square.energy
+	  if square.energy_hue > cm then
+	    square.energy_hue = max(cm, square.energy_hue - (0.5 * (square.energy_hue / cm)))
+	  end
 	end
-      elseif not square.energy then
+	if square.hue ~= square.energy_hue then
+	  local diff = square.energy_hue - square.hue
+	  if square.hue < square.energy_hue then
+	    square.hue = min(square.energy_hue, square.hue + diff / 3 + 2)
+	  else
+	    square.hue = max(cm, square.hue + diff / 4)
+	  end
+	  square:colorize()
+	end
+      else
+	square.blocked = {}
+	square.energy = nil
+	square.vested_energy = 0
         if square.fade_floor < self.IDLE_FLOOR then
           square.fade_floor = min(square.fade_floor + 0.001, self.IDLE_FLOOR)
         end
@@ -173,6 +202,14 @@ function scene:enterFrame(event)
 	  if square.alpha ~= square.fade_floor then
 	    square.alpha = max(square.fade_floor, square.alpha - this_frame_fade)
 	  end
+	end
+      end
+      if random(self.squares.total_squares) == 1 then
+	square.blocked = {}
+	if square.alpha < 1 and square.hue < cm * 4 then
+	  self:energize(square, (2 / cm) + random() + 1, square.hue + cm / 2, .1)
+	  -- and make this one a little stickier
+	  square.energy = square.energy + 3
 	end
       end
       local new_scale = 0.7 + ((square.energy or 0) / cm / 6 / 3)
@@ -217,52 +254,7 @@ function scene:enterFrame(event)
     end
     ]]--
   end
-  local removes = {}
-  for i = 1, #self.events do
-    square = self.events[i]
-    if square.energy and square.energy > 0.05 then
-      if square.vested_energy < square.energy then
-	local old_range = floor((square.spread_so_far or 0) * self.RANGE_SCALE / cm)
-	local diff = square.energy - square.vested_energy
-	local scale = min(diff / cm, square.vested_energy)
-        square.vested_energy = min(square.energy, square.vested_energy + scale + 1)
-	if square.spreading then
-	  local new_range = floor(square.vested_energy * self.RANGE_SCALE / cm)
-	  for j = old_range + 1, new_range do
-            self:spread_plus(square, j)
-          end
-	  square.spread_so_far = square.vested_energy
-	end
-      else
-	square.blocked = {}
-        square.spreading = false
-	square.energy = max(square.energy * 0.90 - 0.2, 0)
-	square.vested_energy = square.energy
-	if square.energy_hue > cm then
-	  square.energy_hue = max(cm, square.energy_hue - (0.5 * (square.energy_hue / cm)))
-	end
-      end
-      if square.hue ~= square.energy_hue then
-	local diff = square.energy_hue - square.hue
-	if square.hue < square.energy_hue then
-          square.hue = min(square.energy_hue, square.hue + diff / 3 + 2)
-	else
-          square.hue = max(cm, square.hue + diff / 4)
-	end
-	square:colorize()
-      end
-    else
-      square.blocked = {}
-      square.energy = nil
-      square.vested_energy = 0
-      removes[#removes + 1] = i
-    end
-  end
-  Util.printf("%d events, %d to remove, %d energized",
-  	#self.events, #removes, nrg_count)
-  for i = #removes, 1, -1 do
-    table_remove(self.events, removes[i])
-  end
+  -- Util.printf("%d events, %d energized", self.events, nrg_count)
 end
 
 function scene:willEnterScene(event)
@@ -310,9 +302,6 @@ function scene:energize(square, amount, hue, newalpha, source)
     end
   end
   if force_value then
-    if not square.energy then
-      self.events[#self.events + 1] = square
-    end
     square.energy = amount
     square.vested_energy = square.vested_energy or 0
     square.spread_so_far = 0

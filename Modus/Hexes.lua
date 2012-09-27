@@ -7,6 +7,8 @@ local ceil = math.ceil
 local abs = math.abs
 local fmod = math.fmod
 local sqrt = math.sqrt
+local max = math.max
+local min = math.min
 
 -- this gets fussy; if you divide a hex into four equal parts, each additional
 -- hex costs three fourths as much.  So if size were 32, it'd be 32, 32+24,
@@ -326,42 +328,33 @@ end
 
 function Hexes.new(group, set, highlights, multiplier)
   local hexes = {}
-  hexes.base_size = Util.gcd(group.size.x, group.size.y)
-  if hexes.base_size < 64 then
-    hexes.base_size = 64
-  end
-  -- temporary to do a first-pass calculation
-  hexes.hex_size = hexes.base_size / 2
-  hexes.hex_vertical = Hexes.x_to_y * hexes.hex_size
-  hexes.base_rows = Hexes.vertical_in(hexes, group.size.y)
-  hexes.base_columns = Hexes.horizontal_in(hexes, group.size.x)
-  hexes.grid_base = hexes.base_rows * hexes.base_columns / 4
-  -- Util.printf("%dx%d, base_size %d, vertical %d, horizontal %d",
-    -- group.size.x, group.size.y,
-    -- hexes.base_size, hexes.base_rows, hexes.base_columns)
 
-  -- arbitrary guess
+  Util.printf("max items: %s", tostring(set.max_items))
   if not set.max_items then
     set.max_items = 1300
   end
-  hexes.grid_multiplier = set.max_items / hexes.grid_base
+
+  -- temporary to do a first-pass calculation
   local divisor = 1
-  if hexes.grid_multiplier >= 2 then
-    -- Util.printf("%dx%d half-size hex grid = %d hexes base, we want at most %.1f times that many.",
-	  -- hexes.base_columns, hexes.base_rows,
-	  -- hexes.grid_base, hexes.grid_multiplier)
-    divisor = floor(sqrt(hexes.grid_multiplier))
-    while divisor > 1 and (hexes.base_rows * divisor > 35 or
-	                   hexes.base_columns * divisor > 35) do
-      divisor = divisor - 1
+  local try = 24
+  while true do
+    hexes.hex_size = try
+    hexes.hex_vertical = Hexes.x_to_y * hexes.hex_size
+    hexes.rows = Hexes.vertical_in(hexes, group.size.y)
+    hexes.columns = Hexes.horizontal_in(hexes, group.size.x)
+    hexes.total_hexes = hexes.rows * hexes.columns
+    local too_tall = hexes.rows / 35
+    local too_wide = hexes.columns / 35
+    local too_many = hexes.total_hexes / set.max_items
+    local too_big = max(too_tall, max(too_wide, too_many))
+    if too_big > 1 then
+      try = max(floor(try * sqrt(too_big)) - 1, try + 1)
+      Util.printf("%.1f, %.1f, %.1f: too big, now try %d",
+        too_tall, too_wide, too_many, try)
+    else
+      break
     end
-  else
-    -- Util.printf("%dx%d hex-grid is already too big, running with it.",
-      -- hexes.base_columns, hexes.base_rows)
-    divisor = 1
   end
-  hexes.hex_divisor = divisor
-  hexes.hex_size = hexes.base_size / hexes.hex_divisor / 2
 
   -- recalculate these with the newly computed size
   hexes.hex_vertical = Hexes.x_to_y * hexes.hex_size
@@ -374,6 +367,9 @@ function Hexes.new(group, set, highlights, multiplier)
 
   hexes.rows, rowsize = Hexes.vertical_in(hexes, group.size.y)
   hexes.columns, columnsize = Hexes.horizontal_in(hexes, group.size.x)
+  Util.printf("size %.1f, ended up with %d rows in %d and %d columns in %d",
+    hexes.hex_size, hexes.rows, group.size.y, hexes.columns, group.size.x)
+  hexes.total_hexes = hexes.rows * hexes.columns
   if columnsize < group.size.x then
     local diff = group.size.x - columnsize
     hexes.x_offset = diff / 2
@@ -388,11 +384,6 @@ function Hexes.new(group, set, highlights, multiplier)
   else
     hexes.y_offset = 0
   end
-
-  -- Util.printf("Trying %d divisor, hex size %.1f = %dx%d (%d).",
-  --	hexes.hex_divisor, hexes.hex_size,
-  --	hexes.columns, hexes.rows,
-  --	hexes.columns * hexes.rows)
 
   hexes.r = {}
   hexes.igroup = display.newGroup()

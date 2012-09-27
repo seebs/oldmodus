@@ -98,12 +98,11 @@ function scene:enterFrame(event)
   end
   local previous_sound_delay = self.sound_delay
   local maybe_make_sound = false
-  self.sound_delay = self.sound_delay - event.actual_frames
-  if self.sound_delay < 1 then
-    self.sound_delay = set.sound_delay
-    Sounds.playoctave(3 - ant.index, 0)
-    maybe_make_sound = true
-  elseif self.sound_delay <= (set.sound_delay / 2) and previous_sound_delay > (set.sound_delay / 2) then
+  if ant.index % 2 == 1 then
+    if self.sound_toggle then
+      Sounds.playoctave(3 - ant.index, 0)
+    end
+    self.sound_toggle = not self.sound_toggle
     maybe_make_sound = true
   end
   if self.make_sound and maybe_make_sound then

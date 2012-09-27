@@ -5,7 +5,7 @@ local disp = display
 local debugging_display = nil
 local display_index = 1
 local previous_display = 1
-local debugging_performance = false
+local debugging_performance = true
 local changing_displays = false
 local modus = Modus
 
@@ -56,6 +56,9 @@ function Logic.enterFrame(custom, obj, event)
     return
   end
   local this_frame = timer()
+  if not obj.next_frame then
+    obj.next_frame = this_frame
+  end
   local this_time = this_frame - Logic.last_frame
   Logic.last_frame = this_frame
   if obj.view.alpha < 1 then
@@ -83,8 +86,8 @@ function Logic.enterFrame(custom, obj, event)
 	  end
 	end
 	local frame_time = total / 60
-	Util.message("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
-	-- Util.printf("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
+	-- Util.message("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
+	Util.printf("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
 		small, big, frame_time, obj.ms_delay,
 		Logic.frames_missed, Logic.times_missed)
 	Logic.frames_missed = 0
@@ -98,9 +101,9 @@ function Logic.enterFrame(custom, obj, event)
       end
     end
   end
-  obj.ms_cooldown = obj.ms_cooldown - this_time
-  -- if we are over a half-frame out, assume we are a frame out
-  if obj.ms_cooldown > (frame_to_ms * 0.6) then
+  obj.ms_cooldown = obj.next_frame - this_frame
+  -- if we are nearly a frame out, that's probably a frame.
+  if obj.ms_cooldown > (frame_to_ms * 0.8) then
     if obj.ms_cooldown > frame_to_ms then
       collectgarbage("collect")
     end
@@ -108,10 +111,19 @@ function Logic.enterFrame(custom, obj, event)
     return true
   end
   Logic.ignore_time = false
+  obj.next_frame = this_frame + obj.ms_delay
+
+  -- if obj.ms_stamp then
+    -- Util.printf("cooldown: %.1f = %.1f - %.1f ms, stamp: %.1f - %.1f = %.1f ms next %.1f.",
+	-- obj.ms_cooldown, obj.ms_delay, obj.ms_delay - obj.ms_cooldown,
+	-- this_frame, obj.ms_stamp, this_frame - obj.ms_stamp, obj.next_frame)
+  -- end
+  -- obj.ms_stamp = this_frame
+
   -- approximate frame count: subtract remaining cooldown from delay, this tells
-  -- you how long we actually delayed. convert to frames, add 0.6, take floor;
+  -- you how long we actually delayed. convert to frames, add 0.4, take floor;
   -- this gives about the number of frames we actually delayed.
-  event.actual_frames = floor((obj.ms_delay - obj.ms_cooldown) * ms_to_frame + 0.6)
+  event.actual_frames = floor((obj.ms_delay - obj.ms_cooldown) * ms_to_frame + 0.4)
   -- Util.printf("total time %.1fms, frames ~= %d",
     -- obj.ms_delay - obj.ms_cooldown, event.actual_frames)
   obj.frame_cooldown = obj.frame_delay - event.actual_frames
@@ -120,7 +132,6 @@ function Logic.enterFrame(custom, obj, event)
     Logic.frames_missed = Logic.frames_missed - obj.frame_cooldown
     Logic.times_missed = Logic.times_missed + 1
   end
-  obj.ms_cooldown = obj.ms_delay
   if obj.touch_magic then
     touch.state(obj.touch_magic, obj)
   end
@@ -166,6 +177,7 @@ function Logic.enterScene(custom, obj, event)
   -- more precise for actual behavior
   obj.ms_delay = obj.frame_delay * frame_to_ms
   obj.ms_cooldown = 0
+  obj.next_frame = nil
   -- try to force focus to 'touch'
   disp.getCurrentStage():setFocus(touch.dummy)
   Util.message('')

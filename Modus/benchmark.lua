@@ -13,6 +13,7 @@ local printf = Util.printf
 local timer = system.getTimer
 local co = coroutine
 local to_s = tostring
+local to_n = tonumber
 local floor = math.floor
 local ceil = math.ceil
 
@@ -65,6 +66,54 @@ function scene.do_nothing(self, count)
   end
 end
 
+function scene.do_something1(self, count)
+  local j, k, l
+  local s
+  local old_count = 0
+  while count do
+    local x = {}
+    local y = {}
+    for i = old_count + 1, count do 
+      y[i] = to_s(i)
+    end
+    s = to_s(count)
+    for j = 1, count do
+      x[j] = s .. tostring(j)
+      for k = j - 5, j do
+	if x[j] then
+	  y[k] = to_n(x[j])
+	end
+      end
+    end
+    old_count = count
+    collectgarbage('collect')
+    self, count = co.yield(count)
+  end
+end
+
+function scene.do_something2(self, count)
+  local j, k, l
+  local s
+  local old_count = 0
+  while count do
+    local x = {}
+    local y = {}
+    for i = old_count + 1, count do 
+      y[i] = to_s(i)
+    end
+    s = to_s(count)
+    for j = 1, count do
+      x[j] = s .. tostring(j)
+      for k = j, floor(j + count / 100) do
+	y[k] = to_n(x[j])
+      end
+    end
+    old_count = count
+    collectgarbage('collect')
+    self, count = co.yield(count)
+  end
+end
+
 local do_hexes_stash
 
 function scene.do_hexes(self, count)
@@ -76,20 +125,20 @@ function scene.do_hexes(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 50) * 14.5 + 10
-      local y_loc = floor(spot / 50) * 14.5 + 320
+      local x_loc = (spot % 61) * 12.5 + 10
+      local y_loc = floor(spot / 61) * 12.5 + 320
       local l = display.newImage(hexsheet, 1)
       l.x = x_loc
       l.y = y_loc
-      l.xScale = 40 / 256
-      l.yScale = 40 / 256
+      l.xScale = 20 / 256
+      l.yScale = 20 / 256
       l:setFillColor(unpack(Rainbow.color(i)))
       l.alpha = ((i % 7) + 1) / 7
       do_hexes_stash.hexes[#do_hexes_stash.hexes + 1] = l
       do_hexes_stash:insert(l)
     end
     old_count = count
-    for i = count - ceil(count / 4), count do 
+    for i = 1, count do 
       do_hexes_stash.hexes[i].rotation = (i + count)
     end
     self, count = co.yield(count)
@@ -108,9 +157,9 @@ function scene.do_rects(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 50) * 14.5
-      local y_loc = floor(spot / 50) * 14.5 + 300
-      local l = rect_new(s, x_loc, y_loc, 39, 39)
+      local x_loc = (spot % 61) * 12.5
+      local y_loc = floor(spot / 61) * 12.5 + 300
+      local l = rect_new(s, x_loc, y_loc, 15, 15)
       l:setFillColor(unpack(Rainbow.color(i)))
       l.alpha = 0.4
       l.blendMode = 'add'
@@ -118,7 +167,7 @@ function scene.do_rects(self, count)
       do_rects_stash:insert(l)
     end
     old_count = count
-    for i = count - ceil(count / 4), count do 
+    for i = 1, count do 
       do_rects_stash.rects[i].rotation = (i + count)
     end
     self, count = co.yield(count)
@@ -137,10 +186,10 @@ function scene.do_lines(self, count)
   while count do
     for i = old_count + 1, count do
       local spot = i - 1
-      local x_loc = (spot % 50) * 14.5
-      local y_loc = floor(spot / 50) * 14.5 + 300
-      local l = line_new(x_loc, y_loc, x_loc + 40, y_loc + 40, set.line_depth, i)
-      l:setThickness(3)
+      local x_loc = (spot % 61) * 12.5
+      local y_loc = floor(spot / 61) * 12.5 + 300
+      local l = line_new(x_loc, y_loc, x_loc + 20, y_loc + 20, set.line_depth, i)
+      l:setThickness(4)
       l.blendMode = 'add'
       do_lines_stash.lines[#do_lines_stash.lines + 1] = l
       do_lines_stash:insert(l)
@@ -148,7 +197,7 @@ function scene.do_lines(self, count)
       l:redraw()
     end
     old_count = count
-    for i = count - ceil(count / 4), count do 
+    for i = 1, count do 
       do_lines_stash.lines[i]:setTheta(i + count)
       do_lines_stash.lines[i]:redraw()
     end
@@ -162,9 +211,11 @@ local measuring
 
 local benchmarks = {
   { name = 'baseline', base = 1000, inc = 1000, func = scene.do_nothing, max = 15000 },
-  { name = 'line', base = 20, inc = 20, func = scene.do_lines, max = 2500 },
-  { name = 'square', base = 20, inc = 20, func = scene.do_rects, max = 2500 },
-  { name = 'hex', base = 20, inc = 20, func = scene.do_hexes, max = 2500 },
+  { name = 'linear', base = 30, inc = 30, func = scene.do_something1, max = 3600 },
+  { name = 'quadratic', base = 30, inc = 30, func = scene.do_something2, max = 3600 },
+  { name = 'line', base = 30, inc = 30, func = scene.do_lines, max = 3600 },
+  { name = 'square', base = 30, inc = 30, func = scene.do_rects, max = 3600 },
+  { name = 'hex', base = 30, inc = 30, func = scene.do_hexes, max = 3600 },
 }
 
 local stats = {
@@ -226,7 +277,8 @@ function scene:enterFrame(event)
     else
       self:state1("Done benchmarking.")
       Settings.benchmark = stats
-      Settings:save()
+      Settings.save()
+      Settings.interpolate()
       Logic.reload_display()
       return
     end

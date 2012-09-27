@@ -1,5 +1,8 @@
 local Settings = {}
 
+local floor = math.floor
+local ceil = math.ceil
+
 local json = require('json')
 
 Settings.default = {
@@ -16,6 +19,8 @@ Settings.default = {
   line_thickness = 3,
   line_depth = 2,
   square_type = 2,
+  linear = 0.01,
+  quadratic = 0.01,
 }
 
 Settings.scene_defaults = {
@@ -26,11 +31,17 @@ Settings.scene_defaults = {
     color_multiplier = 16,
     frame_delay = 4,
     square_type = 1,
+    type = 'square',
+    quadratic = 1,
+    linear = 1,
   },
   fire = {
     color_multiplier = 16,
     frame_delay = 4,
     square_type = 1,
+    type = 'square',
+    quadratic = 1,
+    linear = 1,
   },
   stringart = {
     points = 3,
@@ -105,15 +116,15 @@ Settings.scene_defaults = {
     color_multiplier = 7,
     ants = 6,
     frame_delay = 5,
-    sound_delay = 20,
     type = 'hex',
+    linear = 2,
   },
   ants2 = {
     color_multiplier = 7,
     ants = 6,
     frame_delay = 5,
-    sound_delay = 20,
     type = 'hex',
+    linear = 2,
   },
 }
 
@@ -125,6 +136,68 @@ Settings.scene_overrides = {
 
 Settings.file_path = system.pathForFile('settings.json', system.DocumentsDirectory)
 
+-- clean up benchmark tables
+function Settings.interpolate()
+  Settings.bindex = {}
+  Settings.interpolated = {}
+  for key, benchmark in pairs(Settings.benchmark) do
+    Settings.bindex[key], Settings.interpolated[key] = Settings.interpolate_one(benchmark)
+    Settings.bindex[key].name = key
+  end
+end
+
+function Settings.interpolate_one(benchmark)
+  local counts = {}
+  local count_to_msec = {}
+  for count, msec in pairs(benchmark) do
+    count = tonumber(count)
+    msec = tonumber(msec)
+    counts[#counts + 1] = count
+    count_to_msec[count] = msec
+  end
+  table.sort(counts)
+  counts.lowest = counts[1]
+  counts.highest = counts[#counts]
+  counts.middle = ceil((counts.lowest + counts.highest) / 2)
+  counts.msecs = count_to_msec
+  count_to_msec.index = counts
+  return counts, count_to_msec
+end
+
+function Settings.estimate(benchmark, value)
+  if not benchmark then
+    return 60
+  end
+  local index = benchmark.index
+  local below, above, below_msec, above_msec
+  for i = 1, #index do
+    local count = index[i]
+    if count < value then
+      below = count
+      below_msec = benchmark[count]
+    end
+    if count > value and not above then
+      above = count
+      above_msec = benchmark[count]
+      break
+    end
+  end
+  if below and above then
+    local below_msec = benchmark[below]
+    local above_msec = benchmark[above]
+    local scale = (value - below) / (above - below)
+    return (above_msec * scale) + (below_msec * (1 - scale))
+  end
+  if below then
+    return below_msec * (value / below)
+  end
+  if above then
+    return above_msec * (value / above)
+  end
+  Util.printf("Found no values anywhere near %d, keys are %s.", value, table.concat(index, ", "))
+  return 60
+end
+
 function Settings.load()
   local stream = io.open(Settings.file_path, "r")
   if stream then
@@ -135,6 +208,7 @@ function Settings.load()
       Settings.default_overrides = data.default
       Settings.scene_overrides = data.scene
       Settings.benchmark = data.benchmark
+      Settings.interpolate()
       return true
     end
   end
@@ -151,82 +225,70 @@ function Settings.save()
   end
 end
 
-function Settings.items_for(ideal_time, benchmark)
-  local best_count
-  local best_msec = 1000
-
-  -- Util.printf("items_for: %.1fms.", ideal_time)
-  for count, msec in pairs(benchmark) do
-    count = tonumber(count)
-    msec = tonumber(msec)
-    if best_count then
-      if msec < ideal_time and count > best_count then
-        -- Util.printf("have %d in %.1fms, prefer %d in %.1fms",
-          -- best_count, best_msec, count, msec)
-        best_count = count
-	best_msec = msec
-      -- else
-        -- Util.printf("have %d in %.1fms, don't want %d in %.1fms",
-          -- best_count, best_msec, count, msec)
-      end
-    else
-      best_count = count
-      best_msec = msec
-    end
+function Settings.time_for(benchmark, count, linear, quadratic)
+  local base_msec, linear_time, quadratic_time = 0, 0, 0
+  base_msec = Settings.estimate(benchmark, count)
+  if linear then
+    linear_msec = Settings.estimate(Settings.interpolated.linear, count) * linear
   end
-  if best_msec == 1000 then
-    -- we didn't find anything under ideal_time? geeze.
-    return 100, 1000
-  else
-    return best_count, best_msec
+  if quadratic then
+    quadratic_msec = Settings.estimate(Settings.interpolated.quadratic, count) * quadratic
   end
+  Util.printf("%d items: %.1f + %.1f ms + %.1f ms => %.1fms",
+    count, base_msec, linear_msec, quadratic_msec,
+    base_msec + linear_msec + quadratic_msec)
+  return base_msec + linear_msec + quadratic_msec
 end
 
-function Settings.time_for(n, benchmark)
+function Settings.items_for(ideal_time, benchmark, linear, quadratic)
   local best_count
   local best_msec = 1000
-  local highest_count = 0
-  local highest_msec = 1000
-  -- Util.printf("Estimating time for %d items:", n)
-  for count, msec in pairs(benchmark) do
-    count = tonumber(count)
-    msec = tonumber(msec)
-    if best_count then
-      if count >= n and count < best_count and msec <= best_msec then
-        -- Util.printf("  have %d in %.1fms, prefer %d in %.1fms",
-          -- best_count, best_msec, count, msec)
-        best_count = count
-	best_msec = msec
-      -- else
-        -- Util.printf("  have %d in %.1fms, don't want %d in %.1fms",
-          -- best_count, best_msec, count, msec)
-      end
-    elseif count >= n then
-      best_count = count
-      best_msec = msec
-    end
-    -- highest we saw at all
-    if count > highest_count then
-      highest_count = count
-      highest_msec = msec
-    end
+  local linear_time = 0
+  local quadratic_time = 0
+  local index = benchmark.index
+
+  Util.printf("items_for: %.1fms.", ideal_time)
+  local lowest_count, lowest_msec = index.lowest, benchmark[index.lowest]
+  local highest_count, highest_msec = index.highest, benchmark[index.highest]
+  local current_count, current_msec, base_msec, crunch_msec
+  linear_msec = 0
+  quadratic_msec = 0
+  current_count = index.middle
+  highest_msec = Settings.time_for(benchmark, highest_count, linear, quadratic)
+  if highest_msec < ideal_time then
+    Util.printf("Highest time is %.1fms, using %d.", highest_msec, highest_count)
+    return highest_count, highest_msec
   end
-  if best_msec == 1000 then
-    -- maybe we got lucky
-    return Settings.frametime
-  else
-    if n > highest_count then
-      -- scale to actual N, if N is larger than anything the benchmark tried
-      return highest_msec * n / highest_count
+  current_msec = Settings.time_for(benchmark, current_count, linear, quadratic)
+  local tries = 1
+  while current_msec > ideal_time or (ideal_time - current_msec > 3) do
+    tries = tries + 1
+    if tries > 10 then
+      Util.printf("Giving up after 10 tries.")
+      break
+    end
+    Util.printf("Considering %d items: %.1fms, compared to %.1fms.",
+      current_count, current_msec, ideal_time)
+    if current_msec > ideal_time then
+      highest_count = current_count
+      highest_msec = current_msec
+      current_count = (current_count + lowest_count) / 2
     else
-      return best_msec
+      lowest_count = current_count
+      lowest_msec = current_msec
+      current_count = (current_count + highest_count) / 2
     end
+    current_msec = Settings.time_for(benchmark, current_count, linear, quadratic)
   end
+  return current_count, current_msec
 end
 
 function Settings.compute_properties(set, benchmark)
   -- trim it a bit because otherwise we tend to run over...
+  Util.printf("computing: %s", tostring(set.type))
   local ideal_time = (set.frame_delay * Settings.frametime) * .85
+  local linear = set.linear or 0.2
+  local quadratic = set.quadratic or 0.01
   if set.type == 'line' then
     local orig_color_multiplier = set.color_multiplier
     local orig_history = set.history
@@ -235,15 +297,13 @@ function Settings.compute_properties(set, benchmark)
     -- color multiplier, and possibly a number of "points" (for
     -- instance, the 3 arms of the spiral mode).  number of lines
     -- onscreen will be points * history * multiplier
+    local can_draw, expected_time = Settings.items_for(ideal_time, benchmark, linear, quadratic)
     while not giving_up do
       -- color_multiplier * 6 because color_multiplier multiplies colors
       local effective_n = set.points * set.history * set.color_multiplier * 6
-      local delay = Settings.time_for(effective_n, benchmark)
-      -- Util.printf("Considering %d points, %d history, %d colors (%d lines), expecting %.1fms.",
-      --   set.points, set.history, set.color_multiplier, effective_n, delay)
-      if delay <= ideal_time then
-        -- Util.printf("Looking for %.1fms, expecting %.1fms for %d lines.",
-          -- ideal_time, delay, effective_n)
+      if effective_n < can_draw then
+	Util.printf("Looking for time of %.1fms (%.2f+%.2f crunch) or less, got %d/%d lines in %.1fms.",
+	    ideal_time, set.quadratic, set.linear, effective_n, can_draw, expected_time)
 	return
       else
 	-- scale back whichever has been scaled back less, starting with
@@ -266,9 +326,9 @@ function Settings.compute_properties(set, benchmark)
     end
   elseif set.type == 'square' or set.type == 'hex' then
     local msec
-    set.max_items, msec = Settings.items_for(ideal_time, benchmark)
-    -- Util.printf("Looking for time of %.1fms or less, got %d items in %.1fms.",
-    	-- ideal_time, set.max_items, msec)
+    set.max_items, msec = Settings.items_for(ideal_time, benchmark, linear, quadratic)
+    Util.printf("Looking for time of %.1fms (%.2f+%.2f crunch) or less, got %d items in %.1fms.",
+    	ideal_time, set.quadratic, set.linear, set.max_items, msec)
   end
 end
 
@@ -292,7 +352,7 @@ function Settings.scene(scene)
     o[k] = v
   end
   if o.frame_delay and o.type then
-    bench = Settings.benchmark and Settings.benchmark[o.type]
+    bench = Settings.interpolated and Settings.interpolated[o.type]
     if bench then
       Settings.compute_properties(o, bench)
       -- Util.printf("Computed settings for %s frame delay %d", o.type, o.frame_delay)
