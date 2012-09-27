@@ -33,8 +33,6 @@ Vector = require "Vector"
 storyboard.purgeOnSceneChange = true
 
 local displays = {
-  'firebugs',
-  'fire',
   'spiral',
   'ants2',
   'knights',
@@ -43,11 +41,13 @@ local displays = {
   'lissajous',
   'drops',
   'spiral2',
+  'fire',
   'ants',
   'cascade2',
   'lines',
   'knights2',
   'stringart',
+  'firebugs',
 }
 
 local display_code = {}
@@ -85,12 +85,6 @@ make_scene('prefs')
 make_scene('benchmark')
 Modus.displays = displays
 Modus.scenes = scenes
-
--- we always want the option of displaying stuff:
-local message_box = display.newText('', Screen.center.x, Screen.center.y, Screen.size.x - 10, 0, native.defaultFont, 35)
--- invisible messages in case any leak out
--- message_box:setTextColor(0, 0, 0, 0)
-Util.messages_to(message_box)
 
 system.activate("multitouch")
 

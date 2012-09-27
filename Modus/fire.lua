@@ -6,7 +6,7 @@ scene.meta = {
 }
 
 scene.FADED = 0.1
-scene.IDLE_TIME = 6
+scene.IDLE_TIME = 7
 scene.IDLE_ENERGY = 1
 scene.TOUCH_ENERGY = 6.5
 scene.IDLE_FLOOR = 0.2
@@ -49,6 +49,7 @@ function scene:createScene(event)
       sq.energy_hue = cm
     end
   end
+  self.range_scale = self.RANGE_SCALE * (self.squares.total_squares / 768)
   self.fade_multiplier = .005
   self.events = 0
 end
@@ -91,12 +92,11 @@ function scene:spread_plus(square, range)
   if range < 1 then
     return
   end
-  i = range
-  local mod = (square.energy - i + 1) / (2 * cm)
+  local mod = (square.energy - range + 1) / (2 * cm)
   if mod > 5 then
     mod = 5
   end
-  local hue_mod = range * cm / self.RANGE_SCALE
+  local hue_mod = range * cm / self.range_scale
   local hue = square.energy_hue - hue_mod
   -- Util.printf("spreading %d, %d by %d: nrg %.2f/%.2f nrg_hue %.1f, hue %.1f (%.1f)",
     -- square.logical_x, square.logical_y, range, square.vested_energy or -1, square.energy or -1, square.energy_hue or -1, square.hue, hue)
@@ -107,19 +107,20 @@ function scene:spread_plus(square, range)
   local alpha = (square.alpha * effective / 4) - (0.1 * range)
   local spread_any = false
   for j = 1, #plus do
-    local sq = square:find(scale(i, unpack(plus[j])))
+    local sq = square:find(scale(range, unpack(plus[j])))
     if sq then
       if not sq.blocked[square] then
 	spread_any = self:energize(sq, mod, hue, alpha, square) or spread_any
       end
     end
   end
-  if mod > 3 then
-    mod = mod - 2
+  if (range % 2) == 0 then
+    range = range / 2
+    mod = mod / 2
     alpha = alpha / 2
     hue = hue - cm / 2
     for j = 1, #diag do
-      local sq = square:find(scale(i, unpack(diag[j])))
+      local sq = square:find(scale(range, unpack(diag[j])))
       if sq then
 	if not sq.blocked[square] then
 	  spread_any = self:energize(sq, mod, hue, alpha, square) or spread_any
@@ -142,12 +143,12 @@ function scene:enterFrame(event)
       if square.energy and square.energy > 0.05 then
 	self.events = self.events + 1
 	if square.vested_energy < square.energy then
-	  local old_range = floor((square.spread_so_far or 0) * self.RANGE_SCALE / cm)
+	  local old_range = floor((square.spread_so_far or 0) * self.range_scale / cm)
 	  local diff = square.energy - square.vested_energy
 	  local scale = min(diff / cm, square.vested_energy)
 	  square.vested_energy = min(square.energy, square.vested_energy + scale + 1)
 	  if square.spreading then
-	    local new_range = floor(square.vested_energy * self.RANGE_SCALE / cm)
+	    local new_range = floor(square.vested_energy * self.range_scale / cm)
 	    for j = old_range + 1, new_range do
 	      self:spread_plus(square, j)
 	    end
@@ -206,7 +207,7 @@ function scene:enterFrame(event)
     end
   end
   self.cooldown = self.cooldown - 1
-  if self.cooldown < 0 then
+  if self.cooldown < 1 then
     self.cooldown = self.IDLE_TIME
     local square = self.squares[random(self.squares.columns)][random(self.squares.rows)]
     local energy = self.IDLE_ENERGY + random(4) + random(3) - 2

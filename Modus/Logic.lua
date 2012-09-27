@@ -14,6 +14,10 @@ local floor = math.floor
 local frame_to_ms = Util.frame_to_ms
 local ms_to_frame = Util.ms_to_frame
 
+local message = Util.message
+local message_fade = Util.message_fade
+local message_fade_in = Util.message_fade_in
+
 if debugging_display or debugging_performance then
   storyboard.isDebug = true
 end
@@ -64,6 +68,7 @@ function Logic.enterFrame(custom, obj, event)
   if obj.view.alpha < 1 then
     obj.view.alpha = min(obj.view.alpha + .02, 1)
   end
+  message_fade()
   if not Logic.ignore_time and (debugging_performance or (debugging_display and obj.name == debugging_display)) then
     last_times[#last_times + 1] = this_time
     if #last_times > 60 then
@@ -86,7 +91,7 @@ function Logic.enterFrame(custom, obj, event)
 	  end
 	end
 	local frame_time = total / 60
-	-- Util.message("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
+	-- message("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
 	Util.printf("%.1f-%.1f %.1fms/%.1fms %d/%d drop",
 		small, big, frame_time, obj.ms_delay,
 		Logic.frames_missed, Logic.times_missed)
@@ -173,6 +178,8 @@ end
 
 function Logic.enterScene(custom, obj, event)
   -- intended behavior
+  message(obj.meta.name or "Unnamed")
+  message_fade_in(50)
   obj.frame_delay = obj.settings.frame_delay
   -- more precise for actual behavior
   obj.ms_delay = obj.frame_delay * frame_to_ms
@@ -180,7 +187,6 @@ function Logic.enterScene(custom, obj, event)
   obj.next_frame = nil
   -- try to force focus to 'touch'
   disp.getCurrentStage():setFocus(touch.dummy)
-  Util.message('')
   -- wipe existing touches
   touch.state(nil)
   -- give a few ticks to think about frame rate
@@ -294,7 +300,7 @@ function Logic.next_display(event)
       display_index = (display_index % #modus.displays) + 1
       if display_index == started_at then
 	next_place = 'prefs'
-	Util.message("You do not appear to have any other scenes enabled.  Enable some scenes.")
+	message("You do not appear to have any other scenes enabled.  Enable some scenes.")
 	break
       end
       next_place = modus.displays[display_index]

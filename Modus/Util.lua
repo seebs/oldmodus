@@ -14,25 +14,74 @@ function Util.scale(o)
   return pow(1.1, level)
 end
 
+local message_boxes = {}
 local message_box
 
-local message_table = {}
+local message_fade_in = 0
 
-function Util.messages_to(frame)
-  message_box = frame
+function Util.message_fade(amount)
+  if not amount then
+    if message_fade_in > 0 then
+      amount = -0.07
+      message_fade_in = message_fade_in - 1
+    else
+      amount = 0.03
+    end
+  end
+  message_box.alpha = min(max(0, message_box.alpha - amount), 1)
+end
+
+function Util.message_fade_in(value)
+  message_fade_in = value or 50
+  message_box.alpha = 0
 end
 
 function Util.message(fmt, ...)
   local out = Util.sprintf(fmt, ...)
-  message_table[#message_table + 1] = out
-  if message_box then
-    message_box.text = table.concat(message_table, "\n")
-    message_box:setReferencePoint(display.centerReferencePoint)
-    message_box.x = Screen.size.x / 2
-    message_box.y = Screen.size.y / 2
+  if not message_box then
+    message_box = display.newGroup()
+    for i = 1, 5 do
+      message_boxes[i] = display.newText('', Screen.center.x, Screen.center.y, Screen.size.x - 10, 0, native.defaultFont, 40)
+    end
+    message_boxes[1]:setTextColor(0)
+    message_boxes[2]:setTextColor(0)
+    message_boxes[3]:setTextColor(0)
+    message_boxes[4]:setTextColor(0)
+    message_boxes[5]:setTextColor(255)
+
+    message_box:insert(message_boxes[1])
+    message_box:insert(message_boxes[2])
+    message_box:insert(message_boxes[3])
+    message_box:insert(message_boxes[4])
+    message_box:insert(message_boxes[5])
   end
-  if #message_table > 5 then
-    table.remove(message_table, 1)
+  for i = 1, #message_boxes do
+    local box = message_boxes[i]
+    box.text = out
+    box:setReferencePoint(display.centerReferencePoint)
+  end
+  message_box.x = Screen.size.x / 2
+  message_box.y = Screen.size.y / 2
+  message_boxes[1].x = - 1.5
+  message_boxes[1].y = - 1.5
+  message_boxes[2].x = - 1.5
+  message_boxes[2].y =   1.5
+  message_boxes[3].x =   1.5
+  message_boxes[3].y = - 1.5
+  message_boxes[4].x =   1.5
+  message_boxes[4].y =   1.5
+  message_boxes[5].x = 0
+  message_boxes[5].y = 0
+  message_box.alpha = 1
+  local dir = system.orientation
+  if dir == 'portraitUpsideDown' then
+    message_box.rotation = 180
+  elseif dir == 'landscapeLeft' then
+    message_box.rotation = 270
+  elseif dir == 'landscapeRight' then
+    message_box.rotation = 90
+  else
+    message_box.rotation = 0
   end
   print(out)
 end

@@ -1,5 +1,10 @@
 local scene = {}
 
+scene.meta = {
+  name = "Preferences",
+  description = "Change settings",
+}
+
 -- make this a global so we shouldn't reinitialize it
 store_global_state = store_global_state or {
   state = false,
@@ -8,7 +13,7 @@ store_global_state = store_global_state or {
 
 scene.ROW_HEIGHT = 150
 scene.NAME_OFFSET = 290
-scene.GLOBAL_SPACE = 400
+scene.GLOBAL_SPACE = 450
 
 local frame = Util.enterFrame
 local touch = Touch.state
@@ -170,6 +175,7 @@ function scene.make_buttons(top, tabname, source, include_off, where, what, do_t
   local using = where[what] or Settings.default[what]
   local items, descriptions = source()
   local left = 125
+  local button
   local redo_me = function(...)
     do_this(...)
     scene.make_buttons(top, tabname, source, include_off, where, what, do_this)
@@ -234,6 +240,66 @@ function scene.pick_setting(event, where, what, do_this)
   return true
 end
 
+function scene.enable_all(event)
+  if event.phase ~= 'release' and event.phase ~= 'tap' then
+    return true
+  end
+  for i, sc in pairs(modus.scenes) do
+    sc.settings.enabled = true
+    sc.settings.setting_overrides.enabled = sc.settings.enabled
+  end
+  if scene.scene_list and scene.scene_list.content and scene.scene_list.content.rows then
+    for i = 1, #scene.scene_list.content.rows do
+      local r = scene.scene_list.content.rows[i]
+      scene.update_row_status(r)
+    end
+  end
+  Settings.save()
+end
+
+function scene.disable_all(event)
+  if event.phase ~= 'release' and event.phase ~= 'tap' then
+    return true
+  end
+  for i, sc in pairs(modus.scenes) do
+    sc.settings.enabled = false
+    sc.settings.setting_overrides.enabled = sc.settings.enabled
+  end
+  if scene.scene_list and scene.scene_list.content and scene.scene_list.content.rows then
+    for i = 1, #scene.scene_list.content.rows do
+      local r = scene.scene_list.content.rows[i]
+      scene.update_row_status(r)
+    end
+  end
+  Settings.save()
+end
+
+function scene.update_row_status(row)
+  local scene_name = row.id
+  local sc = modus.scenes[scene_name]
+  -- the row may not be rendered yet
+  if not row or not row.toggle_button then
+    return
+  end
+  if sc and sc.settings then
+    if sc.settings.enabled then
+      row.toggle_button:setLabel("Disable")
+      row.title_label:setTextColor(255)
+      row.enabled_label:setTextColor(255)
+      row.enabled_label.text = "Enabled"
+      row.enabled_label:setReferencePoint(display.CenterLeftReferencePoint)
+      row.enabled_label.x = 5
+    else
+      row.toggle_button:setLabel("Enable")
+      row.title_label:setTextColor(180)
+      row.enabled_label:setTextColor(180)
+      row.enabled_label.text = "Disabled"
+      row.enabled_label:setReferencePoint(display.CenterLeftReferencePoint)
+      row.enabled_label.x = 5
+    end
+  end
+end
+
 function scene.toggle_scene(event)
   if event.phase ~= 'release' and event.phase ~= 'tap' then
     return true
@@ -245,21 +311,7 @@ function scene.toggle_scene(event)
     sc.settings.enabled = not sc.settings.enabled
     sc.settings.setting_overrides.enabled = sc.settings.enabled
     Settings.save()
-    if sc.settings.enabled then
-      button:setLabel("Disable")
-      button.parent.title_label:setTextColor(255)
-      button.parent.enabled_label:setTextColor(255)
-      button.parent.enabled_label.text = "Enabled"
-      button.parent.enabled_label:setReferencePoint(display.CenterLeftReferencePoint)
-      button.parent.enabled_label.x = 5
-    else
-      button:setLabel("Enable")
-      button.parent.title_label:setTextColor(180)
-      button.parent.enabled_label:setTextColor(180)
-      button.parent.enabled_label.text = "Disabled"
-      button.parent.enabled_label:setReferencePoint(display.CenterLeftReferencePoint)
-      button.parent.enabled_label.x = 5
-    end
+    scene.update_row_status(button.parent)
   else
     -- Util.message("Got toggle for a scene I can't handle: %s.", tostring(scene_name))
   end
@@ -268,6 +320,7 @@ end
 function scene.onRowRender(event)
   local row = event.target
   local row_group = event.view
+  row.view_group = row_group
   local sc = modus.scenes[row.id]
   local settings = sc.settings
   local enabled = settings.enabled
@@ -277,7 +330,7 @@ function scene.onRowRender(event)
   local text
   text = display.newText(sc.meta.name, 5, 5, native.systemFont, 30)
   row_group:insert(text)
-  row_group.title_label = text
+  row.title_label = text
   if not enabled then
     text:setTextColor(180)
   end
@@ -288,7 +341,7 @@ function scene.onRowRender(event)
   if not enabled then
     text:setTextColor(180)
   end
-  row_group.enabled_label = text
+  row.enabled_label = text
   local button = widget.newButton({
     id = row.id,
     left = 5,
@@ -298,6 +351,7 @@ function scene.onRowRender(event)
     label = settings.enabled and "Disable" or "Enable",
     onEvent = scene.toggle_scene,
   })
+  row.toggle_button = button
   row_group:insert(button)
 end
 
@@ -315,13 +369,28 @@ function scene:enterScene(event)
   display.getCurrentStage():setFocus(nil)
 end
 
+function scene.maybe_resume(event)
+  if event.phase ~= 'release' and event.phase ~= 'tap' then
+    return true
+  end
+  for i, sc in pairs(modus.scenes) do
+    if sc.settings.enabled then
+      Logic.reload_display()
+      return true
+    end
+  end
+  Util.message("Can't resume when all modes are disabled.")
+  Util.message_fade_in(50)
+  return true
+end
+
 function scene.store_message(fmt, ...)
   local txt = Util.sprintf(fmt, ...)
   if scene.store_message_text then
     scene.store_message_text.text = "(" .. txt .. ")"
     scene.store_message_text:setReferencePoint(display.TopLeftReferencePoint)
     scene.store_message_text.x = 5
-    scene.store_message_text.y = 280
+    scene.store_message_text.y = scene.GLOBAL_SPACE - 70
   end
 end
 
@@ -376,7 +445,7 @@ function scene:createScene(event)
       default = { 0, 128, 0, 255 },
       over = { 0, 128, 0, 255 }
     },
-    onEvent = Logic.reload_display
+    onEvent = scene.maybe_resume
   })
   scene.globals:insert(button)
   local text
@@ -398,6 +467,34 @@ function scene:createScene(event)
   end
   scene.make_buttons(175, 'thickbuttons', thicknesses, false, Settings.default_overrides, 'line_thickness', function(picked) end)
   scene.make_buttons(225, 'depthbuttons', depths, false, Settings.default_overrides, 'line_depth', function(picked) end)
+  text = display.newText("Modes:", 5, 270, native.systemFont, 30)
+  scene.globals:insert(text)
+  button = widget.newButton({
+    left = 125,
+    top = 270,
+    width = 145,
+    height = 40,
+    label = "Enable All",
+    labelColor = {
+      default = { 0, 128, 0, 255 },
+      over = { 0, 128, 0, 255 }
+    },
+    onEvent = self.enable_all
+  })
+  scene.globals:insert(button)
+  button = widget.newButton({
+    left = 285,
+    top = 270,
+    width = 145,
+    height = 40,
+    label = "Disable All",
+    labelColor = {
+      default = { 0, 128, 0, 255 },
+      over = { 0, 128, 0, 255 }
+    },
+    onEvent = self.disable_all
+  })
+  scene.globals:insert(button)
 
   -- allow IAP
   scene.store_message_text = display.newText("", 125, scene.GLOBAL_SPACE - 70, native.systemFont, 23)
@@ -433,49 +530,16 @@ function scene:createScene(event)
     })
     scene.globals:insert(button)
   else
-    scene.store_message("store.canMakePurchases: %s", tostring(store.canMakePurchases))
+    scene.store_message("Thanks for trying the Miracle Modus!")
   end
   text = display.newText("Scene Settings:", 5, scene.GLOBAL_SPACE - 45, native.systemFont, 36)
   scene.globals:insert(text)
-  text = display.newText(version, s.size.x - 50, scene.GLOBAL_SPACE - 25, native.systemFont, 18)
+  text = display.newText(version, s.size.x - 60, scene.GLOBAL_SPACE - 29, native.systemFont, 22)
   scene.globals:insert(text)
 
   scene.scene_list:insert(scene.globals)
   scene.globals.y = -scene.GLOBAL_SPACE
 end
-
-function scene.make_palette_buttons()
-  local using = Settings.default_overrides.palette or Settings.default.palette
-  local palettes, descriptions = Rainbow.list()
-  local left = 125
-  local top = 120
-  -- recreate buttons
-  if scene.palettebuttons then
-    for idx, button in ipairs(scene.palettebuttons) do
-      button:removeSelf()
-    end
-  end
-  scene.palettebuttons = {}
-  local offset = 0
-  for idx, name in ipairs(palettes) do
-    local selected = (name == using)
-    button = widget.newButton({
-      id = name,
-      left = left + ((idx + offset - 1) * 160),
-      top = top,
-      width = 145,
-      labelColor = {
-	default = { 0, selected and 128 or 0, 0, 255 },
-	over = { 0, selected and 0 or 255, 0, 255 }
-      },
-      height = 38,
-      label = descriptions[name],
-      onEvent = scene.pick_palette,
-    })
-    scene.globals:insert(button)
-  end
-end
-
 
 function scene:touch_magic(state)
   --if state.events > 0 then

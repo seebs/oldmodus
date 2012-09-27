@@ -211,11 +211,11 @@ local measuring
 
 local benchmarks = {
   { name = 'baseline', base = 1000, inc = 1000, func = scene.do_nothing, max = 15000 },
-  { name = 'linear', base = 30, inc = 30, func = scene.do_something1, max = 3600 },
-  { name = 'quadratic', base = 30, inc = 30, func = scene.do_something2, max = 3600 },
-  { name = 'line', base = 30, inc = 30, func = scene.do_lines, max = 3600 },
-  { name = 'square', base = 30, inc = 30, func = scene.do_rects, max = 3600 },
-  { name = 'hex', base = 30, inc = 30, func = scene.do_hexes, max = 3600 },
+  { name = 'linear', base = 50, inc = 50, func = scene.do_something1, max = 3600 },
+  { name = 'quadratic', base = 20, inc = 20, func = scene.do_something2, max = 3600 },
+  { name = 'line', base = 50, inc = 50, func = scene.do_lines, max = 3600 },
+  { name = 'square', base = 50, inc = 50, func = scene.do_rects, max = 3600 },
+  { name = 'hex', base = 50, inc = 50, func = scene.do_hexes, max = 3600 },
 }
 
 local stats = {
@@ -313,9 +313,9 @@ function scene:enterFrame(event)
       end
       Util.printf("%s average for %d: %.1fms", bench.name, per_frame, avg)
       per_frame = per_frame + per_frame_inc
-      per_frame_inc = ceil(per_frame_inc * 1.05)
+      per_frame_inc = ceil(per_frame_inc * 1.15)
       -- some modes are as slow as 12 frames, ~= 0.2 seconds or 200ms
-      if avg > 220 or per_frame > bench.max then
+      if avg > 58 or per_frame > bench.max then
 	-- we're done here
 	stats[bench.name] = averages
 	Util.printf("  *** %s ***", bench.name)
