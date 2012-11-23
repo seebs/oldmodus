@@ -311,7 +311,7 @@ function scene.toggle_scene(event)
     sc.settings.enabled = not sc.settings.enabled
     sc.settings.setting_overrides.enabled = sc.settings.enabled
     Settings.save()
-    scene.update_row_status(button.parent)
+    scene.update_row_status(button.parent.row)
   else
     -- Util.message("Got toggle for a scene I can't handle: %s.", tostring(scene_name))
   end
@@ -321,6 +321,7 @@ function scene.onRowRender(event)
   local row = event.target
   local row_group = event.view
   row.view_group = row_group
+  row_group.row = row
   local sc = modus.scenes[row.id]
   local settings = sc.settings
   local enabled = settings.enabled

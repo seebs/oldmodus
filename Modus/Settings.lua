@@ -172,6 +172,9 @@ function Settings.estimate(benchmark, value)
   local below, above, below_msec, above_msec
   for i = 1, #index do
     local count = index[i]
+    if count == value then
+      return benchmark[count]
+    end
     if count < value then
       below = count
       below_msec = benchmark[count]
@@ -183,8 +186,6 @@ function Settings.estimate(benchmark, value)
     end
   end
   if below and above then
-    local below_msec = benchmark[below]
-    local above_msec = benchmark[above]
     local scale = (value - below) / (above - below)
     return (above_msec * scale) + (below_msec * (1 - scale))
   end

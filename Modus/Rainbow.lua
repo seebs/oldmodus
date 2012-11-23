@@ -49,6 +49,7 @@ function Rainbow.list()
 end
 
 Rainbow.hues = Rainbow.manyhues.rainbow
+Rainbow.current_palette = "rainbow"
 
 Rainbow.smoothed = {}
 Rainbow.funcs = {}
@@ -65,6 +66,9 @@ function Rainbow.funcs_for(denominator)
   end
   if not Rainbow.smoothed[denominator] then
     Rainbow.smoothify(denominator)
+  end
+
+  if not Rainbow.funcs[denominator] then
     Rainbow.funcs[denominator] = {}
     local t = Rainbow.smoothed[denominator]
     local n = 6 * denominator
@@ -113,7 +117,7 @@ end
 
 function Rainbow.smoothify(denominator)
   local tab = Rainbow.smoothed[denominator] or {}
-  if denominator == 1 and not Rainbow.smoothed[denominator] then
+  if denominator == 1 then
     Rainbow.smoothed[denominator] = { unpack(Rainbow.hues) }
     return
   end
@@ -141,9 +145,12 @@ end
 function Rainbow.change_palette(palette)
   if Rainbow.manyhues[palette] then
     Rainbow.hues = Rainbow.manyhues[palette]
+    Rainbow.current_palette = palette
     for idx, tab in pairs(Rainbow.smoothed) do
       Rainbow.smoothify(idx)
     end
+    -- force regeneration of functions
+    Rainbow.funcs = {}
   else
     Util.printf("unknown palette choice: %s", tostring(palette))
   end
