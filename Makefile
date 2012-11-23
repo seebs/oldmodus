@@ -25,3 +25,6 @@ perf:
 
 ipa:
 	(cd ~/Desktop; mkdir Payload; mv Modus.app Payload; zip -r Payload.zip Payload; mv Payload/Modus.app .; rmdir Payload; mv Payload.zip Payload.ipa)
+
+perms:
+	cp ~/Desktop/Modus.apk .; ./cleanperms Modus.apk

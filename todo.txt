@@ -1,16 +1,26 @@
+RELEASE 1.1:
+	* Use menu button on Android?
+	* screenshots of modes on settings screen
+	* allow single scene only somehow
+	* use click targets instead of double-tap?
+	  - show click targets on startup?
+	* Colors sometimes not setting back to rainbow as expected.
+	* Try 48KHz audio to reduce stutter?
+
+RELEASE 1.2:
+	* make sure messages have a chance to get seen
+	* Disable all others?
+	* Make velocity smarter -- actual velocity, not x/y separate,
+	  smoother behavior, etc.
+	* Continue singing with screen blanked, as an option?
+	* allow reordering
+
+FUTURE:
+	* VoiceOver support (iOS)
+
 Preferences
 	add speed setting?
-Line modes:
-	* Reduce max line count to avoid touch-event tragedy.
 
-Apple store
-	* screenshots
-	* support page
-	* finish converting main seebs page to match
-Android store
-	* Get signing key?
-	* Test rebuilding app.
-	* See if I can find out how to enable/test in-app purchase.
 Cascade
 	Sometimes touching one square alters another (!??)
 
