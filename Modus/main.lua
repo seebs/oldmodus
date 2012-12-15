@@ -89,7 +89,19 @@ Modus.scenes = scenes
 system.activate("multitouch")
 
 local touch = Touch
+
+local function handle_key(event)
+  if event and event.keyName == 'menu' then
+    Logic.goto('prefs')
+    return true
+  end
+end
+
 Runtime:addEventListener('touch', function(e) touch:handle(e) end)
+-- android has hardware key support
+if system.getInfo("platformName") == "Android" then 
+  Runtime:addEventListener('key', handle_key)
+end
 
 if have_settings and scenes.benchmark.settings_complete() then
   Logic.reload_display()
