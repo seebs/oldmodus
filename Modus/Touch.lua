@@ -5,6 +5,7 @@ Touch.active = nil
 Touch.events = 0
 
 local dist = Util.dist
+local abs = math.abs
 
 local active_events = { }
 
@@ -35,8 +36,13 @@ local gear = display.newImage('gear.png')
 gear:scale(60 / 199, 60 / 199)
 gear.x = 32 + screen_origin.x
 gear.y = 32 + screen_origin.y
+local arrows = display.newImage('arrows256.png')
+arrows:scale(60 / 240, 60 / 240)
+arrows.x = 92 + screen_origin.x
+arrows.y = 32 + screen_origin.y
 -- gear.blendMode = 'add'
 gear.isVisible = false
+arrows.isVisible = false
 
 function Touch.ignore_prefs(flag)
   ignore_prefs = flag
@@ -186,47 +192,50 @@ function Touch.handle(event)
       end
     end
   end
+
   if tapped then
     local maybe_prefs = false
-    for idx, pt in ipairs(corners) do
-      if dist(e.current, pt) < 80 then
-        maybe_prefs = idx
-      end
-    end
-    if last_tap and (e.end_stamp - last_tap.end_stamp < 650) and dist(e.current, last_tap.current) < 35 then
-      if maybe_prefs and (maybe_prefs == last_tap.maybe_prefs) then
+    -- if the gear is displayed, let's see whether the user clicked it
+    if gear.isVisible then
+      -- either you clicked on one, so we hide them, or you didn't, so we
+      -- hide them.
+      gear.isVisible = false
+      arrows.isVisible = false
+      local pt = { x = e.current.x + Screen.origin.x, y = e.current.y + Screen.origin.y }
+      if dist(pt, gear) < 35 then
         Logic.goto('prefs')
-      else
+      elseif abs(pt.y - arrows.y) < 35 and abs(pt.x - arrows.x) < 35 then
         Logic.next_display()
       end
-      gear.isVisible = false
-      last_tap = nil
     else
-      local previous_maybe = last_tap and last_tap.maybe_prefs
-      last_tap = e
-      last_tap.maybe_prefs = maybe_prefs
-      -- if you tap again, but it's not a double-tap, we clear the gear
-      if last_tap.maybe_prefs and (last_tap.maybe_prefs ~= previous_maybe) then
-        gear.isVisible = true
-	-- move gear to the tapped corner
-	local pt = corners[last_tap.maybe_prefs] or { x = 0, y = 0 }
-	if pt.x == 0 then
-	  gear.x = 32 + screen_origin.x
-	else
-	  gear.x = screen_origin.x + screen_size.x - 32
+      for idx, pt in ipairs(corners) do
+	if dist(e.current, pt) < 80 then
+	  gear.isVisible = true
+	  arrows.isVisible = true
+	  -- move gear to the tapped corner
+	  local pt = corners[idx] or { x = 0, y = 0 }
+	  if pt.x == 0 then
+	    gear.x = 32 + screen_origin.x
+	    arrows.x = 98 + screen_origin.x
+	  else
+	    gear.x = screen_origin.x + screen_size.x - 32
+	    arrows.x = screen_origin.x + screen_size.x - 92
+	  end
+	  if pt.y == 0 then
+	    gear.y = 32 + screen_origin.y
+	    arrows.y = 36 + screen_origin.y
+	  else
+	    gear.y = screen_origin.y + screen_size.y - 32
+	    arrows.y = screen_origin.y + screen_size.y - 28
+	  end
+	  gear:toFront()
+	  arrows:toFront()
 	end
-	if pt.y == 0 then
-	  gear.y = 32 + screen_origin.y
-	else
-	  gear.y = screen_origin.y + screen_size.y - 32
-	end
-	gear:toFront()
-      else
-        gear.isVisible = false
       end
     end
   elseif e.done then
     gear.isVisible = false
+    arrows.isVisible = false
   end
 
   return true

@@ -1,8 +1,8 @@
 local scene = {}
 
 scene.meta = {
-  name = "Spiraling Shape 2",
-  description = "The center (and arms) will drift towards touch events."
+  name = "Spiraling Shape",
+  description = "The arms will drift towards touch events."
 }
 
 local pi = math.pi
@@ -14,6 +14,7 @@ local floor = math.floor
 local ceil = math.ceil
 local abs = math.abs
 local find_line = Util.line
+local line_new = Line.new
 
 -- settings and the Screen object
 local set
@@ -30,11 +31,11 @@ function scene:createScene(event)
   set = self.settings
   s = self.screen
 
+  self.total_colors = #Rainbow.hues * set.color_multiplier
   rfuncs = Rainbow.funcs_for(set.color_multiplier)
   colorfor = rfuncs.smooth
   colorize = rfuncs.smoothobj
 
-  self.total_colors = #Rainbow.hues * set.color_multiplier
   self.line_segments = self.total_colors
   self.segments_triangle = (self.line_segments * self.line_segments + self.line_segments) / 2
   self.segments_triangle = self.segments_triangle + (self.line_segments * self.segment_fudge)
@@ -132,7 +133,7 @@ function scene:line(color, g, index)
 	seg:setPoints(point, next)
 	colorize(seg, color)
       else
-	local l = Line.new(point, next, set.line_depth, colorfor(color))
+	local l = line_new(point, next, set.line_depth, colorfor(color))
 	l:setThickness(set.line_thickness)
 	seg = l
 	g.segments[i] = l
@@ -150,13 +151,8 @@ local vec_scale = Util.vec_scale
 
 function scene:move()
   local bounce = false
-  local offset = 0
-  if self.center.dx then
-    self.center:move(self.toward[1] or s.center)
-    offset = 1
-  end
   for i, v in ipairs(self.vecs) do
-    if v:move(self.toward[i + offset]) then
+    if v:move(self.toward[i]) then
       table.insert(v.ripples, self.line_segments)
       bounce = i
     end

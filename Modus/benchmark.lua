@@ -311,17 +311,17 @@ function scene:enterFrame(event)
 	last_average = avg
 	last_per_frame = per_frame
       end
-      Util.printf("%s average for %d: %.1fms", bench.name, per_frame, avg)
+      -- Util.printf("%s average for %d: %.1fms", bench.name, per_frame, avg)
       per_frame = per_frame + per_frame_inc
       per_frame_inc = ceil(per_frame_inc * 1.15)
       -- some modes are as slow as 12 frames, ~= 0.2 seconds or 200ms
       if avg > 58 or per_frame > bench.max then
 	-- we're done here
 	stats[bench.name] = averages
-	Util.printf("  *** %s ***", bench.name)
-	for frames, millis in pairs(averages) do
-	  Util.printf("    %d: %.1f", frames, millis)
-	end
+	-- Util.printf("  *** %s ***", bench.name)
+	-- for frames, millis in pairs(averages) do
+	  -- Util.printf("    %d: %.1f", frames, millis)
+	-- end
 	samples = {}
 	averages = {}
 	last_average = 0

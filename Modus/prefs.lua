@@ -11,8 +11,10 @@ store_global_state = store_global_state or {
   product_state = false
 }
 
-scene.ROW_HEIGHT = 150
-scene.NAME_OFFSET = 290
+scene.ROW_HEIGHT = 212
+scene.NAME_X_OFFSET = 5
+scene.NAME_Y_OFFSET = 202
+scene.TEXT_OFFSET = 276
 scene.GLOBAL_SPACE = 450
 
 local frame = Util.enterFrame
@@ -45,8 +47,6 @@ local store_host = system.getInfo("platformName")
 local store_product_keys = all_store_product_keys[store_host] or {}
 
 local store_products = {}
-
-local already_bought = {}
 
 local function store_callback(event)
   local transaction = event.transaction
@@ -283,19 +283,35 @@ function scene.update_row_status(row)
   end
   if sc and sc.settings then
     if sc.settings.enabled then
-      row.toggle_button:setLabel("Disable")
-      row.title_label:setTextColor(255)
-      row.enabled_label:setTextColor(255)
+      if row.toggle_button.setReferencePoint then
+        row.toggle_button:setLabel("Disable")
+      end
+      if row.title_label.setTextColor then
+        row.title_label:setTextColor(255)
+      end
+      if row.enabled_label.setTextColor then
+        row.enabled_label:setTextColor(255)
+      end
       row.enabled_label.text = "Enabled"
-      row.enabled_label:setReferencePoint(display.CenterLeftReferencePoint)
-      row.enabled_label.x = 5
+      if row.enabled_label.setReferencePoint then
+        row.enabled_label:setReferencePoint(display.CenterLeftReferencePoint)
+      end
+      row.enabled_label.x = scene.TEXT_OFFSET
     else
-      row.toggle_button:setLabel("Enable")
-      row.title_label:setTextColor(180)
-      row.enabled_label:setTextColor(180)
+      if row.toggle_button.setReferencePoint then
+        row.toggle_button:setLabel("Enable")
+      end
+      if row.title_label.setTextColor then
+        row.title_label:setTextColor(180)
+      end
+      if row.enabled_label.setTextColor then
+        row.enabled_label:setTextColor(180)
+      end
       row.enabled_label.text = "Disabled"
-      row.enabled_label:setReferencePoint(display.CenterLeftReferencePoint)
-      row.enabled_label.x = 5
+      if row.enabled_label.setReferencePoint then
+        row.enabled_label:setReferencePoint(display.CenterLeftReferencePoint)
+      end
+      row.enabled_label.x = scene.TEXT_OFFSET
     end
   end
 end
@@ -328,16 +344,24 @@ function scene.onRowRender(event)
   if not sc then
     sc = { meta = { name = row.id or "unnamed", description = "Does not exist." } }
   end
+  local img
+  img = display.newImage(row.id .. '.png')
+  row_group:insert(img)
+  img:setReferencePoint(display.TopLeftReferencePoint)
+  img.x = 10
+  img.y = 10
+  -- img.yScale = 192 / 256;
+  -- img.xScale = 192 / 256;
   local text
-  text = display.newText(sc.meta.name, 5, 5, native.systemFont, 30)
+  text = display.newText(sc.meta.name, scene.TEXT_OFFSET, 5, native.systemFont, 30)
   row_group:insert(text)
   row.title_label = text
   if not enabled then
     text:setTextColor(180)
   end
-  text = display.newText(sc.meta.description, scene.NAME_OFFSET, 10, s.size.x - scene.NAME_OFFSET - 5, scene.ROW_HEIGHT - 10, native.systemFont, 26)
+  text = display.newText(sc.meta.description, scene.TEXT_OFFSET, 80, s.size.x - scene.TEXT_OFFSET - 5, scene.ROW_HEIGHT - 10, native.systemFont, 26)
   row_group:insert(text)
-  text = display.newText(settings.enabled and "Enabled" or "Disabled", 5, 37, native.systemFont, 26)
+  text = display.newText(settings.enabled and "Enabled" or "Disabled", scene.TEXT_OFFSET, 40, native.systemFont, 26)
   row_group:insert(text)
   if not enabled then
     text:setTextColor(180)
@@ -345,8 +369,8 @@ function scene.onRowRender(event)
   row.enabled_label = text
   local button = widget.newButton({
     id = row.id,
-    left = 5,
-    top = 110,
+    left = s.size.x - 110,
+    top = 5,
     width = 100,
     height = 35,
     label = settings.enabled and "Disable" or "Enable",

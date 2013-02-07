@@ -115,10 +115,10 @@ function scene:find_interest(pairs, out, index)
     r = (r % #ip) + 1
     -- we give up
     if r == r_orig then
-      Util.printf("can't find interesting point for:")
-      for i = 1, #pairs do
-	Util.printf("  %s + %s", tostring(pairs[i][1]), tostring(pairs[i][2]))
-      end
+      -- Util.printf("can't find interesting point for:")
+      -- for i = 1, #pairs do
+	-- Util.printf("  %s + %s", tostring(pairs[i][1]), tostring(pairs[i][2]))
+      -- end
       break
     end
     v3 = ip[r]
@@ -280,11 +280,11 @@ function scene:addpoint(i, p1, p2)
   point.orig[3] = point.vecs[3]:copy()
   point.vecs[1]:set_target(point.vecs[3], point.steps)
   self.points[i] = point
-  Util.printf("points[%d] = { %s, %s, %s }",
-    i,
-    tostring(point.vecs[1]),
-    tostring(point.vecs[2]),
-    tostring(point.vecs[3]))
+  -- Util.printf("points[%d] = { %s, %s, %s }",
+    -- i,
+    -- tostring(point.vecs[1]),
+    -- tostring(point.vecs[2]),
+    -- tostring(point.vecs[3]))
 end
 
 function scene:enterScene(event)

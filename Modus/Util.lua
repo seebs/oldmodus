@@ -41,7 +41,9 @@ function Util.message(fmt, ...)
   if not message_box then
     message_box = display.newGroup()
     for i = 1, 5 do
-      message_boxes[i] = display.newText('', Screen.center.x, Screen.center.y, Screen.size.x - 10, 0, native.defaultFont, 40)
+      -- specifying a width has unexpected behaviors on Android
+      -- message_boxes[i] = display.newText('blah', Screen.center.x, Screen.center.y, Screen.size.x - 10, 0, native.defaultFont, 40)
+      message_boxes[i] = display.newText('blah', Screen.center.x, Screen.center.y, native.defaultFont, 40)
     end
     message_boxes[1]:setTextColor(0)
     message_boxes[2]:setTextColor(0)
@@ -60,8 +62,8 @@ function Util.message(fmt, ...)
     box.text = out
     box:setReferencePoint(display.centerReferencePoint)
   end
-  message_box.x = Screen.size.x / 2
-  message_box.y = Screen.size.y / 2
+  message_box.x = (Screen.size.x / 2) + Screen.origin.x
+  message_box.y = (Screen.size.y / 2) + Screen.origin.y
   message_boxes[1].x = - 1.5
   message_boxes[1].y = - 1.5
   message_boxes[2].x = - 1.5

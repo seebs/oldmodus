@@ -298,13 +298,13 @@ function Logic.next_display(event)
     local started_at = display_index
     while not next_place do
       display_index = (display_index % #modus.displays) + 1
-      if display_index == started_at then
-	next_place = 'prefs'
-	message("You do not appear to have any other scenes enabled.  Enable some scenes.")
-	break
-      end
       next_place = modus.displays[display_index]
       local enabled = modus.scenes[modus.displays[display_index]].settings.enabled
+      -- skip disabled scenes unless this we've looped.
+      if display_index == started_at then
+        message("No other scenes to switch to.")
+	return
+      end
       if not enabled then
 	next_place = nil
       end

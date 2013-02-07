@@ -8,6 +8,8 @@ local sqrt = math.sqrt
 local atan2 = math.atan2
 local printf = Util.printf
 
+local rainbow = Rainbow
+
 local redrawn = 0
 
 function Line.redraws()
@@ -30,10 +32,11 @@ function Line.new(x1, y1, x2, y2, depth, r, g, b)
     depth = depth or 1
   end
   if not b then
-    r, g, b = unpack(Rainbow.color(r))
+    r, g, b = unpack(rainbow.color(r))
   end
   local o = display.newGroup()
-  o.hue = hue or math.random(#Rainbow.hues)
+  o.blend = rainbow.blending()
+  o.hue = hue or math.random(#rainbow.hues)
   o.r, o.g, o.b, o.a = r, g, b, 255
   o.depth = depth
   o.theta = 0
@@ -50,7 +53,7 @@ function Line.new(x1, y1, x2, y2, depth, r, g, b)
     o:insert(l)
     table.insert(o.lines, l)
   end
-  o.blendMode = 'add'
+  o.blendMode = o.blend
   o.p1 = p1
   o.p2 = p2
   o.setPoints = Line.setPoints
@@ -103,7 +106,7 @@ function Line:redraw1()
     self.x, self.y, self.len, self.rotation, self.dirty = (ax + bx) / 2, (ay + by) / 2, sqrt(dx * dx + dy * dy), deg(atan2(dy, dx)) + self.theta, false
   end
   self.lines[1]:setFillColor(self.r, self.g, self.b, self.a)
-  self.lines[1].blendMode, self.lines[1].xScale = 'add', self.len + .001
+  self.lines[1].blendMode, self.lines[1].xScale = self.blend, self.len + .001
   redrawn = redrawn + 1
 end
 
@@ -114,9 +117,9 @@ function Line:redraw2()
     self.x, self.y, self.len, self.rotation, self.dirty = (ax + bx) / 2, (ay + by) / 2, sqrt(dx * dx + dy * dy), deg(atan2(dy, dx)) + self.theta, false
   end
   self.lines[1]:setFillColor(self.r, self.g, self.b, self.a)
-  self.lines[1].blendMode, self.lines[1].xScale = 'add', self.len + .001
+  self.lines[1].blendMode, self.lines[1].xScale = self.blend, self.len + .001
   self.lines[2]:setFillColor(self.r, self.g, self.b, self.a)
-  self.lines[2].blendMode, self.lines[2].xScale = 'add', self.len + .001
+  self.lines[2].blendMode, self.lines[2].xScale = self.blend, self.len + .001
   redrawn = redrawn + 1
 end
 
@@ -128,7 +131,7 @@ function Line:redraw()
   end
   for i, l in ipairs(self.lines) do
     l:setFillColor(self.r, self.g, self.b, self.a)
-    l.blendMode, l.xScale = 'add', self.len + .001
+    l.blendMode, l.xScale = self.blend, self.len + .001
   end
   redrawn = redrawn + 1
 end

@@ -52,7 +52,7 @@ Settings.scene_defaults = {
     frame_delay = 3,
     type = 'line',
   },
-  spiral = {
+  spiral1 = {
     points = 3,
     history = 8,
     color_multiplier = 16,
@@ -66,7 +66,7 @@ Settings.scene_defaults = {
     frame_delay = 3,
     type = 'line',
   },
-  knights = {
+  knights1 = {
     frame_delay = 12,
     type = 'square',
   },
@@ -89,7 +89,7 @@ Settings.scene_defaults = {
     color_multiplier = 12,
     type = 'square',
   },
-  drops = {
+  raindrops = {
     total_drops = #Rainbow.hues * 3,
     drop_threshold = #Rainbow.hues * 3 - 5,
     min_cooldown = 10,
@@ -112,14 +112,14 @@ Settings.scene_defaults = {
     frame_delay = 3,
     type = 'line',
   },
-  ants = {
+  hexes1 = {
     color_multiplier = 7,
     ants = 6,
     frame_delay = 5,
     type = 'hex',
     linear = 2,
   },
-  ants2 = {
+  hexes2 = {
     color_multiplier = 7,
     ants = 6,
     frame_delay = 5,
@@ -235,9 +235,9 @@ function Settings.time_for(benchmark, count, linear, quadratic)
   if quadratic then
     quadratic_msec = Settings.estimate(Settings.interpolated.quadratic, count) * quadratic
   end
-  Util.printf("%d items: %.1f + %.1f ms + %.1f ms => %.1fms",
-    count, base_msec, linear_msec, quadratic_msec,
-    base_msec + linear_msec + quadratic_msec)
+  -- Util.printf("%d items: %.1f + %.1f ms + %.1f ms => %.1fms",
+    -- count, base_msec, linear_msec, quadratic_msec,
+    -- base_msec + linear_msec + quadratic_msec)
   return base_msec + linear_msec + quadratic_msec
 end
 
@@ -248,7 +248,7 @@ function Settings.items_for(ideal_time, benchmark, linear, quadratic)
   local quadratic_time = 0
   local index = benchmark.index
 
-  Util.printf("items_for: %.1fms.", ideal_time)
+  -- Util.printf("items_for: %.1fms.", ideal_time)
   local lowest_count, lowest_msec = index.lowest, benchmark[index.lowest]
   local highest_count, highest_msec = index.highest, benchmark[index.highest]
   local current_count, current_msec, base_msec, crunch_msec
@@ -257,7 +257,7 @@ function Settings.items_for(ideal_time, benchmark, linear, quadratic)
   current_count = index.middle
   highest_msec = Settings.time_for(benchmark, highest_count, linear, quadratic)
   if highest_msec < ideal_time then
-    Util.printf("Highest time is %.1fms, using %d.", highest_msec, highest_count)
+    -- Util.printf("Highest time is %.1fms, using %d.", highest_msec, highest_count)
     return highest_count, highest_msec
   end
   current_msec = Settings.time_for(benchmark, current_count, linear, quadratic)
@@ -268,8 +268,8 @@ function Settings.items_for(ideal_time, benchmark, linear, quadratic)
       Util.printf("Giving up after 10 tries.")
       break
     end
-    Util.printf("Considering %d items: %.1fms, compared to %.1fms.",
-      current_count, current_msec, ideal_time)
+    -- Util.printf("Considering %d items: %.1fms, compared to %.1fms.",
+      -- current_count, current_msec, ideal_time)
     if current_msec > ideal_time then
       highest_count = current_count
       highest_msec = current_msec
@@ -286,7 +286,7 @@ end
 
 function Settings.compute_properties(set, benchmark)
   -- trim it a bit because otherwise we tend to run over...
-  Util.printf("computing: %s", tostring(set.type))
+  -- Util.printf("computing: %s", tostring(set.type))
   local ideal_time = (set.frame_delay * Settings.frametime) * .85
   local linear = set.linear or 0.2
   local quadratic = set.quadratic or 0.01
@@ -303,8 +303,8 @@ function Settings.compute_properties(set, benchmark)
       -- color_multiplier * 6 because color_multiplier multiplies colors
       local effective_n = set.points * set.history * set.color_multiplier * 6
       if effective_n < can_draw then
-	Util.printf("Looking for time of %.1fms (%.2f+%.2f crunch) or less, got %d/%d lines in %.1fms.",
-	    ideal_time, set.quadratic, set.linear, effective_n, can_draw, expected_time)
+	-- Util.printf("Looking for time of %.1fms (%.2f+%.2f crunch) or less, got %d/%d lines in %.1fms.",
+	    -- ideal_time, set.quadratic, set.linear, effective_n, can_draw, expected_time)
 	return
       else
 	-- scale back whichever has been scaled back less, starting with
@@ -328,8 +328,8 @@ function Settings.compute_properties(set, benchmark)
   elseif set.type == 'square' or set.type == 'hex' then
     local msec
     set.max_items, msec = Settings.items_for(ideal_time, benchmark, linear, quadratic)
-    Util.printf("Looking for time of %.1fms (%.2f+%.2f crunch) or less, got %d items in %.1fms.",
-    	ideal_time, set.quadratic, set.linear, set.max_items, msec)
+    -- Util.printf("Looking for time of %.1fms (%.2f+%.2f crunch) or less, got %d items in %.1fms.",
+    	-- ideal_time, set.quadratic, set.linear, set.max_items, msec)
   end
 end
 

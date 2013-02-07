@@ -8,6 +8,7 @@ Rainbow.manyhues = {
     { 0, 200, 0 },
     { 0, 0, 255 },
     { 180, 0, 200 },
+    blend = 'add',
   },
   pastel = {
     { 255, 128, 128 },
@@ -16,6 +17,7 @@ Rainbow.manyhues = {
     { 128, 200, 128 },
     { 128, 128, 255 },
     { 200, 128, 220 },
+    blend = 'normal',
   },
   ocean = {
     { 0, 0, 255 },
@@ -24,6 +26,7 @@ Rainbow.manyhues = {
     { 0, 200, 200 },
     { 0, 180, 255 },
     { 140, 0, 240 },
+    blend = 'add'
   },
   earth = {
     { 70, 100, 40 },
@@ -32,6 +35,7 @@ Rainbow.manyhues = {
     { 100, 50, 30 },
     { 210, 110, 0 },
     { 150, 60, 30 },
+    blend = 'normal'
   },
 }
 
@@ -113,6 +117,10 @@ function Rainbow.funcs_for(denominator)
     end
   end
   return Rainbow.funcs[denominator]
+end
+
+function Rainbow.blending()
+  return Rainbow.hues.blend or 'add'
 end
 
 function Rainbow.smoothify(denominator)

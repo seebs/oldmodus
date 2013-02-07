@@ -5,8 +5,8 @@ local min = math.min
 local random = math.random
 
 scene.meta = {
-  name = "Knights 2",
-  description = "Glowing squares perform random knight's moves, advancing colors towards their own."
+  name = "Knights",
+  description = "Glowing squares perform random knight's moves, advancing colors as they go."
 }
 
 scene.KNIGHTS = 6
@@ -24,19 +24,14 @@ function scene:createScene(event)
   self.squares = Squares.new(s, set, { highlights = self.KNIGHTS })
   self.fade_multiplier = (#self.squares / scene.FADE_RATE / 6) * .003
   -- Util.printf("fade_multiplier: (%d / %d / 6) * .003 = %f",
-    -- #self.squares, scene.FADE_RATE, self.fade_multiplier)
+  --   #self.squares, scene.FADE_RATE, self.fade_multiplier)
   self.knights = {}
 end
 
-function scene:setcolor(square, hue)
+function scene:bump(square)
   if square then
-    square:colorize(hue)
-  end
-end
-
-function scene:bump(square, hue)
-  if square then
-    square:colorize(Rainbow.towards(square.hue, hue))
+    square.hue = ((square.hue + 1) % #Rainbow.hues)
+    square:colorize()
     if square.alpha < self.FADED then
       square.alpha = (self.FADED + square.alpha) / 2
     end
@@ -45,12 +40,21 @@ end
 
 function scene:adjust(knight)
   local square = self.squares[knight.x][knight.y]
-  local oldhue = square.hue
-  scene:setcolor(square, knight.hue)
-  square.alpha = 1
+  self:bump(square)
+  self:bump(square)
   if knight.light then
+    -- knight.light.hue = knight.index
+    knight.light.hue = square.hue
+    knight.light:colorize()
+    -- this test is meaningful if I change the preceeding lines back.
+    if knight.light.hue == square.hue then
+      knight.light.alpha = 0.6
+      knight.light.blendMode = 'add'
+    else
+      knight.light.alpha = 1.0
+      knight.light.blendMode = 'normal'
+    end
     knight.light:move(square)
-    knight.light.isVisible = true
   end
   if knight.index % 3 == 1 then
     Sounds.playexact(self.tone_base_offset + self.tone_offset, 1)
@@ -59,12 +63,12 @@ function scene:adjust(knight)
       self.tone_base_offset = (self.tone_base_offset + 1) % 4
     end
   end
-  Sounds.playexact(oldhue + 5, 0.7)
+  Sounds.playexact(square.hue + 5, 0.7)
   square.alpha = 1
-  scene:bump(square:find(1, 0), knight.hue)
-  scene:bump(square:find(-1, 0), knight.hue)
-  scene:bump(square:find(0, 1), knight.hue)
-  scene:bump(square:find(0, -1), knight.hue)
+  self:bump(square:find(1, 0))
+  self:bump(square:find(-1, 0))
+  self:bump(square:find(0, 1))
+  self:bump(square:find(0, -1))
 end
 
 function scene:move_knight(knight)
@@ -78,6 +82,19 @@ function scene:move_knight(knight)
   end
   local p_chance = .5
   local s_chance = .5
+  local toward = self.toward[knight.index]
+  if toward then
+    if toward[primary] > knight[primary] then
+      p_chance = .8
+    elseif toward[primary] < knight[primary] then
+      p_chance = .2
+    end
+    if toward[secondary] > knight[secondary] then
+      s_chance = .8
+    elseif toward[secondary] < knight[secondary] then
+      s_chance = .2
+    end
+  end
 
   self.squares[knight.x][knight.y].alpha = self.FADED + 0.1
 
@@ -116,7 +133,7 @@ end
 function scene:willEnterScene(event)
   for x, column in ipairs(self.squares) do
     for y, square in ipairs(column) do
-      square.hue = (x + y) % #Rainbow.hues
+      square.hue = 1
       square.alpha = self.FADED
       square:colorize()
     end
@@ -129,11 +146,12 @@ function scene:willEnterScene(event)
       x = random(self.squares.columns),
       y = random(self.squares.rows),
       index = i,
-      hue = ((i - 1) % #Rainbow.hues) + 1,
       light = self.squares.highlights[i]
     }
-    knight.light.hue = knight.hue
-    knight.light:colorize()
+    if knight.light then
+      knight.light.hue = (knight.index - 1) % #Rainbow.hues + 1
+      knight.light:colorize()
+    end
     table.insert(self.knights, knight)
     self:adjust(knight)
   end

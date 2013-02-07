@@ -130,8 +130,8 @@ function Squares.new(group, set, args)
     local too_big = max(too_tall, max(too_wide, too_many))
     if too_big > 1 then
       try = max(floor(try * sqrt(too_big)) - 1, try + 1)
-      Util.printf("%.1f, %.1f, %.1f: too big, now try %d",
-        too_tall, too_wide, too_many, try)
+      -- Util.printf("%.1f, %.1f, %.1f: too big, now try %d",
+        -- too_tall, too_wide, too_many, try)
     else
       break
     end

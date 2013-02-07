@@ -329,7 +329,7 @@ end
 function Hexes.new(group, set, highlights, multiplier)
   local hexes = {}
 
-  Util.printf("max items: %s", tostring(set.max_items))
+  -- Util.printf("max items: %s", tostring(set.max_items))
   if not set.max_items then
     set.max_items = 1300
   end
@@ -349,8 +349,8 @@ function Hexes.new(group, set, highlights, multiplier)
     local too_big = max(too_tall, max(too_wide, too_many))
     if too_big > 1 then
       try = max(floor(try * sqrt(too_big)) - 1, try + 1)
-      Util.printf("%.1f, %.1f, %.1f: too big, now try %d",
-        too_tall, too_wide, too_many, try)
+      -- Util.printf("%.1f, %.1f, %.1f: too big, now try %d",
+        -- too_tall, too_wide, too_many, try)
     else
       break
     end
@@ -367,8 +367,8 @@ function Hexes.new(group, set, highlights, multiplier)
 
   hexes.rows, rowsize = Hexes.vertical_in(hexes, group.size.y)
   hexes.columns, columnsize = Hexes.horizontal_in(hexes, group.size.x)
-  Util.printf("size %.1f, ended up with %d rows in %d and %d columns in %d",
-    hexes.hex_size, hexes.rows, group.size.y, hexes.columns, group.size.x)
+  -- Util.printf("size %.1f, ended up with %d rows in %d and %d columns in %d",
+    -- hexes.hex_size, hexes.rows, group.size.y, hexes.columns, group.size.x)
   hexes.total_hexes = hexes.rows * hexes.columns
   if columnsize < group.size.x then
     local diff = group.size.x - columnsize

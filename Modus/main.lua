@@ -33,16 +33,16 @@ Vector = require "Vector"
 storyboard.purgeOnSceneChange = true
 
 local displays = {
-  'spiral',
-  'ants2',
-  'knights',
+  'spiral1',
+  'hexes2',
+  'knights1',
   'spline',
   'cascade',
   'lissajous',
-  'drops',
+  'raindrops',
   'spiral2',
   'fire',
-  'ants',
+  'hexes1',
   'cascade2',
   'lines',
   'knights2',
@@ -77,6 +77,9 @@ local have_settings = Settings.load()
 
 -- load sounds now that we know what sounds we like
 Sounds.update()
+
+-- prevent spamming the IAP keys
+already_bought = {}
 
 for i, v in ipairs(displays) do
   make_scene(v)
