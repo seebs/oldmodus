@@ -1,0 +1,64 @@
+#!/bin/sh
+PATH=$PATH:/Applications/android-sdk-macosx/platform-tools:/Applications/android-sdk-macosx/tools
+JAVA="java -Xmx256M"
+NUKE_US="CoronaProvider/analytics/flurry CoronaProvider/ads/inmobi CoronaProvider/ads/inneractive com/facebook com/flurry com/inmobi com/inneractive"
+BILLING=false
+dir=/tmp/apk.$$
+pwd=$(pwd)
+
+die() {
+  fmt="$1"
+  shift 1
+  printf >&2 "$fmt\n" "$@"
+  exit 1
+}
+
+fixapk() {
+  if $BILLING; then
+    billing_line='<uses-permission android:name="com.android.vending.BILLING" />'
+  else
+    billing_line=''
+  fi
+  awk -v billing_line="$billing_line" -v version="android:versionCode=\"$$\"" '
+    $2 == "android:versionCode=\"1\"" { $2 = version }
+    /adknowledge/ { next; }
+    /superrewards/ { next; }
+    /action.*PAYMENT/ { next; }
+    /intent.category.DEFAULT/ { next; }
+    /activity.*Zong/,/\/activity/ { next; }
+    /receiver.*CloudMessaging/,/<\/receiver>/ { next }
+    /receiver.*GoogleStore/,/<\/receiver>/ { next }
+    /permission/ { if (billing_line) { $0 = billing_line; billing_line = ""; } else { next; } }
+    { print }
+  ' AndroidManifest.xml > AndroidManifest.nxml || die "awk failed."
+  cp AndroidManifest.xml /tmp/Manifest-$$.xml
+  mv AndroidManifest.nxml AndroidManifest.xml
+  rm -r smali/zongfuscated
+  rm -r $(echo " $NUKE_US" | sed -e 's! ! smali/!g')
+}
+
+for apk; do
+  set -x
+  apkfile=$(basename $apk)
+  progname=$(basename $apkfile .apk)
+  echo "Looking at $apk."
+  case $apk in
+  /*)	;;
+  *)	apk=$pwd/$apk;;
+  esac
+  mkdir $dir || die "Can't create %s." $dir
+  cd $dir || die "Can't cd to %s." $dir
+  $JAVA -jar ~/bin/apktool_1.5.0.jar d $apk
+  cd $progname
+  fixapk
+  cd ..
+  $JAVA -jar ~/bin/apktool_1.5.0.jar b $progname $apkfile
+  jarsigner -sigalg MD5withRSA -digestalg SHA1 -verbose -keystore /Users/seebs/seebsllc/seebs-llc.keystore -storepass 'bf,4gd3@ng2-B' ./$progname.apk seebsllc || die "jarsigner failed."
+  mkdir -p unaligned
+  mv $apkfile unaligned/.
+  zipalign 4 unaligned/$apkfile $apkfile
+  cp $apkfile $apk
+  cd -
+  mv $dir $apk-$$.SAVE
+  set +x
+done

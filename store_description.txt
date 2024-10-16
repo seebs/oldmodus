@@ -11,10 +11,10 @@ More testimonials from users:
 "It's so cool I can't even look at it." - Lerg, app developer
 
 USAGE:
-Watch the pretty lights. Want different pretty lights? Double-tap (with only one finger). Most modes are at least a little interactive, but sometimes it is pretty subtle. After you've explored a bit, you may find you prefer some modes, or don't like some of them. We've thought of that!
+Watch the pretty lights. Want different pretty lights? Tap in any corner, then tap the arrows to change modes. Most modes are at least a little interactive, but sometimes it is pretty subtle. After you've explored a bit, you may find you prefer some modes, or don't like some of them. We've thought of that!
 
 SETTINGS:
-Double-tap in any corner to bring up the settings page. This allows you to change (or disable) the sounds, enable or disable modes so you only see your favorites, or re-run the benchmark phase if you think it got bogus results.
+Tap in any corner, then tap on the gear to bring up the settings page. This allows you to change (or disable) the sounds, enable or disable modes so you only see your favorites, or re-run the benchmark phase if you think it got bogus results.
 
 SUPPORT:
 See the support page. Feel free to email suggestions for display modes you'd like to see, as I enjoy writing new display modes. If you wish to report the app being slow or erratic, be sure to tell me what device you've got, and what it's doing.
@@ -23,7 +23,7 @@ KNOWN ISSUES:
 Performance is not as reliable as I'd like.
 
 PRICING:
-The app is free. There's an in-app purchase available called "thanks". It does not get you any new features or functions, it just increases my chances of working on the app more.
+The app is free. It used to have a donation feature, but it wasn't worth the effort of maintaining.
 
 ABOUT THE NAME:
 The name "Miracle Modus" is used by kind permission of Andrew Hussie. It is a reference to a device in his webcomic "Homestuck".

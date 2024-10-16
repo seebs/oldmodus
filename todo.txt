@@ -2,10 +2,10 @@ RELEASE 1.1:
 	* Use menu button on Android?
 	* screenshots of modes on settings screen
 	* allow single scene only somehow
+	* check text positioning
 	* use click targets instead of double-tap?
 	  - show click targets on startup?
-	* Colors sometimes not setting back to rainbow as expected.
-	* Try 48KHz audio to reduce stutter?
+	* Make "thanks" only available once per app run.
 
 RELEASE 1.2:
 	* make sure messages have a chance to get seen
